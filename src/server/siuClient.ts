@@ -1,4 +1,4 @@
-import { BadGatewayError, GatewayTimeoutError } from './errors';
+import { AppError, BadGatewayError, GatewayTimeoutError } from './errors';
 import { parseJsonp } from './jsonp';
 import { normalizePredictions } from './normalizers';
 
@@ -19,11 +19,15 @@ export async function fetchJsonp(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): 
 
     return parseJsonp(await response.text());
   } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
     if (error instanceof Error && error.name === 'AbortError') {
       throw new GatewayTimeoutError('SIU Mobile não respondeu no tempo esperado', error);
     }
 
-    throw error;
+    throw new BadGatewayError('Falha ao consultar SIU Mobile', error);
   } finally {
     clearTimeout(timeout);
   }
