@@ -38,11 +38,16 @@ export function createNotificationService(
         return false;
       }
 
+      try {
+        new deps.NotificationClass(`Linha ${input.lineCode} chegando`, {
+          body: `Previsão de ${input.minutes} min para ${input.destination}.`,
+          tag: input.id,
+        });
+      } catch {
+        return false;
+      }
+
       notifiedIds.add(input.id);
-      new deps.NotificationClass(`Linha ${input.lineCode} chegando`, {
-        body: `Previsão de ${input.minutes} min para ${input.destination}.`,
-        tag: input.id,
-      });
       return true;
     },
   };

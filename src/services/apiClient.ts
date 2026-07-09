@@ -15,7 +15,17 @@ export class ApiClientError extends Error {
 }
 
 async function readJson<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { error?: { message?: string } };
+  let data: (T & { error?: { message?: string } }) | null = null;
+
+  try {
+    data = (await response.json()) as T & { error?: { message?: string } };
+  } catch {
+    if (!response.ok) {
+      throw new ApiClientError('Erro ao consultar API', response.status);
+    }
+
+    throw new ApiClientError('Erro ao consultar API', response.status);
+  }
 
   if (!response.ok) {
     throw new ApiClientError(data.error?.message ?? 'Erro ao consultar API', response.status);
@@ -25,7 +35,14 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export async function fetchStopPredictions(stopCode: string): Promise<Prediction[]> {
-  const response = await fetch(`/api/paradas/${encodeURIComponent(stopCode)}/previsoes`);
+  let response: Response;
+
+  try {
+    response = await fetch(`/api/paradas/${encodeURIComponent(stopCode)}/previsoes`);
+  } catch {
+    throw new ApiClientError('Não foi possível conectar à API', 0);
+  }
+
   const data = await readJson<PredictionsResponse>(response);
   return data.predictions;
 }

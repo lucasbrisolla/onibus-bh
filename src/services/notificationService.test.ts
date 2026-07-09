@@ -28,4 +28,41 @@ describe('createNotificationService', () => {
 
     expect(notificationSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('returns false and does not mark the notification as sent when Notification throws', () => {
+    const notificationSpy = vi.fn();
+
+    class ThrowingNotification {
+      static permission = 'granted';
+
+      constructor() {
+        notificationSpy();
+        throw new Error('permission changed');
+      }
+    }
+
+    class WorkingNotification {
+      static permission = 'granted';
+
+      constructor(title: string, options?: NotificationOptions) {
+        notificationSpy(title, options);
+      }
+    }
+
+    const deps = {
+      NotificationClass: ThrowingNotification as unknown as typeof Notification,
+    };
+    const service = createNotificationService(deps);
+
+    expect(
+      service.notifyArrival({ id: 'a', lineCode: '8350', minutes: 5, destination: 'Centro' }),
+    ).toBe(false);
+
+    deps.NotificationClass = WorkingNotification as unknown as typeof Notification;
+
+    expect(
+      service.notifyArrival({ id: 'a', lineCode: '8350', minutes: 5, destination: 'Centro' }),
+    ).toBe(true);
+    expect(notificationSpy).toHaveBeenCalledTimes(2);
+  });
 });
