@@ -35,9 +35,33 @@ describe('findAlertMatch', () => {
     expect(findAlertMatch({ ...baseSettings, enabled: false }, [diretoPrediction]).reason).toBe('disabled');
   });
 
+  it('requires configured stop and line codes', () => {
+    expect(findAlertMatch({ ...baseSettings, stopCode: '   ' }, [diretoPrediction]).reason).toBe('missing-settings');
+    expect(findAlertMatch({ ...baseSettings, lineCode: '   ' }, [diretoPrediction]).reason).toBe('missing-settings');
+  });
+
+  it('matches configured line codes with extra spaces', () => {
+    expect(findAlertMatch({ ...baseSettings, lineCode: ' 8350 ' }, [diretoPrediction])).toEqual({
+      shouldNotify: true,
+      prediction: diretoPrediction,
+      reason: 'matched',
+    });
+  });
+
   it('does not match a different 8350 variant', () => {
     const prediction: Prediction = { ...diretoPrediction, id: '8350-nao-5', variant: 'nao-direto' };
     expect(findAlertMatch(baseSettings, [prediction]).reason).toBe('no-matching-line');
+  });
+
+  it('uses the closest prediction when multiple predictions match', () => {
+    const laterPrediction: Prediction = { ...diretoPrediction, id: '8350-direto-6', minutes: 6 };
+    const closestPrediction: Prediction = { ...diretoPrediction, id: '8350-direto-2', minutes: 2 };
+
+    expect(findAlertMatch(baseSettings, [laterPrediction, closestPrediction])).toEqual({
+      shouldNotify: true,
+      prediction: closestPrediction,
+      reason: 'matched',
+    });
   });
 
   it('does not match above the minute threshold', () => {

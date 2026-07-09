@@ -12,7 +12,7 @@ export function findAlertMatch(settings: AlertSettings, predictions: Prediction[
 
   const matchingLine = predictions.filter(
     prediction =>
-      prediction.lineCode === settings.lineCode &&
+      prediction.lineCode === settings.lineCode.trim() &&
       matchesVariantFilter(prediction.variant, settings.variantFilter),
   );
 
