@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AlertSettingsForm from './components/AlertSettingsForm.vue';
+import MapView from './components/MapView.vue';
 import PredictionList from './components/PredictionList.vue';
 import StatusPanel from './components/StatusPanel.vue';
 import { findAlertMatch } from './domain/alertRules';
@@ -157,6 +158,7 @@ onBeforeUnmount(() => {
         :message="statusMessage"
         :is-loading="isLoading"
       />
+      <MapView />
       <PredictionList :predictions="predictions" />
     </section>
   </main>

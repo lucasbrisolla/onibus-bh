@@ -139,6 +139,59 @@ button.primary {
   color: #35413a;
 }
 
+.map-panel {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid #d6ded4;
+  border-radius: 8px;
+  background: #e8ece6;
+}
+
+.map-surface {
+  min-height: 360px;
+  height: 100%;
+}
+
+.map-hint {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 500;
+  max-width: min(320px, calc(100% - 32px));
+  margin: 0;
+  border: 1px solid #ded8fb;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #5b4a9f;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 24px rgba(23, 32, 26, 0.12);
+}
+
+.map-marker {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(23, 32, 26, 0.24);
+}
+
+.map-marker.is-monitored {
+  background: #111827;
+}
+
+.map-marker.is-stop {
+  border: 2px solid #7c3aed;
+  background: #fff;
+}
+
+.map-marker.is-vehicle {
+  background: #7c3aed;
+}
+
 .prediction-list {
   display: grid;
   gap: 10px;

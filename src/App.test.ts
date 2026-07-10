@@ -30,6 +30,9 @@ const prediction: Prediction = {
   minutes: 5,
   queryTime: null,
   serviceId: null,
+  vehicleId: null,
+  color: null,
+  accessibilityCode: null,
   variant: 'direto',
 };
 
@@ -56,6 +59,8 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Ativar monitoramento');
     expect(wrapper.text()).toContain('Monitoramento');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
+    expect(wrapper.find('.map-surface').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Rota disponível quando houver veículo em operação.');
   });
 
   it('polls enabled settings, renders predictions, and stores the notified prediction id', async () => {
