@@ -4,6 +4,7 @@ defineProps<{
   permission: string;
   lastUpdated: string | null;
   message: string;
+  isLoading: boolean;
 }>();
 </script>
 
@@ -19,7 +20,7 @@ defineProps<{
     </div>
     <div>
       <span class="label">Última consulta</span>
-      <strong>{{ lastUpdated ?? 'Ainda não consultou' }}</strong>
+      <strong>{{ isLoading ? 'Consultando...' : (lastUpdated ?? 'Ainda não consultou') }}</strong>
     </div>
     <p class="status-message">{{ message }}</p>
   </section>

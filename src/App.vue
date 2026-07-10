@@ -15,9 +15,11 @@ const settings = ref<AlertSettings>(loadSettings());
 const predictions = ref<Prediction[]>([]);
 const lastUpdated = ref<string | null>(null);
 const statusMessage = ref('Configure uma parada e ative o monitoramento.');
+const isLoading = ref(false);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 let intervalId: number | undefined;
+let isPolling = false;
 
 const canPoll = computed(() => settings.value.enabled && settings.value.stopCode.trim().length > 0);
 
@@ -42,14 +44,36 @@ async function pollPredictions() {
     return;
   }
 
+  if (isPolling) {
+    return;
+  }
+
+  const settingsSnapshot = { ...settings.value };
+  const stopCode = settingsSnapshot.stopCode.trim();
+  isPolling = true;
+  isLoading.value = true;
+  statusMessage.value = 'Consultando previsões...';
+
   try {
-    predictions.value = await fetchStopPredictions(settings.value.stopCode.trim());
+    const nextPredictions = await fetchStopPredictions(stopCode);
+
+    if (
+      settings.value.stopCode !== settingsSnapshot.stopCode ||
+      settings.value.lineCode !== settingsSnapshot.lineCode
+    ) {
+      return;
+    }
+
+    predictions.value = nextPredictions;
     lastUpdated.value = new Date().toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
     });
 
-    const match = findAlertMatch(settings.value, predictions.value);
+    const finitePredictions = nextPredictions.filter(prediction =>
+      Number.isFinite(prediction.minutes),
+    );
+    const match = findAlertMatch(settingsSnapshot, finitePredictions);
     statusMessage.value = describeMatch(match.reason);
 
     if (match.shouldNotify && match.prediction) {
@@ -65,7 +89,12 @@ async function pollPredictions() {
       }
     }
   } catch (error) {
+    predictions.value = [];
+    lastUpdated.value = null;
     statusMessage.value = error instanceof Error ? error.message : 'Erro ao consultar previsões.';
+  } finally {
+    isLoading.value = false;
+    isPolling = false;
   }
 }
 
@@ -115,6 +144,7 @@ onBeforeUnmount(() => {
         :permission="permission"
         :last-updated="lastUpdated"
         :message="statusMessage"
+        :is-loading="isLoading"
       />
       <PredictionList :predictions="predictions" />
     </section>

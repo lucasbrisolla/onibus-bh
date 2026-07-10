@@ -36,6 +36,7 @@ const prediction: Prediction = {
 describe('App', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
     notifyArrival.mockReset();
     notifyArrival.mockReturnValue(true);
     requestPermission.mockClear();
@@ -97,5 +98,135 @@ describe('App', () => {
 
     await vi.advanceTimersByTimeAsync(45_000);
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears stale predictions and shows an error when a refresh fails', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(response({ predictions: [prediction] }))
+        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+
+    await vi.advanceTimersByTimeAsync(45_000);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
+    expect(wrapper.text()).toContain('Não foi possível conectar à API');
+    expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
+  });
+
+  it('does not render or notify non-finite prediction minutes', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ predictions: [{ ...prediction, minutes: Infinity }] }),
+      })),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).not.toContain('Infinity min');
+    expect(wrapper.text()).toContain('Sem previsão');
+    expect(notifyArrival).not.toHaveBeenCalled();
+  });
+
+  it('clamps alert minutes input into the supported range', async () => {
+    const wrapper = mount(App);
+    const minutesInput = wrapper.find('input[type="number"]');
+
+    await minutesInput.setValue('999');
+    await wrapper.vm.$nextTick();
+
+    expect((minutesInput.element as HTMLInputElement).value).toBe('60');
+
+    let stored = JSON.parse(localStorage.getItem('onibus-bh-alert-settings') ?? '{}') as {
+      minutesBefore?: number;
+    };
+    expect(stored.minutesBefore).toBe(60);
+
+    await minutesInput.setValue('');
+    await wrapper.vm.$nextTick();
+
+    expect((minutesInput.element as HTMLInputElement).value).toBe('1');
+
+    stored = JSON.parse(localStorage.getItem('onibus-bh-alert-settings') ?? '{}') as {
+      minutesBefore?: number;
+    };
+    expect(stored.minutesBefore).toBe(1);
+  });
+
+  it('ignores overlapping poll requests and stale responses', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    let resolveFetch: (value: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
+
+    const wrapper = mount(App);
+    await vi.advanceTimersByTimeAsync(45_000);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await wrapper.find('input[placeholder="Ex: 1234"]').setValue('9999');
+    resolveFetch(response({ predictions: [prediction] }));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
+    expect(notifyArrival).not.toHaveBeenCalled();
   });
 });

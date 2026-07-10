@@ -7,6 +7,23 @@ const emit = defineEmits<{ update: [settings: AlertSettings]; requestPermission:
 function update<K extends keyof AlertSettings>(key: K, value: AlertSettings[K]) {
   emit('update', { ...props.settings, [key]: value });
 }
+
+function normalizeMinutes(value: string): number {
+  const parsed = Math.trunc(Number(value));
+
+  if (!Number.isFinite(parsed)) {
+    return 1;
+  }
+
+  return Math.min(60, Math.max(1, parsed));
+}
+
+function updateMinutes(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const minutes = normalizeMinutes(input.value);
+  input.value = String(minutes);
+  update('minutesBefore', minutes);
+}
 </script>
 
 <template>
@@ -49,7 +66,8 @@ function update<K extends keyof AlertSettings>(key: K, value: AlertSettings[K]) 
         type="number"
         min="1"
         max="60"
-        @input="update('minutesBefore', Number(($event.target as HTMLInputElement).value))"
+        step="1"
+        @input="updateMinutes"
       />
     </label>
 
