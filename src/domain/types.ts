@@ -9,7 +9,33 @@ export interface Prediction {
   minutes: number;
   queryTime: string | null;
   serviceId: string | null;
+  vehicleId: string | null;
+  color: number | null;
+  accessibilityCode: number | null;
   variant: BusVariant;
+}
+
+export interface NearbyStop {
+  code: string;
+  publicCode: string;
+  latitude: number;
+  longitude: number;
+  description: string;
+  color: number | null;
+}
+
+export interface RoutePoint {
+  latitude: number;
+  longitude: number;
+}
+
+export interface Vehicle {
+  latitude: number;
+  longitude: number;
+  color: number | null;
+  lineCode: string;
+  vehicleId: string;
+  bearing: number | null;
 }
 
 export interface AlertSettings {
