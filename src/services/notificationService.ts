@@ -1,4 +1,4 @@
-type PermissionState = NotificationPermission | 'unsupported';
+export type PermissionState = NotificationPermission | 'unsupported';
 
 interface NotificationDeps {
   NotificationClass: typeof Notification | undefined;

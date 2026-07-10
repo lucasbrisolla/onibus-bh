@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import AlertSettingsForm from './components/AlertSettingsForm.vue';
+import AppShell from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
-import PredictionList from './components/PredictionList.vue';
-import StatusPanel from './components/StatusPanel.vue';
+import MobileBottomSheet from './components/MobileBottomSheet.vue';
+import MonitoringPanel from './components/MonitoringPanel.vue';
 import { findAlertMatch } from './domain/alertRules';
-import type { AlertMatch, AlertSettings, Prediction } from './domain/types';
-import { fetchStopPredictions } from './services/apiClient';
+import type { AlertMatch, AlertSettings, NearbyStop, Prediction, RoutePoint, Vehicle } from './domain/types';
+import { fetchNearbyStops, fetchRoutePoints, fetchStopPredictions, fetchVehicles } from './services/apiClient';
+import { createMapDataLoader, selectMapServiceId } from './services/mapDataService';
 import { createNotificationService } from './services/notificationService';
 import { loadSettings, saveSettings } from './services/settingsStore';
 
@@ -17,12 +18,20 @@ const predictions = ref<Prediction[]>([]);
 const lastUpdated = ref<string | null>(null);
 const statusMessage = ref('Configure uma parada e ative o monitoramento.');
 const isLoading = ref(false);
+const nearbyStops = ref<NearbyStop[]>([]);
+const route = ref<RoutePoint[]>([]);
+const vehicles = ref<Vehicle[]>([]);
+const activeMapServiceId = ref<string | null>(null);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
+const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
 let intervalId: number | undefined;
 let isPolling = false;
 
 const canPoll = computed(() => settings.value.enabled && settings.value.stopCode.trim().length > 0);
+const monitoredStop = computed(
+  () => nearbyStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
+);
 
 watch(
   settings,
@@ -38,6 +47,32 @@ async function requestPermission() {
 
 function updateSettings(next: AlertSettings) {
   settings.value = next;
+}
+
+async function useCurrentLocation() {
+  if (!navigator.geolocation) {
+    statusMessage.value = 'Seu navegador não informou suporte a localização.';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      void loadNearbyStops(position.coords.latitude, position.coords.longitude);
+    },
+    () => {
+      statusMessage.value = 'Não foi possível acessar sua localização.';
+    },
+    { enableHighAccuracy: true, timeout: 10_000 },
+  );
+}
+
+async function loadNearbyStops(latitude: number, longitude: number) {
+  try {
+    nearbyStops.value = await fetchNearbyStops(latitude, longitude);
+  } catch (error) {
+    statusMessage.value =
+      error instanceof Error ? error.message : 'Erro ao consultar paradas próximas.';
+  }
 }
 
 function hasCurrentAlertSettings(snapshot: AlertSettings): boolean {
@@ -96,6 +131,8 @@ async function pollPredictions() {
         settings.value = { ...settings.value, lastNotifiedPredictionId: match.prediction.id };
       }
     }
+
+    void refreshMapData(nextPredictions, settingsSnapshot.lineCode);
   } catch (error) {
     if (!hasCurrentAlertSettings(settingsSnapshot)) {
       return;
@@ -107,6 +144,32 @@ async function pollPredictions() {
   } finally {
     isLoading.value = false;
     isPolling = false;
+  }
+}
+
+async function refreshMapData(nextPredictions: Prediction[], lineCode: string) {
+  const serviceId = selectMapServiceId(nextPredictions, lineCode);
+
+  if (!serviceId) {
+    activeMapServiceId.value = null;
+    route.value = [];
+    vehicles.value = [];
+    return;
+  }
+
+  activeMapServiceId.value = serviceId;
+
+  try {
+    const data = await mapDataLoader.load(serviceId);
+    if (!data || data.serviceId !== activeMapServiceId.value) {
+      return;
+    }
+
+    route.value = data.route;
+    vehicles.value = data.vehicles;
+  } catch {
+    route.value = [];
+    vehicles.value = [];
   }
 }
 
@@ -136,30 +199,47 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="app-shell">
-    <section class="hero">
-      <p class="eyebrow">Ônibus BH</p>
-      <h1>Alerta pessoal de chegada</h1>
-      <p class="summary">
-        Monitore uma parada e receba aviso local quando a linha escolhida estiver perto.
-      </p>
-    </section>
-
-    <section class="layout">
-      <AlertSettingsForm
+  <AppShell :last-updated="lastUpdated" :is-loading="isLoading">
+    <section class="dashboard-grid">
+      <MonitoringPanel
         :settings="settings"
-        @update="updateSettings"
-        @request-permission="requestPermission"
-      />
-      <StatusPanel
-        :enabled="settings.enabled"
+        :predictions="predictions"
+        :status-message="statusMessage"
+        :is-loading="isLoading"
         :permission="permission"
         :last-updated="lastUpdated"
-        :message="statusMessage"
-        :is-loading="isLoading"
+        @update="updateSettings"
+        @request-permission="requestPermission"
+        @use-current-location="useCurrentLocation"
       />
-      <MapView />
-      <PredictionList :predictions="predictions" />
+
+      <section class="map-stage">
+        <div class="map-toolbar">
+          <span class="active-indicator">
+            <span></span>
+            {{ settings.enabled ? 'Monitoramento ativo' : 'Monitoramento pausado' }}
+          </span>
+          <span class="map-mode">Mapa</span>
+        </div>
+        <MapView
+          :monitored-stop="monitoredStop"
+          :nearby-stops="nearbyStops"
+          :route="route"
+          :vehicles="vehicles"
+        />
+      </section>
+
+      <MobileBottomSheet
+        :settings="settings"
+        :predictions="predictions"
+        :status-message="statusMessage"
+        :is-loading="isLoading"
+        :permission="permission"
+        :last-updated="lastUpdated"
+        @update="updateSettings"
+        @request-permission="requestPermission"
+        @use-current-location="useCurrentLocation"
+      />
     </section>
-  </main>
+  </AppShell>
 </template>

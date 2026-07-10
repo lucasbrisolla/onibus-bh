@@ -58,6 +58,12 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Variante da 8350');
     expect(wrapper.text()).toContain('Ativar monitoramento');
     expect(wrapper.text()).toContain('Monitoramento');
+    expect(wrapper.text()).toContain('Parada monitorada');
+    expect(wrapper.text()).toContain('Próximos ônibus');
+    expect(wrapper.text()).toContain('Mapa');
+    expect(wrapper.text()).toContain('Favoritos');
+    expect(wrapper.text()).toContain('Histórico');
+    expect(wrapper.text()).toContain('Configurações');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
     expect(wrapper.find('.map-surface').exists()).toBe(true);
     expect(wrapper.text()).toContain('Rota disponível quando houver veículo em operação.');
