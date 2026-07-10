@@ -39,6 +39,16 @@ function updateSettings(next: AlertSettings) {
   settings.value = next;
 }
 
+function hasCurrentAlertSettings(snapshot: AlertSettings): boolean {
+  return (
+    settings.value.enabled === snapshot.enabled &&
+    settings.value.stopCode === snapshot.stopCode &&
+    settings.value.lineCode === snapshot.lineCode &&
+    settings.value.variantFilter === snapshot.variantFilter &&
+    settings.value.minutesBefore === snapshot.minutesBefore
+  );
+}
+
 async function pollPredictions() {
   if (!canPoll.value) {
     return;
@@ -57,10 +67,7 @@ async function pollPredictions() {
   try {
     const nextPredictions = await fetchStopPredictions(stopCode);
 
-    if (
-      settings.value.stopCode !== settingsSnapshot.stopCode ||
-      settings.value.lineCode !== settingsSnapshot.lineCode
-    ) {
+    if (!hasCurrentAlertSettings(settingsSnapshot)) {
       return;
     }
 
@@ -89,6 +96,10 @@ async function pollPredictions() {
       }
     }
   } catch (error) {
+    if (!hasCurrentAlertSettings(settingsSnapshot)) {
+      return;
+    }
+
     predictions.value = [];
     lastUpdated.value = null;
     statusMessage.value = error instanceof Error ? error.message : 'Erro ao consultar previsões.';

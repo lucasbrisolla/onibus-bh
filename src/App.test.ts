@@ -229,4 +229,40 @@ describe('App', () => {
     expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
     expect(notifyArrival).not.toHaveBeenCalled();
   });
+
+  it('ignores an in-flight response when alert settings change before it resolves', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    let resolveFetch: (value: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
+
+    const wrapper = mount(App);
+    await wrapper.find('select').setValue('nao-direto');
+
+    resolveFetch(response({ predictions: [prediction] }));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
+    expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
+    expect(notifyArrival).not.toHaveBeenCalled();
+  });
 });
