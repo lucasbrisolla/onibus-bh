@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { toHttpError } from '../src/server/errors';
-import { checkSiuHealth } from '../src/server/siuClient';
+import { toHttpError } from '../src/server/errors.js';
+import { checkSiuHealth } from '../src/server/siuClient.js';
 
 function sendError(response: VercelResponse, error: unknown) {
   const httpError = toHttpError(error);

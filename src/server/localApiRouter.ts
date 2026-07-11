@@ -1,4 +1,4 @@
-import { toHttpError } from './errors';
+import { toHttpError } from './errors.js';
 import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
 
 export interface LocalApiHandlers {

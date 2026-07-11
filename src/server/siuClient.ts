@@ -1,11 +1,11 @@
-import { AppError, BadGatewayError, GatewayTimeoutError } from './errors';
-import { parseJsonp } from './jsonp';
+import { AppError, BadGatewayError, GatewayTimeoutError } from './errors.js';
+import { parseJsonp } from './jsonp.js';
 import {
   normalizeNearbyStops,
   normalizePredictions,
   normalizeRoutePoints,
   normalizeVehicles,
-} from './normalizers';
+} from './normalizers.js';
 
 export const SIU_BASE_URL =
   'http://bhz.siumobile.com.br:6060/siumobiletacomapp/siumobile-ws-v01/rest/ws';

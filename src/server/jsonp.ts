@@ -1,4 +1,4 @@
-import { BadGatewayError } from './errors';
+import { BadGatewayError } from './errors.js';
 
 export function parseJsonp<T = unknown>(input: string): T {
   const trimmed = input.trim().replace(/;$/, '');

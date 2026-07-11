@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { BadRequestError, toHttpError } from '../../src/server/errors';
-import { getNearbyStops } from '../../src/server/siuClient';
+import { BadRequestError, toHttpError } from '../../src/server/errors.js';
+import { getNearbyStops } from '../../src/server/siuClient.js';
 
 function sendError(response: VercelResponse, error: unknown) {
   const httpError = toHttpError(error);
