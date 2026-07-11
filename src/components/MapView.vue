@@ -10,14 +10,22 @@ const props = withDefaults(
     nearbyStops?: NearbyStop[];
     route?: RoutePoint[];
     vehicles?: Vehicle[];
+    isLocating?: boolean;
+    locationStatus?: string;
   }>(),
   {
     monitoredStop: null,
     nearbyStops: () => [],
     route: () => [],
     vehicles: () => [],
+    isLocating: false,
+    locationStatus: 'Use sua localização para encontrar pontos por perto.',
   },
 );
+
+const emit = defineEmits<{
+  useCurrentLocation: [];
+}>();
 
 const mapElement = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
@@ -165,6 +173,17 @@ watch(
 <template>
   <section class="map-panel">
     <div ref="mapElement" class="map-surface" aria-label="Mapa de ônibus e paradas"></div>
+    <div class="map-location-control">
+      <button
+        type="button"
+        class="primary"
+        :disabled="isLocating"
+        @click="emit('useCurrentLocation')"
+      >
+        {{ isLocating ? 'Localizando...' : 'Usar minha localização' }}
+      </button>
+      <span>{{ locationStatus }}</span>
+    </div>
     <p class="map-points-badge">{{ stopCount }} pontos próximos</p>
     <p v-if="route.length === 0" class="map-hint">
       Rota disponível quando houver veículo em operação.

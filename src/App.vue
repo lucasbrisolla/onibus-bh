@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppShell from './components/AppShell.vue';
+import type { DashboardSection } from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
@@ -68,6 +69,10 @@ const predictions = ref<Prediction[]>([]);
 const lastUpdated = ref<string | null>(null);
 const statusMessage = ref('Configure uma parada e ative o monitoramento.');
 const isLoading = ref(false);
+const isLocating = ref(false);
+const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
+const activeSection = ref<DashboardSection>('monitoramento');
+const searchQuery = ref('');
 const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
@@ -82,6 +87,23 @@ const canPoll = computed(() => settings.value.enabled && settings.value.stopCode
 const monitoredStop = computed(
   () => nearbyStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
 );
+const searchResults = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase('pt-BR');
+
+  if (!query) {
+    return [];
+  }
+
+  return nearbyStops.value
+    .filter(stop => {
+      const searchable = [stop.code, stop.publicCode, stop.description]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase('pt-BR');
+      return searchable.includes(query);
+    })
+    .slice(0, 6);
+});
 
 watch(
   settings,
@@ -99,18 +121,44 @@ function updateSettings(next: AlertSettings) {
   settings.value = next;
 }
 
+function navigate(section: DashboardSection) {
+  activeSection.value = section;
+}
+
+function updateSearch(query: string) {
+  searchQuery.value = query;
+}
+
+function selectStop(stop: NearbyStop) {
+  settings.value = {
+    ...settings.value,
+    stopCode: stop.code,
+  };
+  searchQuery.value = '';
+  activeSection.value = 'monitoramento';
+  statusMessage.value = `Parada ${stop.publicCode || stop.code} selecionada para monitoramento.`;
+}
+
 async function useCurrentLocation() {
   if (!navigator.geolocation) {
     statusMessage.value = 'Seu navegador não informou suporte a localização.';
+    locationStatus.value = 'Geolocalização indisponível neste navegador.';
     return;
   }
 
+  isLocating.value = true;
+  locationStatus.value = 'Localizando...';
+
   navigator.geolocation.getCurrentPosition(
     position => {
-      void loadNearbyStops(position.coords.latitude, position.coords.longitude);
+      void loadNearbyStops(position.coords.latitude, position.coords.longitude).finally(() => {
+        isLocating.value = false;
+      });
     },
     () => {
       statusMessage.value = 'Não foi possível acessar sua localização.';
+      locationStatus.value = 'Não foi possível acessar sua localização.';
+      isLocating.value = false;
     },
     { enableHighAccuracy: true, timeout: 10_000 },
   );
@@ -119,9 +167,11 @@ async function useCurrentLocation() {
 async function loadNearbyStops(latitude: number, longitude: number) {
   try {
     nearbyStops.value = await fetchNearbyStops(latitude, longitude);
+    locationStatus.value = 'Pontos próximos atualizados pelo GPS.';
   } catch (error) {
     statusMessage.value =
       error instanceof Error ? error.message : 'Erro ao consultar paradas próximas.';
+    locationStatus.value = 'Erro ao consultar pontos próximos.';
   }
 }
 
@@ -249,8 +299,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppShell :last-updated="lastUpdated" :is-loading="isLoading">
-    <section class="dashboard-grid">
+  <AppShell
+    :last-updated="lastUpdated"
+    :is-loading="isLoading"
+    :active-section="activeSection"
+    :search-query="searchQuery"
+    :search-results="searchResults"
+    @navigate="navigate"
+    @update-search="updateSearch"
+    @select-stop="selectStop"
+  >
+    <section v-if="activeSection === 'monitoramento'" class="dashboard-grid">
       <MonitoringPanel
         :settings="settings"
         :predictions="predictions"
@@ -276,6 +335,9 @@ onBeforeUnmount(() => {
           :nearby-stops="nearbyStops"
           :route="route"
           :vehicles="vehicles"
+          :is-locating="isLocating"
+          :location-status="locationStatus"
+          @use-current-location="useCurrentLocation"
         />
       </section>
 
@@ -290,6 +352,76 @@ onBeforeUnmount(() => {
         @request-permission="requestPermission"
         @use-current-location="useCurrentLocation"
       />
+    </section>
+
+    <section v-else-if="activeSection === 'mapa'" class="section-page map-page">
+      <div class="section-page-header">
+        <p class="section-kicker">Mapa</p>
+        <h1>Mapa em tela cheia</h1>
+        <p>Veja os pontos carregados, a parada monitorada, a rota e os ônibus em operação.</p>
+      </div>
+      <section class="map-stage is-full">
+        <MapView
+          :monitored-stop="monitoredStop"
+          :nearby-stops="nearbyStops"
+          :route="route"
+          :vehicles="vehicles"
+          :is-locating="isLocating"
+          :location-status="locationStatus"
+          @use-current-location="useCurrentLocation"
+        />
+      </section>
+    </section>
+
+    <section v-else-if="activeSection === 'favoritos'" class="section-page">
+      <div class="section-page-header">
+        <p class="section-kicker">Favoritos</p>
+        <h1>Favoritos salvos</h1>
+        <p>Suas linhas e paradas fixadas vão aparecer aqui.</p>
+      </div>
+      <div class="placeholder-grid">
+        <article class="control-card">
+          <strong>Parada atual</strong>
+          <span>{{ monitoredStop?.publicCode || settings.stopCode || 'Nenhuma parada selecionada' }}</span>
+        </article>
+        <article class="control-card">
+          <strong>Linha preferida</strong>
+          <span>{{ settings.lineCode }}</span>
+        </article>
+      </div>
+    </section>
+
+    <section v-else-if="activeSection === 'historico'" class="section-page">
+      <div class="section-page-header">
+        <p class="section-kicker">Histórico</p>
+        <h1>Histórico de alertas</h1>
+        <p>Os próximos alertas enviados poderão ser listados aqui para auditoria rápida.</p>
+      </div>
+      <article class="control-card">
+        <strong>Última atualização</strong>
+        <span>{{ lastUpdated ?? 'Ainda sem consultas nesta sessão.' }}</span>
+      </article>
+    </section>
+
+    <section v-else class="section-page">
+      <div class="section-page-header">
+        <p class="section-kicker">Configurações</p>
+        <h1>Configurações do app</h1>
+        <p>Ajustes de notificação, permissões e comportamento do PWA entram aqui nas próximas etapas.</p>
+      </div>
+      <div class="placeholder-grid">
+        <article class="control-card">
+          <strong>Permissão de notificação</strong>
+          <span>{{ permission }}</span>
+          <button type="button" class="primary" @click="requestPermission">
+            Permitir notificações
+          </button>
+        </article>
+        <article class="control-card">
+          <strong>Atualização automática</strong>
+          <span>Consultando a cada 45 segundos quando o monitoramento estiver ativo.</span>
+        </article>
+      </div>
     </section>
   </AppShell>
 </template>
