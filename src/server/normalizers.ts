@@ -1,4 +1,4 @@
-import { classifyBusVariant } from '../domain/busVariant';
+import { classifyBusVariant } from '../domain/busVariant.js';
 import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
 
 type UnknownRecord = Record<string, unknown>;
