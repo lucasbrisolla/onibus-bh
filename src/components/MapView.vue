@@ -86,7 +86,7 @@ function renderStops() {
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
     L.marker([stop.latitude, stop.longitude], {
-      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? '🚌' : stopIconSvg),
+      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', stopIconSvg),
       title: stop.description,
       keyboard: true,
     })

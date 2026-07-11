@@ -47,4 +47,20 @@ describe('MapView', () => {
     expect(wrapper.element.querySelector('[data-map-icon="stop"]')).not.toBeNull();
     wrapper.unmount();
   });
+
+  it('uses the stop icon for the monitored stop marker too', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        monitoredStop: stop,
+        nearbyStops: [stop],
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.element.querySelector('.is-monitored [data-map-icon="stop"]')).not.toBeNull();
+    expect(wrapper.text()).not.toContain('🚌');
+    wrapper.unmount();
+  });
 });

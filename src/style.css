@@ -622,30 +622,32 @@ label {
 .map-marker {
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: 12px;
   color: #fff;
   font-size: 1rem;
   font-weight: 800;
-  box-shadow: 0 8px 18px rgba(23, 32, 26, 0.24);
+  box-shadow: 0 10px 20px rgba(23, 32, 26, 0.26);
 }
 
 .map-marker.is-monitored {
   border: 3px solid #f59e0b;
-  background: #111827;
-  color: #fef3c7;
+  background: #fff7ed;
+  color: #111827;
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.22),
+    0 12px 24px rgba(23, 32, 26, 0.28);
 }
 
 .map-marker.is-stop {
-  border: 3px solid #6d28d9;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(109, 40, 217, 0.28), transparent 38%),
-    #0b1020;
-  color: #dbeafe;
+  border: 3px solid #111827;
+  background: #ffffff;
+  color: #111827;
 }
 
-.map-marker.is-stop svg {
-  width: 19px;
-  height: 19px;
+.map-marker.is-stop svg,
+.map-marker.is-monitored svg {
+  width: 23px;
+  height: 23px;
   fill: currentColor;
 }
 
