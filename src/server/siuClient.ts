@@ -1,8 +1,14 @@
 import { AppError, BadGatewayError, GatewayTimeoutError } from './errors';
 import { parseJsonp } from './jsonp';
-import { normalizePredictions } from './normalizers';
+import {
+  normalizeNearbyStops,
+  normalizePredictions,
+  normalizeRoutePoints,
+  normalizeVehicles,
+} from './normalizers';
 
-export const SIU_BASE_URL = 'http://bhz.siumobile.com.br:6060/siumobile-ws-v01/rest/ws';
+export const SIU_BASE_URL =
+  'http://bhz.siumobile.com.br:6060/siumobiletacomapp/siumobile-ws-v01/rest/ws';
 
 const DEFAULT_TIMEOUT_MS = 8000;
 
@@ -35,10 +41,34 @@ export async function fetchJsonp(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): 
 
 export async function getStopPredictions(stopCode: string) {
   const payload = await fetchJsonp(
-    `/V3/buscarPrevisoes/${encodeURIComponent(stopCode)}/false/0/null/jsonpCallback`,
+    `/V3/buscarPrevisoes/${encodeURIComponent(stopCode)}/false/0/BHZ/retornoJSON`,
   );
 
   return normalizePredictions(payload as Record<string, unknown>);
+}
+
+export async function getNearbyStops(latitude: number, longitude: number) {
+  const payload = await fetchJsonp(
+    `/V3/buscarParadasProximas/${encodeURIComponent(longitude)}/${encodeURIComponent(latitude)}/0/BHZ/retornoJSONH`,
+  );
+
+  return normalizeNearbyStops(payload as Record<string, unknown>);
+}
+
+export async function getRoutePoints(serviceId: string) {
+  const payload = await fetchJsonp(
+    `/V3/buscarItinerario/${encodeURIComponent(serviceId)}/0/BHZ/retornoJSONItinerario`,
+  );
+
+  return normalizeRoutePoints(payload as Record<string, unknown>);
+}
+
+export async function getVehicles(serviceId: string) {
+  const payload = await fetchJsonp(
+    `/V3/retornaVeiculosMapa/${encodeURIComponent(serviceId)}/0/BHZ/retornoJSONVeiculos`,
+  );
+
+  return normalizeVehicles(payload as Record<string, unknown>);
 }
 
 export async function getLines() {

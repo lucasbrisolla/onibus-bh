@@ -1,7 +1,19 @@
-import type { Prediction } from '../domain/types';
+import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
 
 interface PredictionsResponse {
   predictions: Prediction[];
+}
+
+interface NearbyStopsResponse {
+  stops: NearbyStop[];
+}
+
+interface RouteResponse {
+  route: RoutePoint[];
+}
+
+interface VehiclesResponse {
+  vehicles: Vehicle[];
 }
 
 export class ApiClientError extends Error {
@@ -45,4 +57,48 @@ export async function fetchStopPredictions(stopCode: string): Promise<Prediction
 
   const data = await readJson<PredictionsResponse>(response);
   return data.predictions;
+}
+
+export async function fetchNearbyStops(
+  latitude: number,
+  longitude: number,
+): Promise<NearbyStop[]> {
+  let response: Response;
+  const encodeCoordinate = (value: number) => encodeURIComponent(String(value)).replaceAll('.', '%2E');
+  const params = `lat=${encodeCoordinate(latitude)}&lng=${encodeCoordinate(longitude)}`;
+
+  try {
+    response = await fetch(`/api/paradas/proximas?${params}`);
+  } catch {
+    throw new ApiClientError('Não foi possível conectar à API', 0);
+  }
+
+  const data = await readJson<NearbyStopsResponse>(response);
+  return data.stops;
+}
+
+export async function fetchRoutePoints(serviceId: string): Promise<RoutePoint[]> {
+  let response: Response;
+
+  try {
+    response = await fetch(`/api/itinerarios/${encodeURIComponent(serviceId)}`);
+  } catch {
+    throw new ApiClientError('Não foi possível conectar à API', 0);
+  }
+
+  const data = await readJson<RouteResponse>(response);
+  return data.route;
+}
+
+export async function fetchVehicles(serviceId: string): Promise<Vehicle[]> {
+  let response: Response;
+
+  try {
+    response = await fetch(`/api/itinerarios/${encodeURIComponent(serviceId)}/veiculos`);
+  } catch {
+    throw new ApiClientError('Não foi possível conectar à API', 0);
+  }
+
+  const data = await readJson<VehiclesResponse>(response);
+  return data.vehicles;
 }

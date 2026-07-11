@@ -1,5 +1,5 @@
 import { classifyBusVariant } from '../domain/busVariant';
-import type { Prediction } from '../domain/types';
+import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -18,6 +18,23 @@ function readString(record: UnknownRecord, keys: string[], fallback = ''): strin
     }
   }
   return fallback;
+}
+
+function readNumber(record: UnknownRecord, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
 }
 
 function minutesFromDeparture(raw: string, queryTime: string | null): number {
@@ -97,6 +114,9 @@ export function normalizePredictions(payload: UnknownRecord): Prediction[] {
       'Destino não informado',
     );
     const serviceId = readString(record, ['codItinerario', 'idItinerario', 'servico'], '') || null;
+    const vehicleId = readString(record, ['numVeicGestor', 'vehicleId'], '') || null;
+    const color = readNumber(record, ['cor']);
+    const accessibilityCode = readNumber(record, ['tpAcess']);
     const minutes = readMinutes(record, queryTime);
     const id = `${lineCode}-${serviceId ?? index}-${minutes}`;
 
@@ -108,7 +128,74 @@ export function normalizePredictions(payload: UnknownRecord): Prediction[] {
       minutes,
       queryTime,
       serviceId,
+      vehicleId,
+      color,
+      accessibilityCode,
       variant: classifyBusVariant({ lineCode, description }),
     };
+  });
+}
+
+export function normalizeNearbyStops(payload: UnknownRecord): NearbyStop[] {
+  const list = Array.isArray(payload.paradas) ? payload.paradas : [];
+
+  return list.filter(isPlainRecord).flatMap(record => {
+    const latitude = readNumber(record, ['y', 'lat', 'latitude']);
+    const longitude = readNumber(record, ['x', 'lng', 'long', 'longitude']);
+
+    if (latitude === null || longitude === null) {
+      return [];
+    }
+
+    return [
+      {
+        code: readString(record, ['cod', 'code']),
+        publicCode: readString(record, ['siu', 'publicCode']),
+        latitude,
+        longitude,
+        description: readString(record, ['desc', 'description', 'end'], 'Parada sem descrição'),
+        color: readNumber(record, ['cor']),
+      },
+    ];
+  });
+}
+
+export function normalizeRoutePoints(payload: UnknownRecord): RoutePoint[] {
+  const list = Array.isArray(payload.itinerarios) ? payload.itinerarios : [];
+
+  return list.filter(isPlainRecord).flatMap(record => {
+    const latitude = readNumber(record, ['coordY', 'y', 'lat', 'latitude']);
+    const longitude = readNumber(record, ['coordX', 'x', 'lng', 'long', 'longitude']);
+
+    if (latitude === null || longitude === null) {
+      return [];
+    }
+
+    return [{ latitude, longitude }];
+  });
+}
+
+export function normalizeVehicles(payload: UnknownRecord): Vehicle[] {
+  const list = Array.isArray(payload.veiculos) ? payload.veiculos : [];
+
+  return list.filter(isPlainRecord).flatMap(record => {
+    const latitude = readNumber(record, ['lat', 'latitude']);
+    const longitude = readNumber(record, ['long', 'lng', 'longitude']);
+    const vehicleId = readString(record, ['numVeicGestor', 'vehicleId']);
+
+    if (latitude === null || longitude === null || !vehicleId) {
+      return [];
+    }
+
+    return [
+      {
+        latitude,
+        longitude,
+        color: readNumber(record, ['cor']),
+        lineCode: readString(record, ['descricao', 'sgLin', 'lineCode']),
+        vehicleId,
+        bearing: readNumber(record, ['direcao', 'bearing']),
+      },
+    ];
   });
 }

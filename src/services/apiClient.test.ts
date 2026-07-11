@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiClientError, fetchStopPredictions } from './apiClient';
+import {
+  ApiClientError,
+  fetchNearbyStops,
+  fetchRoutePoints,
+  fetchStopPredictions,
+  fetchVehicles,
+} from './apiClient';
 import type { Prediction } from '../domain/types';
 
 const prediction: Prediction = {
@@ -10,6 +16,9 @@ const prediction: Prediction = {
   minutes: 5,
   queryTime: null,
   serviceId: null,
+  vehicleId: null,
+  color: null,
+  accessibilityCode: null,
   variant: 'direto',
 };
 
@@ -76,5 +85,64 @@ describe('fetchStopPredictions', () => {
       message: 'Não foi possível conectar à API',
       status: 0,
     });
+  });
+});
+
+describe('map API clients', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('fetches nearby stops with lat and lng query params', async () => {
+    const stops = [
+      {
+        code: '13566',
+        publicCode: '40134',
+        latitude: -19.916136,
+        longitude: -43.99563,
+        description: 'ROD ANEL',
+        color: 4,
+      },
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ stops }), { status: 200 })),
+    );
+
+    await expect(fetchNearbyStops(-19.916342, -43.993759)).resolves.toEqual(stops);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/paradas/proximas?lat=-19%2E916342&lng=-43%2E993759',
+    );
+  });
+
+  it('fetches route points by service id', async () => {
+    const route = [{ latitude: -19.9, longitude: -43.9 }];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ route }), { status: 200 })),
+    );
+
+    await expect(fetchRoutePoints('53564')).resolves.toEqual(route);
+    expect(fetch).toHaveBeenCalledWith('/api/itinerarios/53564');
+  });
+
+  it('fetches vehicles by service id', async () => {
+    const vehicles = [
+      {
+        latitude: -19.91,
+        longitude: -43.99,
+        color: 3,
+        lineCode: '8350',
+        vehicleId: '40743',
+        bearing: 135,
+      },
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ vehicles }), { status: 200 })),
+    );
+
+    await expect(fetchVehicles('53564')).resolves.toEqual(vehicles);
+    expect(fetch).toHaveBeenCalledWith('/api/itinerarios/53564/veiculos');
   });
 });

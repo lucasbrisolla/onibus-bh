@@ -19,6 +19,9 @@ const diretoPrediction: Prediction = {
   minutes: 5,
   queryTime: '10:00',
   serviceId: 'svc-direto',
+  vehicleId: null,
+  color: null,
+  accessibilityCode: null,
   variant: 'direto',
 };
 

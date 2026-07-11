@@ -30,8 +30,23 @@ const prediction: Prediction = {
   minutes: 5,
   queryTime: null,
   serviceId: null,
+  vehicleId: null,
+  color: null,
+  accessibilityCode: null,
   variant: 'direto',
 };
+
+function findClickableByText(wrapper: ReturnType<typeof mount>, text: string) {
+  const target = wrapper
+    .findAll('button, a')
+    .find(element => element.text().includes(text));
+
+  if (!target) {
+    throw new Error(`Clickable element not found: ${text}`);
+  }
+
+  return target;
+}
 
 describe('App', () => {
   beforeEach(() => {
@@ -55,7 +70,16 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Variante da 8350');
     expect(wrapper.text()).toContain('Ativar monitoramento');
     expect(wrapper.text()).toContain('Monitoramento');
+    expect(wrapper.text()).toContain('Parada monitorada');
+    expect(wrapper.text()).toContain('Próximos ônibus');
+    expect(wrapper.text()).toContain('Mapa');
+    expect(wrapper.text()).toContain('Favoritos');
+    expect(wrapper.text()).toContain('Histórico');
+    expect(wrapper.text()).toContain('Configurações');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
+    expect(wrapper.find('.map-surface').exists()).toBe(true);
+    expect(wrapper.text()).toContain('pontos próximos');
+    expect(wrapper.text()).toContain('Rota disponível quando houver veículo em operação.');
   });
 
   it('polls enabled settings, renders predictions, and stores the notified prediction id', async () => {
@@ -264,5 +288,110 @@ describe('App', () => {
     expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
     expect(notifyArrival).not.toHaveBeenCalled();
+  });
+
+  it('switches dashboard sections from the sidebar', async () => {
+    const wrapper = mount(App);
+
+    await findClickableByText(wrapper, 'Favoritos').trigger('click');
+    expect(wrapper.text()).toContain('Favoritos salvos');
+    expect(wrapper.text()).toContain('Suas linhas e paradas fixadas vão aparecer aqui.');
+
+    await findClickableByText(wrapper, 'Histórico').trigger('click');
+    expect(wrapper.text()).toContain('Histórico de alertas');
+
+    await findClickableByText(wrapper, 'Configurações').trigger('click');
+    expect(wrapper.text()).toContain('Configurações do app');
+
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
+    expect(wrapper.text()).toContain('Mapa em tela cheia');
+  });
+
+  it('searches loaded stops and selects a stop from the topbar', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ predictions: [prediction] })),
+    );
+
+    const wrapper = mount(App);
+
+    await wrapper.find('input[placeholder="Buscar parada ou endereço"]').setValue('40134');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('40134');
+    expect(wrapper.text()).toContain('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
+
+    await findClickableByText(wrapper, '40134').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.find('input[placeholder="Ex: 1234"]').element as HTMLInputElement).value).toBe(
+      '13566',
+    );
+    await flushPromises();
+    expect(fetch).toHaveBeenCalledWith('/api/paradas/13566/previsoes');
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+    expect(wrapper.text()).toContain('Parada monitorada');
+    expect(wrapper.text()).toContain('Ponto selecionado');
+    expect(wrapper.text()).toContain('40134');
+    expect(wrapper.text()).toContain('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
+  });
+
+  it('uses the geolocation control from the map', async () => {
+    const getCurrentPosition = vi.fn();
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition,
+      },
+    });
+
+    const wrapper = mount(App);
+
+    expect(wrapper.text()).toContain('Usar minha localização');
+    await findClickableByText(wrapper, 'Usar minha localização').trigger('click');
+
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain('Localizando...');
+  });
+
+  it('shows the current location marker after geolocation succeeds', async () => {
+    const getCurrentPosition = vi.fn(success => {
+      success({
+        coords: {
+          latitude: -19.916342,
+          longitude: -43.993759,
+        },
+      });
+    });
+
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition,
+      },
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({
+          stops: [
+            {
+              code: '13566',
+              publicCode: '40134',
+              latitude: -19.916136,
+              longitude: -43.99563,
+              description: 'ROD ANEL',
+              color: 4,
+            },
+          ],
+        }),
+      ),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Usar minha localização').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Você está aqui');
+    expect(wrapper.text()).toContain('Pontos próximos atualizados pelo GPS.');
   });
 });
