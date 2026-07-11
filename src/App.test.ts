@@ -66,6 +66,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Configurações');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
     expect(wrapper.find('.map-surface').exists()).toBe(true);
+    expect(wrapper.text()).toContain('pontos próximos');
     expect(wrapper.text()).toContain('Rota disponível quando houver veículo em operação.');
   });
 

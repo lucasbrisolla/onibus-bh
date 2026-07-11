@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle } from '../domain/types';
@@ -26,6 +26,10 @@ let routeLayer: L.Polyline | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 
 const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
+const stopCount = computed(() => {
+  const monitored = props.monitoredStop ? [props.monitoredStop.code] : [];
+  return new Set([...monitored, ...props.nearbyStops.map(stop => stop.code)]).size;
+});
 
 function createMarkerIcon(className: string, label: string) {
   return L.divIcon({
@@ -57,7 +61,7 @@ function renderStops() {
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
     L.marker([stop.latitude, stop.longitude], {
-      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? 'P' : ''),
+      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? 'P' : '•'),
       title: stop.description,
     }).addTo(stopLayer);
   }
@@ -108,6 +112,7 @@ function fitMap() {
 
   const points: L.LatLngTuple[] = [
     ...(props.monitoredStop ? [[props.monitoredStop.latitude, props.monitoredStop.longitude] as L.LatLngTuple] : []),
+    ...props.nearbyStops.map(stop => [stop.latitude, stop.longitude] as L.LatLngTuple),
     ...props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple),
     ...props.vehicles.map(vehicle => [vehicle.latitude, vehicle.longitude] as L.LatLngTuple),
   ];
@@ -160,6 +165,7 @@ watch(
 <template>
   <section class="map-panel">
     <div ref="mapElement" class="map-surface" aria-label="Mapa de ônibus e paradas"></div>
+    <p class="map-points-badge">{{ stopCount }} pontos próximos</p>
     <p v-if="route.length === 0" class="map-hint">
       Rota disponível quando houver veículo em operação.
     </p>

@@ -12,13 +12,63 @@ import { createNotificationService } from './services/notificationService';
 import { loadSettings, saveSettings } from './services/settingsStore';
 
 const POLL_INTERVAL_MS = 45_000;
+const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
+  {
+    code: '11073',
+    publicCode: '40135',
+    latitude: -19.914713,
+    longitude: -43.993678,
+    description: 'ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11950',
+    color: 4,
+  },
+  {
+    code: '14276',
+    publicCode: '40170',
+    latitude: -19.916051,
+    longitude: -43.991969,
+    description: 'PCA CAPELA NOVA, 20',
+    color: 4,
+  },
+  {
+    code: '13566',
+    publicCode: '40134',
+    latitude: -19.916136,
+    longitude: -43.99563,
+    description: 'ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749',
+    color: 4,
+  },
+  {
+    code: '10024',
+    publicCode: '40899',
+    latitude: -19.913937,
+    longitude: -43.994929,
+    description: 'AVE IVAI, 158',
+    color: 4,
+  },
+  {
+    code: '6623',
+    publicCode: '40900',
+    latitude: -19.914441,
+    longitude: -43.996139,
+    description: 'AVE IVAI, 235',
+    color: 4,
+  },
+  {
+    code: '3443',
+    publicCode: '40600',
+    latitude: -19.914044,
+    longitude: -43.990867,
+    description: 'RUA PARA DE MINAS, 1005',
+    color: 4,
+  },
+];
 
 const settings = ref<AlertSettings>(loadSettings());
 const predictions = ref<Prediction[]>([]);
 const lastUpdated = ref<string | null>(null);
 const statusMessage = ref('Configure uma parada e ative o monitoramento.');
 const isLoading = ref(false);
-const nearbyStops = ref<NearbyStop[]>([]);
+const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
