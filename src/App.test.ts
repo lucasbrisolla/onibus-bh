@@ -308,6 +308,11 @@ describe('App', () => {
   });
 
   it('searches loaded stops and selects a stop from the topbar', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ predictions: [prediction] })),
+    );
+
     const wrapper = mount(App);
 
     await wrapper.find('input[placeholder="Buscar parada ou endereço"]').setValue('40134');
@@ -322,6 +327,9 @@ describe('App', () => {
     expect((wrapper.find('input[placeholder="Ex: 1234"]').element as HTMLInputElement).value).toBe(
       '13566',
     );
+    await flushPromises();
+    expect(fetch).toHaveBeenCalledWith('/api/paradas/13566/previsoes');
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Parada monitorada');
   });
 
@@ -340,5 +348,47 @@ describe('App', () => {
 
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
     expect(wrapper.text()).toContain('Localizando...');
+  });
+
+  it('shows the current location marker after geolocation succeeds', async () => {
+    const getCurrentPosition = vi.fn(success => {
+      success({
+        coords: {
+          latitude: -19.916342,
+          longitude: -43.993759,
+        },
+      });
+    });
+
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition,
+      },
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({
+          stops: [
+            {
+              code: '13566',
+              publicCode: '40134',
+              latitude: -19.916136,
+              longitude: -43.99563,
+              description: 'ROD ANEL',
+              color: 4,
+            },
+          ],
+        }),
+      ),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Usar minha localização').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Você está aqui');
+    expect(wrapper.text()).toContain('Pontos próximos atualizados pelo GPS.');
   });
 });

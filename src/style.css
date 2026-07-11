@@ -515,6 +515,22 @@ label {
   box-shadow: 0 10px 24px rgba(23, 32, 26, 0.1);
 }
 
+.map-user-badge {
+  position: absolute;
+  top: 122px;
+  right: 18px;
+  z-index: 500;
+  margin: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: rgba(239, 246, 255, 0.96);
+  color: #1d4ed8;
+  padding: 9px 12px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.12);
+}
+
 .map-location-control {
   position: absolute;
   top: 18px;
@@ -587,22 +603,34 @@ label {
   place-items: center;
   border-radius: 999px;
   color: #fff;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 800;
   box-shadow: 0 8px 18px rgba(23, 32, 26, 0.24);
 }
 
 .map-marker.is-monitored {
+  border: 3px solid #f59e0b;
   background: #111827;
+  color: #fef3c7;
 }
 
 .map-marker.is-stop {
   border: 2px solid #7c3aed;
-  background: #fff;
+  background: #f5f3ff;
+  color: #5b21b6;
 }
 
 .map-marker.is-vehicle {
   background: #7c3aed;
+}
+
+.map-marker.is-user-location {
+  border: 3px solid #fff;
+  background: #2563eb;
+  color: #bfdbfe;
+  box-shadow:
+    0 0 0 6px rgba(37, 99, 235, 0.18),
+    0 12px 24px rgba(37, 99, 235, 0.28);
 }
 
 .mobile-bottom-sheet,

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppShell from './components/AppShell.vue';
 import type { DashboardSection } from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
+import type { UserLocation } from './components/MapView.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
 import { findAlertMatch } from './domain/alertRules';
@@ -71,6 +72,7 @@ const statusMessage = ref('Configure uma parada e ative o monitoramento.');
 const isLoading = ref(false);
 const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
+const userLocation = ref<UserLocation | null>(null);
 const activeSection = ref<DashboardSection>('monitoramento');
 const searchQuery = ref('');
 const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
@@ -136,7 +138,8 @@ function selectStop(stop: NearbyStop) {
   };
   searchQuery.value = '';
   activeSection.value = 'monitoramento';
-  statusMessage.value = `Parada ${stop.publicCode || stop.code} selecionada para monitoramento.`;
+  statusMessage.value = `Parada ${stop.publicCode || stop.code} selecionada. Buscando ônibus que passam nela...`;
+  void pollPredictions({ force: true });
 }
 
 async function useCurrentLocation() {
@@ -151,6 +154,10 @@ async function useCurrentLocation() {
 
   navigator.geolocation.getCurrentPosition(
     position => {
+      userLocation.value = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
       void loadNearbyStops(position.coords.latitude, position.coords.longitude).finally(() => {
         isLocating.value = false;
       });
@@ -167,7 +174,7 @@ async function useCurrentLocation() {
 async function loadNearbyStops(latitude: number, longitude: number) {
   try {
     nearbyStops.value = await fetchNearbyStops(latitude, longitude);
-    locationStatus.value = 'Pontos próximos atualizados pelo GPS.';
+    locationStatus.value = 'Você está aqui. Pontos próximos atualizados pelo GPS.';
   } catch (error) {
     statusMessage.value =
       error instanceof Error ? error.message : 'Erro ao consultar paradas próximas.';
@@ -185,8 +192,12 @@ function hasCurrentAlertSettings(snapshot: AlertSettings): boolean {
   );
 }
 
-async function pollPredictions() {
-  if (!canPoll.value) {
+async function pollPredictions({ force = false }: { force?: boolean } = {}) {
+  if (!settings.value.stopCode.trim()) {
+    return;
+  }
+
+  if (!force && !canPoll.value) {
     return;
   }
 
@@ -335,9 +346,11 @@ onBeforeUnmount(() => {
           :nearby-stops="nearbyStops"
           :route="route"
           :vehicles="vehicles"
+          :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
           @use-current-location="useCurrentLocation"
+          @select-stop="selectStop"
         />
       </section>
 
@@ -366,9 +379,11 @@ onBeforeUnmount(() => {
           :nearby-stops="nearbyStops"
           :route="route"
           :vehicles="vehicles"
+          :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
           @use-current-location="useCurrentLocation"
+          @select-stop="selectStop"
         />
       </section>
     </section>

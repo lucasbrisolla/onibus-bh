@@ -4,12 +4,18 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle } from '../domain/types';
 
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
+}
+
 const props = withDefaults(
   defineProps<{
     monitoredStop?: NearbyStop | null;
     nearbyStops?: NearbyStop[];
     route?: RoutePoint[];
     vehicles?: Vehicle[];
+    userLocation?: UserLocation | null;
     isLocating?: boolean;
     locationStatus?: string;
   }>(),
@@ -18,6 +24,7 @@ const props = withDefaults(
     nearbyStops: () => [],
     route: () => [],
     vehicles: () => [],
+    userLocation: null,
     isLocating: false,
     locationStatus: 'Use sua localização para encontrar pontos por perto.',
   },
@@ -25,6 +32,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   useCurrentLocation: [];
+  selectStop: [stop: NearbyStop];
 }>();
 
 const mapElement = ref<HTMLElement | null>(null);
@@ -32,6 +40,7 @@ let map: L.Map | null = null;
 let stopLayer: L.LayerGroup | null = null;
 let routeLayer: L.Polyline | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
+let userLocationLayer: L.LayerGroup | null = null;
 
 const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
 const stopCount = computed(() => {
@@ -69,12 +78,42 @@ function renderStops() {
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
     L.marker([stop.latitude, stop.longitude], {
-      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? 'P' : '•'),
+      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? '🚌' : '🚏'),
       title: stop.description,
-    }).addTo(stopLayer);
+      keyboard: true,
+    })
+      .bindPopup(
+        `<strong>${stop.publicCode || stop.code}</strong><br>${stop.description}<br><small>Clique para ver os ônibus desta parada.</small>`,
+      )
+      .on('click', () => emit('selectStop', stop))
+      .addTo(stopLayer);
   }
 
   stopLayer.addTo(map);
+}
+
+function renderUserLocation() {
+  if (!map) {
+    return;
+  }
+
+  clearLayer(userLocationLayer);
+  userLocationLayer = null;
+
+  if (!props.userLocation) {
+    return;
+  }
+
+  userLocationLayer = L.layerGroup();
+  L.marker([props.userLocation.latitude, props.userLocation.longitude], {
+    icon: createMarkerIcon('is-user-location', '●'),
+    title: 'Você está aqui',
+    zIndexOffset: 1000,
+  })
+    .bindPopup('<strong>Você está aqui</strong>')
+    .addTo(userLocationLayer);
+
+  userLocationLayer.addTo(map);
 }
 
 function renderRoute() {
@@ -121,6 +160,7 @@ function fitMap() {
   const points: L.LatLngTuple[] = [
     ...(props.monitoredStop ? [[props.monitoredStop.latitude, props.monitoredStop.longitude] as L.LatLngTuple] : []),
     ...props.nearbyStops.map(stop => [stop.latitude, stop.longitude] as L.LatLngTuple),
+    ...(props.userLocation ? [[props.userLocation.latitude, props.userLocation.longitude] as L.LatLngTuple] : []),
     ...props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple),
     ...props.vehicles.map(vehicle => [vehicle.latitude, vehicle.longitude] as L.LatLngTuple),
   ];
@@ -135,6 +175,7 @@ function fitMap() {
 
 function renderMapData() {
   renderStops();
+  renderUserLocation();
   renderRoute();
   renderVehicles();
   fitMap();
@@ -164,7 +205,7 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [props.monitoredStop, props.nearbyStops, props.route, props.vehicles],
+  () => [props.monitoredStop, props.nearbyStops, props.userLocation, props.route, props.vehicles],
   () => renderMapData(),
   { deep: true },
 );
@@ -184,6 +225,7 @@ watch(
       </button>
       <span>{{ locationStatus }}</span>
     </div>
+    <p v-if="userLocation" class="map-user-badge">Você está aqui</p>
     <p class="map-points-badge">{{ stopCount }} pontos próximos</p>
     <p v-if="route.length === 0" class="map-hint">
       Rota disponível quando houver veículo em operação.

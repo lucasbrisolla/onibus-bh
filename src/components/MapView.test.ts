@@ -1,0 +1,36 @@
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+
+import MapView from './MapView.vue';
+import type { NearbyStop } from '../domain/types';
+
+const stop: NearbyStop = {
+  code: '13566',
+  publicCode: '40134',
+  latitude: -19.916136,
+  longitude: -43.99563,
+  description: 'ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749',
+  color: 4,
+};
+
+describe('MapView', () => {
+  it('emits selected stop when a stop marker is clicked', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        nearbyStops: [stop],
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+    const marker = wrapper.element.querySelector(
+      '[title="ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749"]',
+    );
+    expect(marker).not.toBeNull();
+
+    marker?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(wrapper.emitted('selectStop')).toEqual([[stop]]);
+    wrapper.unmount();
+  });
+});
