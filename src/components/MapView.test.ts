@@ -33,4 +33,18 @@ describe('MapView', () => {
     expect(wrapper.emitted('selectStop')).toEqual([[stop]]);
     wrapper.unmount();
   });
+
+  it('renders the pilot stop icon for regular stop markers', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        nearbyStops: [stop],
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.element.querySelector('[data-map-icon="stop"]')).not.toBeNull();
+    wrapper.unmount();
+  });
 });

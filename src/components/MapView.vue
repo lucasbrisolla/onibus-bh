@@ -43,6 +43,14 @@ let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
 
 const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
+const stopIconSvg = `
+  <svg data-map-icon="stop" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M7 3h10a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3l1.2 2.4a.7.7 0 0 1-.63 1H15.4a.7.7 0 0 1-.63-.39L13.8 18h-3.6l-.97 2.01a.7.7 0 0 1-.63.39H7.43a.7.7 0 0 1-.63-1L8 17a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2Z" />
+    <path d="M8 6.5h8v4H8z" />
+    <circle cx="8.5" cy="14" r="1.1" />
+    <circle cx="15.5" cy="14" r="1.1" />
+  </svg>
+`;
 const stopCount = computed(() => {
   const monitored = props.monitoredStop ? [props.monitoredStop.code] : [];
   return new Set([...monitored, ...props.nearbyStops.map(stop => stop.code)]).size;
@@ -78,7 +86,7 @@ function renderStops() {
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
     L.marker([stop.latitude, stop.longitude], {
-      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? '🚌' : '🚏'),
+      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', isMonitored ? '🚌' : stopIconSvg),
       title: stop.description,
       keyboard: true,
     })
