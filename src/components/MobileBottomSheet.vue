@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MonitoringPanel from './MonitoringPanel.vue';
-import type { AlertSettings, Prediction } from '../domain/types';
+import type { AlertSettings, NearbyStop, Prediction } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
 
 defineProps<{
@@ -10,6 +10,7 @@ defineProps<{
   isLoading: boolean;
   permission: PermissionState;
   lastUpdated: string | null;
+  selectedStop: NearbyStop | null;
 }>();
 
 defineEmits<{
@@ -29,6 +30,7 @@ defineEmits<{
       :is-loading="isLoading"
       :permission="permission"
       :last-updated="lastUpdated"
+      :selected-stop="selectedStop"
       @update="$emit('update', $event)"
       @request-permission="$emit('requestPermission')"
       @use-current-location="$emit('useCurrentLocation')"

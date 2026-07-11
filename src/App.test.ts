@@ -331,6 +331,9 @@ describe('App', () => {
     expect(fetch).toHaveBeenCalledWith('/api/paradas/13566/previsoes');
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Parada monitorada');
+    expect(wrapper.text()).toContain('Ponto selecionado');
+    expect(wrapper.text()).toContain('40134');
+    expect(wrapper.text()).toContain('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
   });
 
   it('uses the geolocation control from the map', async () => {

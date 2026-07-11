@@ -89,6 +89,7 @@ const canPoll = computed(() => settings.value.enabled && settings.value.stopCode
 const monitoredStop = computed(
   () => nearbyStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
 );
+const selectedStop = computed(() => monitoredStop.value);
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase('pt-BR');
 
@@ -328,6 +329,7 @@ onBeforeUnmount(() => {
         :is-loading="isLoading"
         :permission="permission"
         :last-updated="lastUpdated"
+        :selected-stop="selectedStop"
         @update="updateSettings"
         @request-permission="requestPermission"
         @use-current-location="useCurrentLocation"
@@ -361,6 +363,7 @@ onBeforeUnmount(() => {
         :is-loading="isLoading"
         :permission="permission"
         :last-updated="lastUpdated"
+        :selected-stop="selectedStop"
         @update="updateSettings"
         @request-permission="requestPermission"
         @use-current-location="useCurrentLocation"

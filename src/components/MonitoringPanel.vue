@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PredictionCards from './PredictionCards.vue';
-import type { AlertSettings, BusVariantFilter, Prediction } from '../domain/types';
+import type { AlertSettings, BusVariantFilter, NearbyStop, Prediction } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
   isLoading: boolean;
   permission: PermissionState;
   lastUpdated: string | null;
+  selectedStop: NearbyStop | null;
 }>();
 
 const emit = defineEmits<{
@@ -53,6 +54,12 @@ function updateMinutes(event: Event) {
     </div>
 
     <section class="control-card">
+      <article v-if="selectedStop" class="selected-stop-card">
+        <span class="section-kicker">Ponto selecionado</span>
+        <strong>{{ selectedStop.publicCode || selectedStop.code }}</strong>
+        <p>{{ selectedStop.description }}</p>
+      </article>
+
       <label>
         <span>Parada monitorada</span>
         <small>Código da parada</small>

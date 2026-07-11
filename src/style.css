@@ -293,6 +293,27 @@ label {
   box-shadow: 0 10px 30px rgba(16, 24, 40, 0.05);
 }
 
+.selected-stop-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #ded8fb;
+  border-radius: 8px;
+  background: #f5f3ff;
+  padding: 14px;
+}
+
+.selected-stop-card strong {
+  color: #5b21b6;
+  font-size: 1.3rem;
+}
+
+.selected-stop-card p {
+  margin: 0;
+  color: #344054;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
 .control-card label span,
 .section-kicker {
   color: #6d28d9;
