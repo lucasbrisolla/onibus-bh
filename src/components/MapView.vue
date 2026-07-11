@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Crosshair, LocateFixed } from '@lucide/vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle } from '../domain/types';
@@ -41,25 +42,43 @@ let stopLayer: L.LayerGroup | null = null;
 let routeLayer: L.Polyline | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let resizeFrameId: number | null = null;
 
 const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
 const stopIconSvg = `
   <svg data-map-icon="stop" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M7 3h10a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3l1.2 2.4a.7.7 0 0 1-.63 1H15.4a.7.7 0 0 1-.63-.39L13.8 18h-3.6l-.97 2.01a.7.7 0 0 1-.63.39H7.43a.7.7 0 0 1-.63-1L8 17a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2Z" />
-    <path d="M8 6.5h8v4H8z" />
-    <circle cx="8.5" cy="14" r="1.1" />
-    <circle cx="15.5" cy="14" r="1.1" />
+    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+    <circle cx="12" cy="10" r="3" />
   </svg>
 `;
-const stopCount = computed(() => {
-  const monitored = props.monitoredStop ? [props.monitoredStop.code] : [];
-  return new Set([...monitored, ...props.nearbyStops.map(stop => stop.code)]).size;
-});
-
-function createMarkerIcon(className: string, label: string) {
+const vehicleIconSvg = `
+  <svg data-map-icon="vehicle" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 6 2 7" />
+    <path d="M10 6h4" />
+    <path d="m22 7-2-1" />
+    <rect width="16" height="16" x="4" y="3" rx="2" />
+    <path d="M4 11h16" />
+    <path d="M8 15h.01" />
+    <path d="M16 15h.01" />
+    <path d="M6 19v2" />
+    <path d="M18 21v-2" />
+  </svg>
+`;
+const userLocationIconSvg = `
+  <svg data-map-icon="user-location" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="3.5" />
+    <path d="M12 2v3" />
+    <path d="M12 19v3" />
+    <path d="M2 12h3" />
+    <path d="M19 12h3" />
+    <circle cx="12" cy="12" r="8" opacity="0.35" />
+  </svg>
+`;
+function createMarkerIcon(className: string, markup: string) {
   return L.divIcon({
     className: `map-marker ${className}`,
-    html: `<span>${label}</span>`,
+    html: `<span>${markup}</span>`,
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });
@@ -69,6 +88,30 @@ function clearLayer(layer: L.Layer | null) {
   if (map && layer) {
     map.removeLayer(layer);
   }
+}
+
+function invalidateMapSize() {
+  if (!map || !mapElement.value) {
+    return;
+  }
+
+  if (resizeFrameId !== null) {
+    cancelAnimationFrame(resizeFrameId);
+  }
+
+  resizeFrameId = requestAnimationFrame(() => {
+    resizeFrameId = null;
+
+    if (!map || !mapElement.value) {
+      return;
+    }
+
+    if (mapElement.value.clientWidth === 0 || mapElement.value.clientHeight === 0) {
+      return;
+    }
+
+    map.invalidateSize(false);
+  });
 }
 
 function renderStops() {
@@ -114,11 +157,11 @@ function renderUserLocation() {
 
   userLocationLayer = L.layerGroup();
   L.marker([props.userLocation.latitude, props.userLocation.longitude], {
-    icon: createMarkerIcon('is-user-location', '●'),
-    title: 'Você está aqui',
+    icon: createMarkerIcon('is-user-location', userLocationIconSvg),
+    title: 'Sua posição',
     zIndexOffset: 1000,
   })
-    .bindPopup('<strong>Você está aqui</strong>')
+    .bindPopup('<strong>Sua posição</strong><br><small>Localização ativa no mapa.</small>')
     .addTo(userLocationLayer);
 
   userLocationLayer.addTo(map);
@@ -152,7 +195,7 @@ function renderVehicles() {
 
   for (const vehicle of props.vehicles) {
     L.marker([vehicle.latitude, vehicle.longitude], {
-      icon: createMarkerIcon('is-vehicle', 'Ô'),
+      icon: createMarkerIcon('is-vehicle', vehicleIconSvg),
       title: `${vehicle.lineCode} - ${vehicle.vehicleId}`,
     }).addTo(vehicleLayer);
   }
@@ -186,7 +229,7 @@ function renderMapData() {
   renderUserLocation();
   renderRoute();
   renderVehicles();
-  fitMap();
+  invalidateMapSize();
 }
 
 onMounted(() => {
@@ -204,10 +247,28 @@ onMounted(() => {
   }).addTo(map);
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  if (typeof ResizeObserver !== 'undefined' && mapElement.value) {
+    resizeObserver = new ResizeObserver(() => {
+      invalidateMapSize();
+    });
+    resizeObserver.observe(mapElement.value);
+  }
+
+  window.addEventListener('resize', invalidateMapSize);
   renderMapData();
+  invalidateMapSize();
 });
 
 onBeforeUnmount(() => {
+  if (resizeFrameId !== null) {
+    cancelAnimationFrame(resizeFrameId);
+    resizeFrameId = null;
+  }
+
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  window.removeEventListener('resize', invalidateMapSize);
   map?.remove();
   map = null;
 });
@@ -215,6 +276,15 @@ onBeforeUnmount(() => {
 watch(
   () => [props.monitoredStop, props.nearbyStops, props.userLocation, props.route, props.vehicles],
   () => renderMapData(),
+  { deep: true },
+);
+
+watch(
+  () => [props.monitoredStop, props.nearbyStops, props.userLocation, props.route],
+  () => {
+    invalidateMapSize();
+    fitMap();
+  },
   { deep: true },
 );
 </script>
@@ -225,18 +295,24 @@ watch(
     <div class="map-location-control">
       <button
         type="button"
-        class="primary"
+        class="primary map-location-button"
+        :aria-label="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
+        :title="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :disabled="isLocating"
         @click="emit('useCurrentLocation')"
       >
-        {{ isLocating ? 'Localizando...' : 'Usar minha localização' }}
+        <LocateFixed v-if="!isLocating" aria-hidden="true" />
+        <Crosshair v-else aria-hidden="true" />
       </button>
-      <span>{{ locationStatus }}</span>
     </div>
-    <p v-if="userLocation" class="map-user-badge">Você está aqui</p>
-    <p class="map-points-badge">{{ stopCount }} pontos próximos</p>
-    <p v-if="route.length === 0" class="map-hint">
-      Rota disponível quando houver veículo em operação.
-    </p>
+    <div v-if="userLocation" class="map-user-badge">
+      <span class="map-user-badge-icon" aria-hidden="true">
+        <LocateFixed />
+      </span>
+      <div class="map-user-badge-copy">
+        <strong>Sua posição</strong>
+        <span>Localização ativa</span>
+      </div>
+    </div>
   </section>
 </template>

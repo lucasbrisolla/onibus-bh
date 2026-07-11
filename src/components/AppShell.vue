@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BusFront, Settings } from '@lucide/vue';
 import type { NearbyStop } from '../domain/types';
 
 export type DashboardSection = 'monitoramento' | 'mapa' | 'favoritos' | 'historico' | 'configuracoes';
@@ -30,7 +31,9 @@ const navItems: { id: DashboardSection; label: string }[] = [
   <main class="dashboard-shell">
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Ônibus BH">
-        <span class="brand-icon">▣</span>
+        <span class="brand-icon" aria-hidden="true">
+          <BusFront />
+        </span>
         <strong>Ônibus BH</strong>
       </a>
 
@@ -42,14 +45,16 @@ const navItems: { id: DashboardSection; label: string }[] = [
           :class="{ active: item.id === activeSection }"
           @click="emit('navigate', item.id)"
         >
-          <span aria-hidden="true">{{ item.label.slice(0, 1) }}</span>
           {{ item.label }}
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <span class="status-dot"></span>
-        <span>{{ isLoading ? 'Atualizando agora' : 'Atualizando a cada 45s' }}</span>
+        <div class="sidebar-status-copy">
+          <span>{{ isLoading ? 'Atualizando agora' : 'Atualizando a cada 10s' }}</span>
+          <span>{{ lastUpdated ? `Atualizado às ${lastUpdated}` : 'Aguardando atualização' }}</span>
+        </div>
       </div>
     </aside>
 
@@ -75,17 +80,13 @@ const navItems: { id: DashboardSection; label: string }[] = [
             <p v-if="searchResults.length === 0">Nenhum ponto carregado encontrado.</p>
           </div>
         </label>
-        <div class="topbar-status">
-          <span class="status-dot"></span>
-          {{ lastUpdated ? `Atualizado às ${lastUpdated}` : 'Aguardando atualização' }}
-        </div>
         <button
           type="button"
           class="icon-button"
           aria-label="Configurações"
           @click="emit('navigate', 'configuracoes')"
         >
-          ⚙
+          <Settings aria-hidden="true" />
         </button>
       </header>
 

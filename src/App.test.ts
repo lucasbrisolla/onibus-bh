@@ -78,8 +78,6 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Configurações');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
     expect(wrapper.find('.map-surface').exists()).toBe(true);
-    expect(wrapper.text()).toContain('pontos próximos');
-    expect(wrapper.text()).toContain('Rota disponível quando houver veículo em operação.');
   });
 
   it('polls enabled settings, renders predictions, and stores the notified prediction id', async () => {
@@ -120,7 +118,7 @@ describe('App', () => {
     };
     expect(stored.lastNotifiedPredictionId).toBe(prediction.id);
 
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(10_000);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
@@ -151,7 +149,7 @@ describe('App', () => {
 
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
 
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(10_000);
     await flushPromises();
     await wrapper.vm.$nextTick();
 
@@ -241,7 +239,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(10_000);
 
     expect(fetch).toHaveBeenCalledTimes(1);
 
@@ -304,7 +302,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Configurações do app');
 
     await findClickableByText(wrapper, 'Mapa').trigger('click');
-    expect(wrapper.text()).toContain('Mapa em tela cheia');
+    expect(wrapper.text()).toContain('Mapa');
   });
 
   it('searches loaded stops and selects a stop from the topbar', async () => {
@@ -346,11 +344,12 @@ describe('App', () => {
 
     const wrapper = mount(App);
 
-    expect(wrapper.text()).toContain('Usar minha localização');
-    await findClickableByText(wrapper, 'Usar minha localização').trigger('click');
+    const locationButton = wrapper.find('button[aria-label="Usar minha localização"]');
+    expect(locationButton.exists()).toBe(true);
+    await locationButton.trigger('click');
 
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain('Localizando...');
+    expect(wrapper.find('button[aria-label="Localizando sua posição"]').exists()).toBe(true);
   });
 
   it('shows the current location marker after geolocation succeeds', async () => {
@@ -387,11 +386,11 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Usar minha localização').trigger('click');
+    await wrapper.find('button[aria-label="Usar minha localização"]').trigger('click');
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('Você está aqui');
-    expect(wrapper.text()).toContain('Pontos próximos atualizados pelo GPS.');
+    expect(wrapper.text()).toContain('Sua posição');
+    expect(wrapper.text()).toContain('Localização ativa');
   });
 });

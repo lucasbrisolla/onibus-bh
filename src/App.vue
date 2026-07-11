@@ -13,7 +13,7 @@ import { createMapDataLoader, selectMapServiceId } from './services/mapDataServi
 import { createNotificationService } from './services/notificationService';
 import { loadSettings, saveSettings } from './services/settingsStore';
 
-const POLL_INTERVAL_MS = 45_000;
+const POLL_INTERVAL_MS = 10_000;
 const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
   {
     code: '11073',
@@ -223,6 +223,7 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
     lastUpdated.value = new Date().toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
     });
 
     const finitePredictions = nextPredictions.filter(prediction =>
@@ -336,13 +337,6 @@ onBeforeUnmount(() => {
       />
 
       <section class="map-stage">
-        <div class="map-toolbar">
-          <span class="active-indicator">
-            <span></span>
-            {{ settings.enabled ? 'Monitoramento ativo' : 'Monitoramento pausado' }}
-          </span>
-          <span class="map-mode">Mapa</span>
-        </div>
         <MapView
           :monitored-stop="monitoredStop"
           :nearby-stops="nearbyStops"
@@ -372,9 +366,7 @@ onBeforeUnmount(() => {
 
     <section v-else-if="activeSection === 'mapa'" class="section-page map-page">
       <div class="section-page-header">
-        <p class="section-kicker">Mapa</p>
-        <h1>Mapa em tela cheia</h1>
-        <p>Veja os pontos carregados, a parada monitorada, a rota e os ônibus em operação.</p>
+        <h1>Mapa</h1>
       </div>
       <section class="map-stage is-full">
         <MapView

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BusFront } from '@lucide/vue';
 import type { Prediction } from '../domain/types';
 
 defineProps<{ predictions: Prediction[] }>();
@@ -35,7 +36,9 @@ function describeVariant(prediction: Prediction): string | null {
         class="prediction-card"
         :class="{ 'is-next': index === 0 }"
       >
-        <div class="bus-token" aria-hidden="true">▣</div>
+        <div class="bus-token" aria-hidden="true">
+          <BusFront />
+        </div>
         <div class="prediction-main">
           <div class="prediction-line">
             <strong>{{ prediction.lineCode }}</strong>
