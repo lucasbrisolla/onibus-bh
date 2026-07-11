@@ -1,6 +1,6 @@
 # Ônibus BH
 
-App pessoal para acompanhar previsões de ônibus em Belo Horizonte e notificar o navegador quando uma linha monitorada estiver chegando.
+Ônibus BH é um aplicativo semelhante ao SIU Mobile BH mas com interface web/mobile moderna, avisos de ônibus em tempo real, monitoramento para quando você precisar sair do trabalho na hora certa
 
 ## Escopo do MVP
 
