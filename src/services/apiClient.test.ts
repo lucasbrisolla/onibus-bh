@@ -111,7 +111,7 @@ describe('map API clients', () => {
 
     await expect(fetchNearbyStops(-19.916342, -43.993759)).resolves.toEqual(stops);
     expect(fetch).toHaveBeenCalledWith(
-      '/api/paradas/proximas?lat=-19.916342&lng=-43.993759',
+      '/api/paradas/proximas?lat=-19%2E916342&lng=-43%2E993759',
     );
   });
 

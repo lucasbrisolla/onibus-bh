@@ -64,13 +64,11 @@ export async function fetchNearbyStops(
   longitude: number,
 ): Promise<NearbyStop[]> {
   let response: Response;
-  const params = new URLSearchParams({
-    lat: String(latitude),
-    lng: String(longitude),
-  });
+  const encodeCoordinate = (value: number) => encodeURIComponent(String(value)).replaceAll('.', '%2E');
+  const params = `lat=${encodeCoordinate(latitude)}&lng=${encodeCoordinate(longitude)}`;
 
   try {
-    response = await fetch(`/api/paradas/proximas?${params.toString()}`);
+    response = await fetch(`/api/paradas/proximas?${params}`);
   } catch {
     throw new ApiClientError('Não foi possível conectar à API', 0);
   }
