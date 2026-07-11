@@ -2,26 +2,78 @@
 
 ## Situação atual
 
-O repositório `lucasbrisolla/onibus-bh` está com o MVP inicial mergeado na `main`.
+O checkout principal está em:
 
-O app foi refeito do zero, sem migrar o código antigo diretamente. A ideia do app antigo foi preservada: consultar previsões de ônibus em BH e avisar quando uma linha estiver chegando.
+```text
+/home/lucas/onibus-bh
+```
 
-## O que já existe
+Mas o trabalho mais recente do mapa está no worktree:
 
-- App Vue 3 + Vite + TypeScript.
-- API serverless Vercel em `api/`.
-- Parser JSONP para respostas da SIU Mobile.
-- Normalização de previsões.
-- Regra de alerta local.
-- Regra específica da linha `8350` Direto/Não Direto.
-- Persistência em `localStorage`.
-- Notification API para aviso local com o app aberto.
+```text
+/home/lucas/.config/superpowers/worktrees/onibus-bh/nucleo-mapa
+```
+
+Branch:
+
+```text
+feat/nucleo-mapa
+```
+
+Antes de continuar, conferir:
+
+```sh
+git worktree list
+```
+
+Se for continuar o mapa, entrar no worktree:
+
+```sh
+cd /home/lucas/.config/superpowers/worktrees/onibus-bh/nucleo-mapa
+```
+
+## Leia primeiro no worktree do mapa
+
+```text
+AGENTS.md
+docs/ARCHITECTURE.md
+docs/RETOMADA.md
+```
+
+Esses arquivos foram atualizados para explicar o estado real do branch `feat/nucleo-mapa`.
+
+## O que existe no branch `feat/nucleo-mapa`
+
+- Dashboard responsiva com sidebar.
+- Mapa Leaflet.
+- Pontos/paradas no mapa.
+- Clique em ponto seleciona parada.
+- Painel mostra código público e rua.
+- Clique em ponto busca previsões.
+- Busca de paradas carregadas.
+- Geolocalização.
+- Marcador “Você está aqui”.
+- Rota e veículos quando há itinerário.
+- Middleware local do Vite para `/api/*`.
+- APIs Vercel em `api/`.
 - Testes unitários.
-- README inicial.
 
-## Verificações já realizadas
+## Últimos commits relevantes no branch
 
-Na última validação:
+```text
+ed34726 docs: add architecture and agent handoff
+cc595ca fix: replace stop marker dots with icon
+c071d52 feat: add pilot stop map icon
+d338403 fix: show selected stop details and local api
+f6a8fd0 fix: load stop predictions from map markers
+00af353 fix: encode nearby stop coordinates
+27c0e0a feat: make dashboard controls interactive
+027e371 feat: show map stops by default
+```
+
+## Última validação conhecida
+
+No worktree `feat/nucleo-mapa`, após o commit `cc595ca`:
 
 ```sh
 npm run test
@@ -31,23 +83,22 @@ npm run build
 
 Resultado:
 
-- 42 testes passando.
-- Typecheck passando.
-- Build passando.
+- 64 testes passando;
+- typecheck passando;
+- build passando.
 
-Também foi testado que a SIU Mobile responde para:
+Depois foi criado o commit de documentação:
 
 ```text
-/buscarLinhas/jsonpCallback
+ed34726 docs: add architecture and agent handoff
 ```
 
-E que a parada próxima de `siu: 40134` usa `cod: 13566` para previsão.
+## Ponto crítico: `cod` versus `siu`
 
-## Ponto crítico descoberto
+A SIU retorna:
 
-O usuário inicialmente passou códigos como `40134` e `50003`.
-
-Foi descoberto que `40134` é um código `siu`, mas a previsão usa o código interno `cod`.
+- `cod`: código interno usado para buscar previsões;
+- `siu`: código público/visível.
 
 Exemplo:
 
@@ -59,140 +110,64 @@ Exemplo:
 }
 ```
 
-Consulta correta de previsão:
+Para buscar previsão, usar `cod`:
 
 ```text
-/V3/buscarPrevisoes/13566/false/0/null/jsonpCallback
+/V3/buscarPrevisoes/13566/false/0/BHZ/retornoJSON
 ```
 
-Essa consulta retornou previsões, incluindo linha `8350`.
+Na UI, mostrar `siu` e `desc`.
 
-## Próxima feature recomendada
-
-Adicionar mapa ou busca de paradas.
-
-### Por quê
-
-O app atual exige que o usuário saiba o código interno da parada. Isso não é usável.
-
-O app antigo abria um mapa em uma coordenada, chamava `buscarParadasProximas`, mostrava os marcadores e permitia selecionar uma parada.
-
-### Escopo sugerido
-
-1. Criar endpoint próprio:
-
-```text
-GET /api/paradas?lat={lat}&lng={lng}
-```
-
-2. No backend, chamar:
-
-```text
-GET /V3/buscarParadasProximas/{lng}/{lat}/0/null/jsonpCallback
-```
-
-3. Normalizar paradas para:
-
-```ts
-interface Stop {
-  code: string;      // cod interno usado em previsão
-  siu: string | null;
-  description: string;
-  lat: number;
-  lng: number;
-}
-```
-
-4. No frontend, adicionar uma tela ou seção para:
-
-- usar localização atual;
-- buscar paradas próximas;
-- listar paradas;
-- escolher uma parada;
-- salvar `Stop.code` em `settings.stopCode`.
-
-5. Depois, opcionalmente adicionar mapa com Leaflet.
-
-### Abordagem incremental recomendada
-
-Primeiro implementar lista de paradas próximas sem mapa.
-
-Depois adicionar mapa.
-
-Motivo: a lista já resolve o problema de usabilidade e reduz risco. O mapa entra como camada visual por cima.
-
-## Coordenada de referência do app antigo
-
-URL antiga analisada:
-
-```text
-https://onibusbh-dkvwihvdi-guilhermerodrigues680.vercel.app/mapa?lat=-19.916342&lng=-43.993759
-```
-
-Coordenadas:
+## Coordenada de referência
 
 ```text
 lat=-19.916342
 lng=-43.993759
 ```
 
-Paradas próximas retornadas incluíram:
+Paradas observadas:
 
 - `cod: 11073`, `siu: 40135`
 - `cod: 13566`, `siu: 40134`
 
-Previsões testadas:
+## Pendências atuais
 
-- `cod: 13566`: retornou `6350`, `8151`, `8350`.
-- `cod: 11073`: retornou `4501`, `6350`, `8151`, `8350`.
+1. Trocar atualização automática para 5 segundos.
+   - Estado atual: `POLL_INTERVAL_MS = 45_000`.
+   - Pedido do usuário: `5_000`.
+   - Atualizar textos que dizem “45s”.
 
-## Arquivos principais
+2. Continuar refinamento de ícones.
+   - O usuário quer substituir bolas pretas por ícones.
+   - Paradas comuns e parada selecionada já usam SVG de parada no branch.
+   - Veículos/localização ainda podem melhorar.
+   - Testar um ícone por vez.
 
-- `src/domain/types.ts`
-- `src/domain/busVariant.ts`
-- `src/domain/alertRules.ts`
-- `src/server/siuClient.ts`
-- `src/server/jsonp.ts`
-- `src/server/normalizers.ts`
-- `api/paradas/[cod]/previsoes.ts`
-- `src/services/settingsStore.ts`
-- `src/services/apiClient.ts`
-- `src/services/notificationService.ts`
-- `src/App.vue`
+3. Favoritos e histórico ainda são placeholders.
+
+4. PWA ainda não implementado.
+
+5. Notificações mobile/browser ainda são básicas.
 
 ## Como retomar
 
-1. Abrir o repositório:
-
 ```sh
-cd /home/lucas/onibus-bh
-```
-
-2. Instalar dependências se necessário:
-
-```sh
-npm install
-```
-
-3. Verificar estado:
-
-```sh
+cd /home/lucas/.config/superpowers/worktrees/onibus-bh/nucleo-mapa
 git status --short --branch
 npm run test
 npm run lint
 npm run build
+npm run dev
 ```
 
-4. Criar branch para a próxima feature:
+Abrir:
 
-```sh
-git checkout -b feat/paradas-proximas
+```text
+http://127.0.0.1:5173/
 ```
 
-5. Implementar endpoint de paradas próximas e UI de seleção de parada.
+Se o Vite escolher outra porta, usar a porta mostrada no terminal.
 
-## Observação para deploy
+## Observação
 
-O app usa Vercel Functions. Rodar apenas `npm run dev` com Vite não executa as funções `/api/*` como a Vercel.
-
-Para testar o fluxo completo localmente, usar Vercel Dev ou publicar na Vercel.
+Este arquivo fica no checkout principal para evitar que uma próxima sessão comece achando que o mapa ainda não foi implementado. O estado mais completo está no worktree `feat/nucleo-mapa`.
