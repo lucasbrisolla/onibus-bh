@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import MonitoringPanel from './MonitoringPanel.vue';
 import type { AlertSettings, NearbyStop, Prediction } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
@@ -21,11 +22,54 @@ defineEmits<{
   selectPrediction: [prediction: Prediction];
   toggleSelectedStopFavorite: [];
 }>();
+
+const isCollapsed = ref(false);
+let touchStartY: number | null = null;
+
+function toggleSheet() {
+  isCollapsed.value = !isCollapsed.value;
+}
+
+function onTouchStart(event: TouchEvent) {
+  touchStartY = event.touches[0]?.clientY ?? null;
+}
+
+function onTouchEnd(event: TouchEvent) {
+  if (touchStartY === null) {
+    return;
+  }
+
+  const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
+  const deltaY = touchEndY - touchStartY;
+  touchStartY = null;
+
+  if (deltaY > 40) {
+    isCollapsed.value = true;
+    return;
+  }
+
+  if (deltaY < -40) {
+    isCollapsed.value = false;
+  }
+}
 </script>
 
 <template>
-  <div class="mobile-bottom-sheet">
-    <div class="sheet-handle"></div>
+  <div
+    class="mobile-bottom-sheet"
+    :class="{ 'is-collapsed': isCollapsed }"
+  >
+    <button
+      type="button"
+      class="sheet-toggle"
+      :aria-expanded="!isCollapsed"
+      :aria-label="isCollapsed ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
+      @click="toggleSheet"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
+      <div class="sheet-handle"></div>
+    </button>
     <MonitoringPanel
       :display-mode="displayMode"
       :settings="settings"
