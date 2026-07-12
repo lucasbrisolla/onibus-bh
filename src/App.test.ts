@@ -122,6 +122,86 @@ describe('App', () => {
     ).toBe(2);
   });
 
+  it('polls immediately again when the window regains focus', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ predictions: [prediction] })),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    const requestsBeforeFocus = vi.mocked(fetch).mock.calls.filter(
+      ([url]) => url === '/api/paradas/1034/previsoes',
+    ).length;
+
+    window.dispatchEvent(new Event('focus'));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/1034/previsoes').length,
+    ).toBeGreaterThan(requestsBeforeFocus);
+  });
+
+  it('keeps polling after selecting a stop while alerts are paused', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/13566/previsoes') {
+          return response({ predictions: [prediction] });
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return response({ route: [] });
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return response({ vehicles: [] });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+
+    await wrapper.find('input[placeholder="Buscar parada ou endereço"]').setValue('40134');
+    await wrapper.vm.$nextTick();
+    await findClickableByText(wrapper, '40134').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/13566/previsoes').length,
+    ).toBe(1);
+    expect(notifyArrival).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/13566/previsoes').length,
+    ).toBe(2);
+    expect(notifyArrival).not.toHaveBeenCalled();
+  });
+
   it('clears stale predictions and shows an error when a refresh fails', async () => {
     localStorage.setItem(
       'onibus-bh-alert-settings',
@@ -173,7 +253,7 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Não foi possível conectar à API');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
@@ -243,7 +323,7 @@ describe('App', () => {
 
   it('clamps alert minutes input into the supported range', async () => {
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     const minutesInput = wrapper.find('input[type="number"]');
 
     await minutesInput.setValue('999');
@@ -296,7 +376,7 @@ describe('App', () => {
 
     expect(fetch).toHaveBeenCalledTimes(1);
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     await wrapper.find('input[placeholder="Ex: 1234"]').setValue('9999');
     resolveFetch(response({ predictions: [prediction] }));
     await flushPromises();
@@ -393,7 +473,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     await wrapper.find('select').setValue('nao-direto');
 
     resolveFetch(response({ predictions: [prediction] }));
@@ -421,11 +501,11 @@ describe('App', () => {
     await findClickableByText(wrapper, 'Configurações').trigger('click');
     expect(wrapper.text()).toContain('Configurações do app');
 
-    await findClickableByText(wrapper, 'Mapa').trigger('click');
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     expect(wrapper.text()).toContain('Próximos ônibus');
     expect(wrapper.text()).not.toContain('Configuração do monitoramento');
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).toContain('Configuração do monitoramento');
     expect(wrapper.text()).toContain('Próximos ônibus');
   });
@@ -471,7 +551,7 @@ describe('App', () => {
     await findClickableByText(wrapper, '40134').trigger('click');
     await wrapper.vm.$nextTick();
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect((wrapper.find('input[placeholder="Ex: 1234"]').element as HTMLInputElement).value).toBe(
       '13566',
     );
@@ -504,7 +584,7 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     await wrapper.find('button[aria-label="Salvar parada"]').trigger('click');
     await wrapper.vm.$nextTick();
 
@@ -515,7 +595,7 @@ describe('App', () => {
     await findClickableByText(wrapper, 'Abrir parada').trigger('click');
     await wrapper.vm.$nextTick();
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).toContain('Configuração do monitoramento');
     expect(wrapper.text()).toContain('Ponto selecionado');
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
@@ -577,7 +657,7 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).toContain('Ponto selecionado');
     expect(wrapper.text()).toContain('RUA TESTE, 123');
     expect(wrapper.text()).toContain('Ponto 50001');

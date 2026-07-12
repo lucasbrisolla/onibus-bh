@@ -107,10 +107,10 @@ const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
-let intervalId: number | undefined;
+let pollTimeoutId: number | undefined;
 let isPolling = false;
 
-const canPoll = computed(() => settings.value.enabled && settings.value.stopCode.trim().length > 0);
+const canPoll = computed(() => settings.value.stopCode.trim().length > 0);
 const monitoredStop = computed(() => {
   const stopCode = settings.value.stopCode.trim();
   if (!stopCode) {
@@ -481,15 +481,46 @@ function describeMatch(reason: AlertMatch['reason']): string {
   return messages[reason];
 }
 
+function clearPollTimer() {
+  if (pollTimeoutId !== undefined) {
+    window.clearTimeout(pollTimeoutId);
+    pollTimeoutId = undefined;
+  }
+}
+
+function scheduleNextPoll(delayMs = POLL_INTERVAL_MS) {
+  clearPollTimer();
+  pollTimeoutId = window.setTimeout(() => void runPollCycle(), delayMs);
+}
+
+async function runPollCycle() {
+  clearPollTimer();
+  await pollPredictions();
+  scheduleNextPoll();
+}
+
+function handlePollingResume() {
+  void runPollCycle();
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    handlePollingResume();
+  }
+}
+
 onMounted(() => {
-  void pollPredictions();
-  intervalId = window.setInterval(() => void pollPredictions(), POLL_INTERVAL_MS);
+  void runPollCycle();
+  window.addEventListener('focus', handlePollingResume);
+  window.addEventListener('pageshow', handlePollingResume);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
-  if (intervalId) {
-    window.clearInterval(intervalId);
-  }
+  clearPollTimer();
+  window.removeEventListener('focus', handlePollingResume);
+  window.removeEventListener('pageshow', handlePollingResume);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 
@@ -662,7 +693,7 @@ onBeforeUnmount(() => {
         </article>
         <article class="control-card">
           <strong>Atualização automática</strong>
-          <span>Consultando a cada 45 segundos quando o monitoramento estiver ativo.</span>
+          <span>Consultando a cada 10 segundos quando o monitoramento estiver ativo.</span>
         </article>
       </div>
     </section>

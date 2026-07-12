@@ -48,8 +48,8 @@ function toggleSidebar() {
 }
 
 const navItems: { id: DashboardSection; label: string; icon: typeof BusFront }[] = [
-  { id: 'monitoramento', label: 'Mapa', icon: MapPinned },
-  { id: 'mapa', label: 'Monitoramento', icon: LayoutDashboard },
+  { id: 'monitoramento', label: 'Monitoramento', icon: LayoutDashboard },
+  { id: 'mapa', label: 'Mapa', icon: MapPinned },
   { id: 'favoritos', label: 'Favoritos', icon: Star },
   { id: 'historico', label: 'Histórico', icon: History },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
