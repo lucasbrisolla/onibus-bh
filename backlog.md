@@ -32,10 +32,9 @@
 
 ### Documentação e estrutura
 
-- [ ] Reescrever o `README` e migrar `ARCHITECTURE.md` e `RETOMADA.md` para a pasta principal `main`
+- [ ] Revisar o `README` do GitHub e complementar com `LICENSE`, arquitetura, link da Vercel e instruções de execução local
 - [ ] Criar `DATA_CONTRACT` para Vercel e servidor local, além de `HEALTH_CHECK` com script Python para validação automática de APIs e alertas
 - [ ] Migrar a `LICENSE` para a pasta principal da home
-- [ ] Revisar a mudança no `README` do GitHub e complementar com `LICENSE`, arquitetura, link da Vercel e instruções de execução local
 
 ### Produto e dados
 
@@ -60,7 +59,6 @@
 
 ### Favoritos, locais e preferências
 
-- [ ] Criar botão para favoritar paradas
 - [ ] Buscar parada ou endereço deve mostrar favoritos primeiro, com endereço visível
 - [ ] Favoritos salvos devem mostrar endereço, não apenas o número da parada
 - [ ] Retirar o box de linha preferida
@@ -68,7 +66,7 @@
 
 ### Interface e UX
 
-- [ ] Consolidar a paleta principal em verde e azul, com bom contraste no modo escuro
+- [ ] Refinar a paleta teal atual com bom contraste no modo escuro
 - [ ] Manter ônibus em movimento em verde
 - [ ] Ajustar ícones para estados como ativo, parado e em movimento
 - [ ] Exibir linhas de itinerário dos ônibus
@@ -77,11 +75,15 @@
 - [ ] Retirar descrições explicativas para deixar a interface mais intuitiva
 - [ ] Números de linha e códigos de parada devem ter tratamento tipográfico diferenciado
 - [ ] Melhorar o contraste do texto secundário e de itens inativos para atender melhor ao WCAG AA
-- [ ] Parar de sobrecarregar o roxo com múltiplas funções visuais
-- [ ] Fixar melhor a semântica de cores: verde para status/sistema; roxo apenas para interação/marca, se ainda existir
+- [ ] Fixar melhor a semântica de cores: verde para status/sistema; teal para interação primária e identidade
 - [ ] Definir se o pin laranja é uma cor semântica exclusiva e reforçar esse padrão em outros pontos da UI
 - [ ] Diferenciar visualmente setup/configuração de ações principais
 - [ ] Considerar esconder a variante da `8350` por padrão, se ainda existir algum controle equivalente
+- [ ] Mobile - reduzir tipografia e altura dos boxes em `Ponto selecionado` e áreas próximas
+- [ ] Melhorar o `MobileBottomSheet` para permitir fechar e abrir com gesto vertical mais amplo, confortável para o dedão
+- [ ] Opção no mapa de Mostrar pontos com um button de ativar e desativar (toggle switch) (útil para quando uma viagem estiver selecionada não fique poluído)
+- [ ] Acesso rápido de Paradas sem ter que ficar clicando na aba Favoritos
+
 
 ## Validação recomendada
 

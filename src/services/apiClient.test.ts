@@ -41,7 +41,7 @@ describe('fetchStopPredictions', () => {
     );
 
     await expect(fetchStopPredictions('1034')).resolves.toEqual([prediction]);
-    expect(fetch).toHaveBeenCalledWith('/api/paradas/1034/previsoes');
+    expect(fetch).toHaveBeenCalledWith('/api/paradas/1034/previsoes', expect.any(Object));
   });
 
   it('uses the API error message for JSON error responses', async () => {
@@ -86,6 +86,35 @@ describe('fetchStopPredictions', () => {
       status: 0,
     });
   });
+
+  it('aborts stalled prediction requests and disables browser cache', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              const error = new Error('Aborted');
+              error.name = 'AbortError';
+              reject(error);
+            });
+          }),
+      ),
+    );
+
+    const pendingRequest = expect(fetchStopPredictions('1034')).rejects.toMatchObject({
+      name: 'ApiClientError',
+      message: 'Não foi possível conectar à API',
+      status: 0,
+    });
+    await vi.advanceTimersByTimeAsync(8_100);
+    await pendingRequest;
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/paradas/1034/previsoes',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
+  });
 });
 
 describe('map API clients', () => {
@@ -112,6 +141,7 @@ describe('map API clients', () => {
     await expect(fetchNearbyStops(-19.916342, -43.993759)).resolves.toEqual(stops);
     expect(fetch).toHaveBeenCalledWith(
       '/api/paradas/proximas?lat=-19%2E916342&lng=-43%2E993759',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
     );
   });
 
@@ -123,7 +153,10 @@ describe('map API clients', () => {
     );
 
     await expect(fetchRoutePoints('53564')).resolves.toEqual(route);
-    expect(fetch).toHaveBeenCalledWith('/api/itinerarios/53564');
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/itinerarios/53564',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('fetches vehicles by service id', async () => {
@@ -143,6 +176,9 @@ describe('map API clients', () => {
     );
 
     await expect(fetchVehicles('53564')).resolves.toEqual(vehicles);
-    expect(fetch).toHaveBeenCalledWith('/api/itinerarios/53564/veiculos');
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/itinerarios/53564/veiculos',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
   });
 });

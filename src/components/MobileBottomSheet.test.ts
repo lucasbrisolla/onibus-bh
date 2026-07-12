@@ -63,4 +63,60 @@ describe('MobileBottomSheet', () => {
     expect(wrapper.classes()).not.toContain('is-collapsed');
     expect(wrapper.find('.sheet-toggle').attributes('aria-expanded')).toBe('true');
   });
+
+  it('collapses and expands with a vertical swipe on the sheet body', async () => {
+    const wrapper = mount(MobileBottomSheet, {
+      props: {
+        settings: {
+          stopCode: '13566',
+          lineCode: '8350',
+          variantFilter: 'direto',
+          minutesBefore: 7,
+          enabled: true,
+          lastNotifiedPredictionId: null,
+        },
+        predictions: [prediction],
+        selectedPredictionId: null,
+        statusMessage: 'OK',
+        isLoading: false,
+        permission: 'granted',
+        lastUpdated: '09:03:09',
+        selectedStop: stop,
+        isSelectedStopFavorite: false,
+      },
+      attachTo: document.body,
+    });
+
+    Object.defineProperty(wrapper.element, 'getBoundingClientRect', {
+      value: () => ({
+        top: 200,
+        bottom: 700,
+        left: 0,
+        right: 320,
+        width: 320,
+        height: 500,
+        x: 0,
+        y: 200,
+        toJSON: () => ({}),
+      }),
+    });
+
+    await wrapper.trigger('touchstart', {
+      touches: [{ clientY: 240 }],
+    });
+    await wrapper.trigger('touchend', {
+      changedTouches: [{ clientY: 330 }],
+    });
+
+    expect(wrapper.classes()).toContain('is-collapsed');
+
+    await wrapper.trigger('touchstart', {
+      touches: [{ clientY: 220 }],
+    });
+    await wrapper.trigger('touchend', {
+      changedTouches: [{ clientY: 130 }],
+    });
+
+    expect(wrapper.classes()).not.toContain('is-collapsed');
+  });
 });

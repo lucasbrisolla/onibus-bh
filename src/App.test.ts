@@ -97,7 +97,10 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(fetch).toHaveBeenCalledWith('/api/paradas/1034/previsoes');
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/paradas/1034/previsoes',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Direto');
     expect(wrapper.text()).toContain('5 min');
@@ -303,6 +306,68 @@ describe('App', () => {
     expect(notifyArrival).not.toHaveBeenCalled();
   });
 
+  it('retries polling after a stalled request times out', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    let predictionRequests = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/1034/previsoes') {
+          predictionRequests += 1;
+
+          if (predictionRequests === 1) {
+            return new Promise<Response>((_resolve, reject) => {
+              init?.signal?.addEventListener('abort', () => {
+                const error = new Error('Aborted');
+                error.name = 'AbortError';
+                reject(error);
+              });
+            });
+          }
+
+          return Promise.resolve(response({ predictions: [prediction] }));
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return Promise.resolve(response({ route: [] }));
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return Promise.resolve(response({ vehicles: [] }));
+        }
+
+        return Promise.resolve(response({}));
+      }),
+    );
+
+    const wrapper = mount(App);
+    await vi.advanceTimersByTimeAsync(8_000);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/1034/previsoes').length,
+    ).toBe(2);
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+  });
+
   it('ignores an in-flight response when alert settings change before it resolves', async () => {
     localStorage.setItem(
       'onibus-bh-alert-settings',
@@ -411,7 +476,10 @@ describe('App', () => {
       '13566',
     );
     await flushPromises();
-    expect(fetch).toHaveBeenCalledWith('/api/paradas/13566/previsoes');
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/paradas/13566/previsoes',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Parada monitorada');
     expect(wrapper.text()).toContain('Ponto selecionado');

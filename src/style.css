@@ -1213,7 +1213,7 @@ label {
     display: grid;
     place-items: center;
     width: 100%;
-    padding: 10px 0 6px;
+    padding: 14px 0 8px;
     border: 0;
     background: transparent;
   }
@@ -1223,18 +1223,59 @@ label {
     max-height: calc(min(54vh, 420px) - 42px);
     overflow-y: auto;
     border-right: 0;
-    padding: 10px 12px 14px;
+    padding: 8px 10px 12px;
   }
 
   .sheet-handle {
-    width: 42px;
-    height: 4px;
+    width: 48px;
+    height: 5px;
     border-radius: 999px;
     background: #d0d5dd;
   }
 
   .mobile-bottom-sheet.is-collapsed .monitoring-panel {
     pointer-events: none;
+  }
+
+  .mobile-bottom-sheet .control-card,
+  .mobile-bottom-sheet .toggle-card,
+  .mobile-bottom-sheet .status-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .mobile-bottom-sheet .selected-stop-card {
+    gap: 4px;
+    padding: 10px;
+  }
+
+  .mobile-bottom-sheet .selected-stop-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+  }
+
+  .mobile-bottom-sheet .favorite-stop-button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobile-bottom-sheet .selected-stop-card h3 {
+    font-size: 0.92rem;
+    line-height: 1.28;
+  }
+
+  .mobile-bottom-sheet .selected-stop-card p {
+    font-size: 0.82rem;
+  }
+
+  .mobile-bottom-sheet .section-kicker,
+  .mobile-bottom-sheet .control-card label span {
+    font-size: 0.68rem;
+  }
+
+  .mobile-bottom-sheet .collapse-toggle {
+    padding: 10px 12px;
   }
 
   .prediction-card {

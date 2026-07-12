@@ -4,6 +4,9 @@ import MonitoringPanel from './MonitoringPanel.vue';
 import type { AlertSettings, NearbyStop, Prediction } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
 
+const SHEET_GESTURE_ZONE_HEIGHT = 108;
+const SWIPE_THRESHOLD_PX = 56;
+
 defineProps<{
   settings: AlertSettings;
   predictions: Prediction[];
@@ -24,31 +27,50 @@ defineEmits<{
 }>();
 
 const isCollapsed = ref(false);
+const sheetElement = ref<HTMLElement | null>(null);
 let touchStartY: number | null = null;
+let isTrackingGesture = false;
 
 function toggleSheet() {
   isCollapsed.value = !isCollapsed.value;
 }
 
 function onTouchStart(event: TouchEvent) {
+  const firstTouch = event.touches[0];
+  if (!firstTouch) {
+    return;
+  }
+
+  const sheetTop = sheetElement.value?.getBoundingClientRect().top ?? 0;
+  const canStartGesture =
+    isCollapsed.value || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
+
+  if (!canStartGesture) {
+    touchStartY = null;
+    isTrackingGesture = false;
+    return;
+  }
+
+  isTrackingGesture = true;
   touchStartY = event.touches[0]?.clientY ?? null;
 }
 
 function onTouchEnd(event: TouchEvent) {
-  if (touchStartY === null) {
+  if (!isTrackingGesture || touchStartY === null) {
     return;
   }
 
   const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
   const deltaY = touchEndY - touchStartY;
   touchStartY = null;
+  isTrackingGesture = false;
 
-  if (deltaY > 40) {
+  if (deltaY > SWIPE_THRESHOLD_PX) {
     isCollapsed.value = true;
     return;
   }
 
-  if (deltaY < -40) {
+  if (deltaY < -SWIPE_THRESHOLD_PX) {
     isCollapsed.value = false;
   }
 }
@@ -56,8 +78,11 @@ function onTouchEnd(event: TouchEvent) {
 
 <template>
   <div
+    ref="sheetElement"
     class="mobile-bottom-sheet"
     :class="{ 'is-collapsed': isCollapsed }"
+    @touchstart.passive="onTouchStart"
+    @touchend.passive="onTouchEnd"
   >
     <button
       type="button"
@@ -65,8 +90,6 @@ function onTouchEnd(event: TouchEvent) {
       :aria-expanded="!isCollapsed"
       :aria-label="isCollapsed ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
       @click="toggleSheet"
-      @touchstart.passive="onTouchStart"
-      @touchend.passive="onTouchEnd"
     >
       <div class="sheet-handle"></div>
     </button>
