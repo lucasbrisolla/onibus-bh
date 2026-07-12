@@ -6,17 +6,19 @@ import type { PermissionState } from '../services/notificationService';
 defineProps<{
   settings: AlertSettings;
   predictions: Prediction[];
+  selectedPredictionId: string | null;
   statusMessage: string;
   isLoading: boolean;
   permission: PermissionState;
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
+  isSelectedStopFavorite: boolean;
 }>();
 
 defineEmits<{
   update: [settings: AlertSettings];
-  requestPermission: [];
-  useCurrentLocation: [];
+  selectPrediction: [prediction: Prediction];
+  toggleSelectedStopFavorite: [];
 }>();
 </script>
 
@@ -26,14 +28,16 @@ defineEmits<{
     <MonitoringPanel
       :settings="settings"
       :predictions="predictions"
+      :selected-prediction-id="selectedPredictionId"
       :status-message="statusMessage"
       :is-loading="isLoading"
       :permission="permission"
       :last-updated="lastUpdated"
       :selected-stop="selectedStop"
+      :is-selected-stop-favorite="isSelectedStopFavorite"
       @update="$emit('update', $event)"
-      @request-permission="$emit('requestPermission')"
-      @use-current-location="$emit('useCurrentLocation')"
+      @select-prediction="$emit('selectPrediction', $event)"
+      @toggle-selected-stop-favorite="$emit('toggleSelectedStopFavorite')"
     />
   </div>
 </template>

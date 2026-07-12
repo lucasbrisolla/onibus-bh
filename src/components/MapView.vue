@@ -3,7 +3,7 @@ import { Crosshair, LocateFixed } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { NearbyStop, RoutePoint, Vehicle } from '../domain/types';
+import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
 
 export interface UserLocation {
   latitude: number;
@@ -16,6 +16,9 @@ const props = withDefaults(
     nearbyStops?: NearbyStop[];
     route?: RoutePoint[];
     vehicles?: Vehicle[];
+    themeMode?: 'light' | 'dark';
+    selectedVehicleId?: string | null;
+    selectedVehicleStatus?: VehicleApproachInfo | null;
     userLocation?: UserLocation | null;
     isLocating?: boolean;
     locationStatus?: string;
@@ -25,6 +28,9 @@ const props = withDefaults(
     nearbyStops: () => [],
     route: () => [],
     vehicles: () => [],
+    themeMode: 'light',
+    selectedVehicleId: null,
+    selectedVehicleStatus: null,
     userLocation: null,
     isLocating: false,
     locationStatus: 'Use sua localização para encontrar pontos por perto.',
@@ -34,6 +40,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   useCurrentLocation: [];
   selectStop: [stop: NearbyStop];
+  moveMapArea: [payload: UserLocation];
 }>();
 
 const mapElement = ref<HTMLElement | null>(null);
@@ -42,8 +49,11 @@ let stopLayer: L.LayerGroup | null = null;
 let routeLayer: L.Polyline | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
+let baseTileLayer: L.TileLayer | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let resizeFrameId: number | null = null;
+let hasAutoFramedMap = false;
+let suppressNextAreaSync = false;
 
 const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
 const stopIconSvg = `
@@ -75,6 +85,20 @@ const userLocationIconSvg = `
     <circle cx="12" cy="12" r="8" opacity="0.35" />
   </svg>
 `;
+const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+function describeSelectedVehicleTooltip(vehicle: Vehicle): string {
+  if (
+    props.selectedVehicleStatus &&
+    vehicle.vehicleId === props.selectedVehicleId &&
+    Number.isFinite(props.selectedVehicleStatus.minutes)
+  ) {
+    return `${vehicle.lineCode} • ${props.selectedVehicleStatus.minutes} min`;
+  }
+
+  return vehicle.lineCode;
+}
+
 function createMarkerIcon(className: string, markup: string) {
   return L.divIcon({
     className: `map-marker ${className}`,
@@ -84,10 +108,42 @@ function createMarkerIcon(className: string, markup: string) {
   });
 }
 
+function updateBaseTileLayer() {
+  if (!map) {
+    return;
+  }
+
+  const isDarkMode = props.themeMode === 'dark';
+
+  if (baseTileLayer) {
+    map.removeLayer(baseTileLayer);
+    baseTileLayer = null;
+  }
+
+  baseTileLayer = L.tileLayer(lightTileUrl, {
+    className: isDarkMode ? 'map-base-tiles map-base-tiles-dark' : 'map-base-tiles',
+    maxZoom: 20,
+  });
+
+  baseTileLayer.addTo(map);
+}
+
 function clearLayer(layer: L.Layer | null) {
   if (map && layer) {
     map.removeLayer(layer);
   }
+}
+
+function markProgrammaticViewportChange() {
+  suppressNextAreaSync = true;
+}
+
+function getVisibleVehicles() {
+  if (!props.selectedVehicleId) {
+    return props.vehicles;
+  }
+
+  return props.vehicles.filter(vehicle => vehicle.vehicleId === props.selectedVehicleId);
 }
 
 function invalidateMapSize() {
@@ -168,7 +224,9 @@ function renderUserLocation() {
 }
 
 function renderRoute() {
-  if (!map) {
+  const currentMap = map;
+
+  if (!currentMap) {
     return;
   }
 
@@ -182,25 +240,53 @@ function renderRoute() {
   routeLayer = L.polyline(
     props.route.map(point => [point.latitude, point.longitude]),
     { color: '#7c3aed', weight: 5, opacity: 0.75 },
-  ).addTo(map);
+  );
+
+  try {
+    routeLayer.addTo(currentMap);
+  } catch {
+    routeLayer = null;
+  }
 }
 
 function renderVehicles() {
-  if (!map) {
+  const currentMap = map;
+
+  if (!currentMap) {
     return;
   }
 
   clearLayer(vehicleLayer);
   vehicleLayer = L.layerGroup();
 
-  for (const vehicle of props.vehicles) {
-    L.marker([vehicle.latitude, vehicle.longitude], {
-      icon: createMarkerIcon('is-vehicle', vehicleIconSvg),
+  for (const vehicle of getVisibleVehicles()) {
+    const marker = L.marker([vehicle.latitude, vehicle.longitude], {
+      icon: createMarkerIcon(
+        vehicle.vehicleId === props.selectedVehicleId ? 'is-vehicle is-selected-vehicle' : 'is-vehicle',
+        vehicleIconSvg,
+      ),
       title: `${vehicle.lineCode} - ${vehicle.vehicleId}`,
-    }).addTo(vehicleLayer);
+      zIndexOffset: vehicle.vehicleId === props.selectedVehicleId ? 1200 : 0,
+    });
+
+    if (vehicle.vehicleId === props.selectedVehicleId) {
+      marker.bindTooltip(describeSelectedVehicleTooltip(vehicle), {
+        className: 'map-vehicle-tooltip',
+        direction: 'top',
+        offset: [0, -18],
+        opacity: 1,
+        permanent: true,
+      });
+    }
+
+    marker.addTo(vehicleLayer);
   }
 
-  vehicleLayer.addTo(map);
+  try {
+    vehicleLayer.addTo(currentMap);
+  } catch {
+    vehicleLayer = null;
+  }
 }
 
 function fitMap() {
@@ -208,20 +294,61 @@ function fitMap() {
     return;
   }
 
+  const visibleVehicles = getVisibleVehicles();
   const points: L.LatLngTuple[] = [
     ...(props.monitoredStop ? [[props.monitoredStop.latitude, props.monitoredStop.longitude] as L.LatLngTuple] : []),
     ...props.nearbyStops.map(stop => [stop.latitude, stop.longitude] as L.LatLngTuple),
     ...(props.userLocation ? [[props.userLocation.latitude, props.userLocation.longitude] as L.LatLngTuple] : []),
     ...props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple),
-    ...props.vehicles.map(vehicle => [vehicle.latitude, vehicle.longitude] as L.LatLngTuple),
+    ...visibleVehicles.map(vehicle => [vehicle.latitude, vehicle.longitude] as L.LatLngTuple),
   ];
 
   if (points.length === 0) {
+    markProgrammaticViewportChange();
     map.setView(defaultCenter, 14);
     return;
   }
 
+  markProgrammaticViewportChange();
   map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 16 });
+}
+
+function handleMapMoveEnd() {
+  if (!map) {
+    return;
+  }
+
+  if (suppressNextAreaSync) {
+    suppressNextAreaSync = false;
+    return;
+  }
+
+  const center = map.getCenter();
+  emit('moveMapArea', {
+    latitude: center.lat,
+    longitude: center.lng,
+  });
+}
+
+function buildAutoFrameSignature() {
+  if (!props.userLocation) {
+    return 'no-location';
+  }
+
+  return `${props.userLocation.latitude}:${props.userLocation.longitude}`;
+}
+
+function autoFrameMap(force = false) {
+  if (!map) {
+    return;
+  }
+
+  if (!force && hasAutoFramedMap) {
+    return;
+  }
+
+  fitMap();
+  hasAutoFramedMap = true;
 }
 
 function renderMapData() {
@@ -237,16 +364,16 @@ onMounted(() => {
     return;
   }
 
+  markProgrammaticViewportChange();
   map = L.map(mapElement.value, {
     zoomControl: false,
     attributionControl: false,
   }).setView(defaultCenter, 14);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
-  }).addTo(map);
+  updateBaseTileLayer();
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
+  map.on('moveend', handleMapMoveEnd);
 
   if (typeof ResizeObserver !== 'undefined' && mapElement.value) {
     resizeObserver = new ResizeObserver(() => {
@@ -257,6 +384,7 @@ onMounted(() => {
 
   window.addEventListener('resize', invalidateMapSize);
   renderMapData();
+  autoFrameMap(true);
   invalidateMapSize();
 });
 
@@ -269,6 +397,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
   window.removeEventListener('resize', invalidateMapSize);
+  map?.off('moveend', handleMapMoveEnd);
   map?.remove();
   map = null;
 });
@@ -280,12 +409,16 @@ watch(
 );
 
 watch(
-  () => [props.monitoredStop, props.nearbyStops, props.userLocation, props.route],
+  () => buildAutoFrameSignature(),
   () => {
     invalidateMapSize();
-    fitMap();
+    autoFrameMap(true);
   },
-  { deep: true },
+);
+
+watch(
+  () => props.themeMode,
+  () => updateBaseTileLayer(),
 );
 </script>
 
@@ -304,15 +437,6 @@ watch(
         <LocateFixed v-if="!isLocating" aria-hidden="true" />
         <Crosshair v-else aria-hidden="true" />
       </button>
-    </div>
-    <div v-if="userLocation" class="map-user-badge">
-      <span class="map-user-badge-icon" aria-hidden="true">
-        <LocateFixed />
-      </span>
-      <div class="map-user-badge-copy">
-        <strong>Sua posição</strong>
-        <span>Localização ativa</span>
-      </div>
     </div>
   </section>
 </template>

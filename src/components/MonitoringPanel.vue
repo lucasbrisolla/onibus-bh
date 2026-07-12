@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BellRing, ChevronDown, ChevronUp } from '@lucide/vue';
+import { BellRing, ChevronDown, ChevronUp, MapPinned, Star } from '@lucide/vue';
 import { reactive } from 'vue';
 import PredictionCards from './PredictionCards.vue';
 import type { AlertSettings, BusVariantFilter, NearbyStop, Prediction } from '../domain/types';
@@ -8,17 +8,19 @@ import type { PermissionState } from '../services/notificationService';
 const props = defineProps<{
   settings: AlertSettings;
   predictions: Prediction[];
+  selectedPredictionId: string | null;
   statusMessage: string;
   isLoading: boolean;
   permission: PermissionState;
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
+  isSelectedStopFavorite: boolean;
 }>();
 
 const emit = defineEmits<{
   update: [settings: AlertSettings];
-  requestPermission: [];
-  useCurrentLocation: [];
+  selectPrediction: [prediction: Prediction];
+  toggleSelectedStopFavorite: [];
 }>();
 
 const collapsedSections = reactive({
@@ -56,10 +58,30 @@ function updateMinutes(event: Event) {
 
 <template>
   <aside class="monitoring-panel">
-    <div class="panel-heading">
-      <p class="section-kicker">Ônibus BH</p>
-      <h1>Alerta pessoal de chegada</h1>
-    </div>
+    <section v-if="selectedStop" class="control-card">
+      <article class="selected-stop-card">
+        <div class="selected-stop-header">
+          <div class="selected-stop-heading">
+            <span class="selected-stop-icon" aria-hidden="true">
+              <MapPinned />
+            </span>
+            <span class="section-kicker">Ponto selecionado</span>
+          </div>
+          <button
+            type="button"
+            class="favorite-stop-button"
+            :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
+            :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
+            :data-active="isSelectedStopFavorite"
+            @click="emit('toggleSelectedStopFavorite')"
+          >
+            <Star aria-hidden="true" />
+          </button>
+        </div>
+        <h3>{{ selectedStop.description }}</h3>
+        <p>Ponto {{ selectedStop.publicCode || selectedStop.code }}</p>
+      </article>
+    </section>
 
     <section class="collapse-section">
       <button
@@ -72,7 +94,11 @@ function updateMinutes(event: Event) {
         <component :is="collapsedSections.predictions ? ChevronUp : ChevronDown" aria-hidden="true" />
       </button>
       <div v-show="collapsedSections.predictions" class="collapse-body">
-        <PredictionCards :predictions="predictions" />
+        <PredictionCards
+          :predictions="predictions"
+          :selected-prediction-id="selectedPredictionId"
+          @select-prediction="emit('selectPrediction', $event)"
+        />
       </div>
     </section>
 
@@ -88,12 +114,6 @@ function updateMinutes(event: Event) {
       </button>
       <div v-show="collapsedSections.settings" class="collapse-body">
         <section class="control-card">
-          <article v-if="selectedStop" class="selected-stop-card">
-            <span class="section-kicker">Ponto selecionado</span>
-            <strong>{{ selectedStop.publicCode || selectedStop.code }}</strong>
-            <p>{{ selectedStop.description }}</p>
-          </article>
-
           <label>
             <span>Parada monitorada</span>
             <small>Código da parada</small>
@@ -170,12 +190,6 @@ function updateMinutes(event: Event) {
           </button>
         </section>
 
-        <div class="panel-actions">
-          <button type="button" class="primary" @click="emit('requestPermission')">
-            Permitir notificações
-          </button>
-          <button type="button" @click="emit('useCurrentLocation')">Usar localização</button>
-        </div>
       </div>
     </section>
 

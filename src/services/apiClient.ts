@@ -87,7 +87,7 @@ export async function fetchRoutePoints(serviceId: string): Promise<RoutePoint[]>
   }
 
   const data = await readJson<RouteResponse>(response);
-  return data.route;
+  return data.route ?? [];
 }
 
 export async function fetchVehicles(serviceId: string): Promise<Vehicle[]> {
@@ -100,5 +100,5 @@ export async function fetchVehicles(serviceId: string): Promise<Vehicle[]> {
   }
 
   const data = await readJson<VehiclesResponse>(response);
-  return data.vehicles;
+  return data.vehicles ?? [];
 }

@@ -29,8 +29,8 @@ const prediction: Prediction = {
   destination: 'Estacao Sao Gabriel',
   minutes: 5,
   queryTime: null,
-  serviceId: null,
-  vehicleId: null,
+  serviceId: '53564',
+  vehicleId: '40743',
   color: null,
   accessibilityCode: null,
   variant: 'direto',
@@ -38,7 +38,7 @@ const prediction: Prediction = {
 
 function findClickableByText(wrapper: ReturnType<typeof mount>, text: string) {
   const target = wrapper
-    .findAll('button, a')
+    .findAll('button, a, [role="button"]')
     .find(element => element.text().includes(text));
 
   if (!target) {
@@ -65,14 +65,14 @@ describe('App', () => {
   it('renders alert controls and initial status', () => {
     const wrapper = mount(App);
 
-    expect(wrapper.text()).toContain('Alerta pessoal de chegada');
+    expect(wrapper.text()).toContain('Configuração do monitoramento');
     expect(wrapper.text()).toContain('Código da parada');
     expect(wrapper.text()).toContain('Variante da 8350');
     expect(wrapper.text()).toContain('Ativar monitoramento');
-    expect(wrapper.text()).toContain('Monitoramento');
     expect(wrapper.text()).toContain('Parada monitorada');
     expect(wrapper.text()).toContain('Próximos ônibus');
     expect(wrapper.text()).toContain('Mapa');
+    expect(wrapper.text()).toContain('Mapa 2');
     expect(wrapper.text()).toContain('Favoritos');
     expect(wrapper.text()).toContain('Histórico');
     expect(wrapper.text()).toContain('Configurações');
@@ -119,7 +119,9 @@ describe('App', () => {
     expect(stored.lastNotifiedPredictionId).toBe(prediction.id);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/1034/previsoes').length,
+    ).toBe(2);
   });
 
   it('clears stale predictions and shows an error when a refresh fails', async () => {
@@ -135,12 +137,32 @@ describe('App', () => {
       }),
     );
 
+    let predictionRequests = 0;
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(response({ predictions: [prediction] }))
-        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/1034/previsoes') {
+          predictionRequests += 1;
+
+          if (predictionRequests === 1) {
+            return response({ predictions: [prediction] });
+          }
+
+          throw new TypeError('Failed to fetch');
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return response({ route: [] });
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return response({ vehicles: [] });
+        }
+
+        return response({});
+      }),
     );
 
     const wrapper = mount(App);
@@ -291,9 +313,12 @@ describe('App', () => {
   it('switches dashboard sections from the sidebar', async () => {
     const wrapper = mount(App);
 
+    const favoritosButton = findClickableByText(wrapper, 'Favoritos');
+    expect(favoritosButton.find('svg').exists()).toBe(true);
+
     await findClickableByText(wrapper, 'Favoritos').trigger('click');
     expect(wrapper.text()).toContain('Favoritos salvos');
-    expect(wrapper.text()).toContain('Suas linhas e paradas fixadas vão aparecer aqui.');
+    expect(wrapper.text()).toContain('Suas paradas mais usadas ficam aqui, com o endereço em destaque.');
 
     await findClickableByText(wrapper, 'Histórico').trigger('click');
     expect(wrapper.text()).toContain('Histórico de alertas');
@@ -303,6 +328,33 @@ describe('App', () => {
 
     await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).toContain('Mapa');
+
+    await findClickableByText(wrapper, 'Mapa 2').trigger('click');
+    expect(wrapper.text()).toContain('Mapa');
+  });
+
+  it('hides and reopens the sidebar from the topbar toggle', async () => {
+    const wrapper = mount(App);
+
+    const shell = wrapper.find('.dashboard-shell');
+    const sidebar = wrapper.find('.sidebar');
+    const hideButton = wrapper.find('button[aria-label="Recolher sidebar"]');
+
+    expect(shell.classes()).not.toContain('is-sidebar-hidden');
+    expect(sidebar.attributes('style') ?? '').not.toContain('display: none');
+    expect(hideButton.exists()).toBe(true);
+
+    await hideButton.trigger('click');
+
+    expect(shell.classes()).toContain('is-sidebar-hidden');
+    expect(wrapper.find('.sidebar').attributes('style')).toContain('display: none');
+    expect(wrapper.find('button[aria-label="Abrir sidebar"]').exists()).toBe(true);
+
+    await wrapper.find('button[aria-label="Abrir sidebar"]').trigger('click');
+
+    expect(shell.classes()).not.toContain('is-sidebar-hidden');
+    expect(wrapper.find('.sidebar').attributes('style') ?? '').not.toContain('display: none');
+    expect(wrapper.find('button[aria-label="Recolher sidebar"]').exists()).toBe(true);
   });
 
   it('searches loaded stops and selects a stop from the topbar', async () => {
@@ -330,8 +382,137 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Parada monitorada');
     expect(wrapper.text()).toContain('Ponto selecionado');
-    expect(wrapper.text()).toContain('40134');
+
+    const selectedStopCard = wrapper.find('.selected-stop-card');
+    expect(selectedStopCard.exists()).toBe(true);
+    expect(selectedStopCard.find('h3').text()).toBe('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
+    expect(selectedStopCard.text()).toContain('40134');
+  });
+
+  it('saves the selected stop as favorite and opens it from the favorites section', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ predictions: [prediction] })),
+    );
+
+    const wrapper = mount(App);
+
+    await wrapper.find('input[placeholder="Buscar parada ou endereço"]').setValue('40134');
+    await wrapper.vm.$nextTick();
+    await findClickableByText(wrapper, '40134').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find('button[aria-label="Salvar parada"]').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    await findClickableByText(wrapper, 'Favoritos').trigger('click');
     expect(wrapper.text()).toContain('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
+    expect(wrapper.text()).toContain('Abrir parada');
+
+    await findClickableByText(wrapper, 'Abrir parada').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Configuração do monitoramento');
+    expect(wrapper.text()).toContain('Ponto selecionado');
+  });
+
+  it('shows the selected bus trajectory context on the map when a prediction card is clicked', async () => {
+    const fasterPrediction: Prediction = {
+      ...prediction,
+      id: '8350-direto-2',
+      minutes: 2,
+      vehicleId: '50743',
+      serviceId: '54545',
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/13566/previsoes') {
+          return response({ predictions: [prediction, fasterPrediction] });
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return response({
+            route: [
+              { latitude: -19.94, longitude: -43.94 },
+              { latitude: -19.93, longitude: -43.93 },
+              { latitude: -19.92, longitude: -43.92 },
+            ],
+          });
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return response({
+            vehicles: [
+              {
+                latitude: -19.939,
+                longitude: -43.939,
+                color: 3,
+                lineCode: '8350',
+                vehicleId: '40743',
+                bearing: 135,
+              },
+            ],
+          });
+        }
+
+        if (url === '/api/itinerarios/54545') {
+          return response({
+            route: [
+              { latitude: -19.94, longitude: -43.94 },
+              { latitude: -19.93, longitude: -43.93 },
+              { latitude: -19.92, longitude: -43.92 },
+            ],
+          });
+        }
+
+        if (url === '/api/itinerarios/54545/veiculos') {
+          return response({
+            vehicles: [
+              {
+                latitude: -19.91,
+                longitude: -43.91,
+                color: 3,
+                lineCode: '8350',
+                vehicleId: '50743',
+                bearing: 135,
+              },
+            ],
+          });
+        }
+
+        return new Response('{}', { status: 404, headers: { 'content-type': 'application/json' } });
+      }),
+    );
+
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '13566',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('8350 - 5 min');
+
+    await findClickableByText(wrapper, '2 min').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('8350 - 2 min');
+    expect(wrapper.text()).toContain('Ônibus 8350 já passou da sua parada');
   });
 
   it('uses the geolocation control from the map', async () => {
@@ -350,6 +531,17 @@ describe('App', () => {
 
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
     expect(wrapper.find('button[aria-label="Localizando sua posição"]').exists()).toBe(true);
+  });
+
+  it('toggles dark mode from the sidebar', async () => {
+    const wrapper = mount(App);
+
+    expect(wrapper.find('.app-theme').attributes('data-theme')).toBe('light');
+
+    await findClickableByText(wrapper, 'Modo escuro').trigger('click');
+
+    expect(wrapper.find('.app-theme').attributes('data-theme')).toBe('dark');
+    expect(localStorage.getItem('onibus-bh-theme')).toBe('dark');
   });
 
   it('shows the current location marker after geolocation succeeds', async () => {
@@ -390,7 +582,8 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('Sua posição');
-    expect(wrapper.text()).toContain('Localização ativa');
+    expect(wrapper.find('[data-map-icon="user-location"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('Sua posição');
+    expect(wrapper.text()).not.toContain('Localização ativa');
   });
 });

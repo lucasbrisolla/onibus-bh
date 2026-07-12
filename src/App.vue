@@ -7,11 +7,30 @@ import type { UserLocation } from './components/MapView.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
 import { findAlertMatch } from './domain/alertRules';
-import type { AlertMatch, AlertSettings, NearbyStop, Prediction, RoutePoint, Vehicle } from './domain/types';
+import type {
+  AlertMatch,
+  AlertSettings,
+  FavoriteStop,
+  NearbyStop,
+  Prediction,
+  RoutePoint,
+  Vehicle,
+} from './domain/types';
 import { fetchNearbyStops, fetchRoutePoints, fetchStopPredictions, fetchVehicles } from './services/apiClient';
-import { createMapDataLoader, selectMapServiceId } from './services/mapDataService';
+import {
+  createMapDataLoader,
+  describeSelectedVehicleApproach,
+  selectMapServiceId,
+} from './services/mapDataService';
 import { createNotificationService } from './services/notificationService';
-import { loadSettings, saveSettings } from './services/settingsStore';
+import {
+  loadFavoriteStops,
+  loadSettings,
+  loadThemeMode,
+  saveFavoriteStops,
+  saveSettings,
+  saveThemeMode,
+} from './services/settingsStore';
 
 const POLL_INTERVAL_MS = 10_000;
 const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
@@ -79,6 +98,9 @@ const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
+const selectedPredictionId = ref<string | null>(null);
+const themeMode = ref(loadThemeMode());
+const favoriteStops = ref<FavoriteStop[]>(loadFavoriteStops());
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
@@ -90,6 +112,20 @@ const monitoredStop = computed(
   () => nearbyStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
 );
 const selectedStop = computed(() => monitoredStop.value);
+const isSelectedStopFavorite = computed(
+  () => !!selectedStop.value && favoriteStops.value.some(stop => stop.code === selectedStop.value?.code),
+);
+const selectedPrediction = computed(
+  () => predictions.value.find(item => item.id === selectedPredictionId.value) ?? null,
+);
+const selectedVehicleStatus = computed(() =>
+  describeSelectedVehicleApproach({
+    prediction: selectedPrediction.value,
+    monitoredStop: monitoredStop.value,
+    route: route.value,
+    vehicles: vehicles.value,
+  }),
+);
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase('pt-BR');
 
@@ -116,6 +152,18 @@ watch(
   { deep: true },
 );
 
+watch(themeMode, value => {
+  saveThemeMode(value);
+});
+
+watch(
+  favoriteStops,
+  value => {
+    saveFavoriteStops(value);
+  },
+  { deep: true },
+);
+
 async function requestPermission() {
   permission.value = await notificationService.requestPermission();
 }
@@ -132,6 +180,10 @@ function updateSearch(query: string) {
   searchQuery.value = query;
 }
 
+function toggleTheme() {
+  themeMode.value = themeMode.value === 'dark' ? 'light' : 'dark';
+}
+
 function selectStop(stop: NearbyStop) {
   settings.value = {
     ...settings.value,
@@ -141,6 +193,38 @@ function selectStop(stop: NearbyStop) {
   activeSection.value = 'monitoramento';
   statusMessage.value = `Parada ${stop.publicCode || stop.code} selecionada. Buscando ônibus que passam nela...`;
   void pollPredictions({ force: true });
+}
+
+function selectPrediction(prediction: Prediction) {
+  selectedPredictionId.value = prediction.id;
+  void refreshMapData(predictions.value, settings.value.lineCode, prediction);
+}
+
+function toggleSelectedStopFavorite() {
+  if (!selectedStop.value) {
+    return;
+  }
+
+  const currentStop = selectedStop.value;
+  const isFavorite = favoriteStops.value.some(stop => stop.code === currentStop.code);
+
+  favoriteStops.value = isFavorite
+    ? favoriteStops.value.filter(stop => stop.code !== currentStop.code)
+    : [
+        {
+          code: currentStop.code,
+          publicCode: currentStop.publicCode,
+          latitude: currentStop.latitude,
+          longitude: currentStop.longitude,
+          description: currentStop.description,
+          color: currentStop.color,
+        },
+        ...favoriteStops.value,
+      ];
+}
+
+function removeFavoriteStop(stopCode: string) {
+  favoriteStops.value = favoriteStops.value.filter(stop => stop.code !== stopCode);
 }
 
 async function useCurrentLocation() {
@@ -172,15 +256,31 @@ async function useCurrentLocation() {
   );
 }
 
-async function loadNearbyStops(latitude: number, longitude: number) {
+async function loadNearbyStops(
+  latitude: number,
+  longitude: number,
+  source: 'user-location' | 'map-area' = 'user-location',
+) {
   try {
     nearbyStops.value = await fetchNearbyStops(latitude, longitude);
-    locationStatus.value = 'Você está aqui. Pontos próximos atualizados pelo GPS.';
+    if (source === 'user-location') {
+      locationStatus.value = 'Você está aqui. Pontos próximos atualizados pelo GPS.';
+      return;
+    }
+
+    locationStatus.value = 'Pontos desta área atualizados pelo mapa.';
   } catch (error) {
     statusMessage.value =
       error instanceof Error ? error.message : 'Erro ao consultar paradas próximas.';
-    locationStatus.value = 'Erro ao consultar pontos próximos.';
+    locationStatus.value =
+      source === 'user-location'
+        ? 'Erro ao consultar pontos próximos.'
+        : 'Erro ao atualizar pontos desta área.';
   }
+}
+
+function updateNearbyStopsFromMap(center: UserLocation) {
+  void loadNearbyStops(center.latitude, center.longitude, 'map-area');
 }
 
 function hasCurrentAlertSettings(snapshot: AlertSettings): boolean {
@@ -220,6 +320,12 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
     }
 
     predictions.value = nextPredictions;
+    if (selectedPredictionId.value && !nextPredictions.some(item => item.id === selectedPredictionId.value)) {
+      selectedPredictionId.value = null;
+    }
+    if (!selectedPredictionId.value && nextPredictions.length > 0) {
+      selectedPredictionId.value = nextPredictions[0].id;
+    }
     lastUpdated.value = new Date().toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
@@ -245,13 +351,14 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
       }
     }
 
-    void refreshMapData(nextPredictions, settingsSnapshot.lineCode);
+    void refreshMapData(nextPredictions, settingsSnapshot.lineCode, selectedPrediction.value);
   } catch (error) {
     if (!hasCurrentAlertSettings(settingsSnapshot)) {
       return;
     }
 
     predictions.value = [];
+    selectedPredictionId.value = null;
     lastUpdated.value = null;
     statusMessage.value = error instanceof Error ? error.message : 'Erro ao consultar previsões.';
   } finally {
@@ -260,8 +367,15 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
   }
 }
 
-async function refreshMapData(nextPredictions: Prediction[], lineCode: string) {
-  const serviceId = selectMapServiceId(nextPredictions, lineCode);
+async function refreshMapData(
+  nextPredictions: Prediction[],
+  lineCode: string,
+  preferredPrediction: Prediction | null = null,
+) {
+  const serviceId =
+    preferredPrediction?.serviceId && Number.isFinite(preferredPrediction.minutes)
+      ? preferredPrediction.serviceId
+      : selectMapServiceId(nextPredictions, lineCode);
 
   if (!serviceId) {
     activeMapServiceId.value = null;
@@ -312,28 +426,33 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppShell
-    :last-updated="lastUpdated"
-    :is-loading="isLoading"
-    :active-section="activeSection"
-    :search-query="searchQuery"
-    :search-results="searchResults"
-    @navigate="navigate"
-    @update-search="updateSearch"
-    @select-stop="selectStop"
-  >
+  <div class="app-theme" :data-theme="themeMode">
+    <AppShell
+      :last-updated="lastUpdated"
+      :is-loading="isLoading"
+      :active-section="activeSection"
+      :search-query="searchQuery"
+      :search-results="searchResults"
+      :theme-mode="themeMode"
+      @navigate="navigate"
+      @update-search="updateSearch"
+      @select-stop="selectStop"
+      @toggle-theme="toggleTheme"
+    >
     <section v-if="activeSection === 'monitoramento'" class="dashboard-grid">
       <MonitoringPanel
         :settings="settings"
         :predictions="predictions"
+        :selected-prediction-id="selectedPredictionId"
         :status-message="statusMessage"
         :is-loading="isLoading"
         :permission="permission"
         :last-updated="lastUpdated"
         :selected-stop="selectedStop"
+        :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
-        @request-permission="requestPermission"
-        @use-current-location="useCurrentLocation"
+        @select-prediction="selectPrediction"
+        @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
       />
 
       <section class="map-stage">
@@ -342,10 +461,14 @@ onBeforeUnmount(() => {
           :nearby-stops="nearbyStops"
           :route="route"
           :vehicles="vehicles"
+          :theme-mode="themeMode"
+          :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
+          :selected-vehicle-status="selectedVehicleStatus"
           :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
           @use-current-location="useCurrentLocation"
+          @move-map-area="updateNearbyStopsFromMap"
           @select-stop="selectStop"
         />
       </section>
@@ -353,14 +476,16 @@ onBeforeUnmount(() => {
       <MobileBottomSheet
         :settings="settings"
         :predictions="predictions"
+        :selected-prediction-id="selectedPredictionId"
         :status-message="statusMessage"
         :is-loading="isLoading"
         :permission="permission"
         :last-updated="lastUpdated"
         :selected-stop="selectedStop"
+        :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
-        @request-permission="requestPermission"
-        @use-current-location="useCurrentLocation"
+        @select-prediction="selectPrediction"
+        @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
       />
     </section>
 
@@ -374,10 +499,14 @@ onBeforeUnmount(() => {
           :nearby-stops="nearbyStops"
           :route="route"
           :vehicles="vehicles"
+          :theme-mode="themeMode"
+          :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
+          :selected-vehicle-status="selectedVehicleStatus"
           :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
           @use-current-location="useCurrentLocation"
+          @move-map-area="updateNearbyStopsFromMap"
           @select-stop="selectStop"
         />
       </section>
@@ -387,16 +516,23 @@ onBeforeUnmount(() => {
       <div class="section-page-header">
         <p class="section-kicker">Favoritos</p>
         <h1>Favoritos salvos</h1>
-        <p>Suas linhas e paradas fixadas vão aparecer aqui.</p>
+        <p>Suas paradas mais usadas ficam aqui, com o endereço em destaque.</p>
       </div>
-      <div class="placeholder-grid">
-        <article class="control-card">
-          <strong>Parada atual</strong>
-          <span>{{ monitoredStop?.publicCode || settings.stopCode || 'Nenhuma parada selecionada' }}</span>
+      <div v-if="favoriteStops.length > 0" class="placeholder-grid favorites-grid">
+        <article v-for="favorite in favoriteStops" :key="favorite.code" class="control-card favorite-stop-card">
+          <span class="section-kicker">Parada favorita</span>
+          <h3>{{ favorite.description }}</h3>
+          <p>Ponto {{ favorite.publicCode || favorite.code }}</p>
+          <div class="favorite-stop-actions">
+            <button type="button" class="primary" @click="selectStop(favorite)">Abrir parada</button>
+            <button type="button" @click="removeFavoriteStop(favorite.code)">Remover</button>
+          </div>
         </article>
+      </div>
+      <div v-else class="placeholder-grid">
         <article class="control-card">
-          <strong>Linha preferida</strong>
-          <span>{{ settings.lineCode }}</span>
+          <strong>Nenhuma parada salva</strong>
+          <span>Use a estrela no card de Ponto selecionado para guardar endereços frequentes.</span>
         </article>
       </div>
     </section>
@@ -433,5 +569,6 @@ onBeforeUnmount(() => {
         </article>
       </div>
     </section>
-  </AppShell>
+    </AppShell>
+  </div>
 </template>

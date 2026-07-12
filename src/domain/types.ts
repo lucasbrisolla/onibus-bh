@@ -24,6 +24,15 @@ export interface NearbyStop {
   color: number | null;
 }
 
+export interface FavoriteStop {
+  code: string;
+  publicCode: string;
+  latitude: number;
+  longitude: number;
+  description: string;
+  color: number | null;
+}
+
 export interface RoutePoint {
   latitude: number;
   longitude: number;
@@ -36,6 +45,21 @@ export interface Vehicle {
   lineCode: string;
   vehicleId: string;
   bearing: number | null;
+}
+
+export type VehicleApproachState =
+  | 'approaching'
+  | 'passed'
+  | 'vehicle-not-found'
+  | 'no-live-vehicle'
+  | 'route-unavailable';
+
+export interface VehicleApproachInfo {
+  state: VehicleApproachState;
+  vehicleId: string | null;
+  lineCode: string;
+  minutes: number;
+  message: string;
 }
 
 export interface AlertSettings {

@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { defaultSettings, loadSettings, saveSettings } from './settingsStore';
+import {
+  defaultSettings,
+  loadFavoriteStops,
+  loadSettings,
+  loadThemeMode,
+  saveFavoriteStops,
+  saveSettings,
+  saveThemeMode,
+} from './settingsStore';
 
 const storageValue = (value: unknown) => JSON.stringify(value);
 
@@ -73,5 +81,87 @@ describe('settingsStore', () => {
     });
 
     expect(() => saveSettings(defaultSettings)).not.toThrow();
+  });
+
+  it('returns light theme by default and dark when persisted', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) => (key === 'onibus-bh-theme' ? 'dark' : null)),
+      setItem: vi.fn(),
+    });
+
+    expect(loadThemeMode()).toBe('dark');
+  });
+
+  it('does not throw when saving theme mode fails', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(),
+      setItem: vi.fn(() => {
+        throw new Error('quota exceeded');
+      }),
+    });
+
+    expect(() => saveThemeMode('dark')).not.toThrow();
+  });
+
+  it('returns favorite stops from storage and filters invalid entries', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) =>
+        key === 'onibus-bh-favorite-stops'
+          ? storageValue([
+              {
+                code: '13566',
+                publicCode: '40134',
+                description: 'ROD ANEL',
+                latitude: -19.916136,
+                longitude: -43.99563,
+                color: 4,
+              },
+              {
+                code: '13566',
+                publicCode: '40134',
+                description: 'ROD ANEL',
+                latitude: -19.916136,
+                longitude: -43.99563,
+                color: 4,
+              },
+              { code: 1234 },
+            ])
+          : null,
+      ),
+      setItem: vi.fn(),
+    });
+
+    expect(loadFavoriteStops()).toEqual([
+      {
+        code: '13566',
+        publicCode: '40134',
+        description: 'ROD ANEL',
+        latitude: -19.916136,
+        longitude: -43.99563,
+        color: 4,
+      },
+    ]);
+  });
+
+  it('does not throw when saving favorite stops fails', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(),
+      setItem: vi.fn(() => {
+        throw new Error('quota exceeded');
+      }),
+    });
+
+    expect(() =>
+      saveFavoriteStops([
+        {
+          code: '13566',
+          publicCode: '40134',
+          description: 'ROD ANEL',
+          latitude: -19.916136,
+          longitude: -43.99563,
+          color: 4,
+        },
+      ]),
+    ).not.toThrow();
   });
 });

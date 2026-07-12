@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import MapView from './MapView.vue';
-import type { NearbyStop } from '../domain/types';
+import type { NearbyStop, Vehicle, VehicleApproachInfo } from '../domain/types';
 
 const stop: NearbyStop = {
   code: '13566',
@@ -11,6 +11,33 @@ const stop: NearbyStop = {
   longitude: -43.99563,
   description: 'ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749',
   color: 4,
+};
+
+const vehicles: Vehicle[] = [
+  {
+    latitude: -19.915,
+    longitude: -43.995,
+    color: null,
+    lineCode: '8350',
+    vehicleId: '40743',
+    bearing: null,
+  },
+  {
+    latitude: -19.917,
+    longitude: -43.994,
+    color: null,
+    lineCode: '8350',
+    vehicleId: '40799',
+    bearing: null,
+  },
+];
+
+const selectedVehicleStatus: VehicleApproachInfo = {
+  lineCode: '8350',
+  minutes: 2,
+  state: 'approaching',
+  vehicleId: '40743',
+  message: 'Ônibus 8350 está se aproximando da sua parada',
 };
 
 describe('MapView', () => {
@@ -63,4 +90,57 @@ describe('MapView', () => {
     expect(wrapper.text()).not.toContain('🚌');
     wrapper.unmount();
   });
+
+  it('does not render the location badge copy when user location is active', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        userLocation: {
+          latitude: -19.916,
+          longitude: -43.994,
+        },
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).not.toContain('Sua posição');
+    expect(wrapper.text()).not.toContain('Localização ativa');
+    wrapper.unmount();
+  });
+
+  it('renders only the selected vehicle when a prediction card is chosen', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        monitoredStop: stop,
+        nearbyStops: [stop],
+        vehicles,
+        selectedVehicleId: '40743',
+        selectedVehicleStatus,
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.element.querySelector('[title="8350 - 40743"]')).not.toBeNull();
+    expect(wrapper.element.querySelector('[title="8350 - 40799"]')).toBeNull();
+    wrapper.unmount();
+  });
+  it('keeps the base tiles and applies only a subtle dark treatment in dark mode', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        themeMode: 'dark',
+        nearbyStops: [stop],
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(document.body.querySelector('.map-base-tiles-dark')).not.toBeNull();
+    expect(document.body.querySelector('.map-label-tiles-dark')).toBeNull();
+    wrapper.unmount();
+  });
+
 });

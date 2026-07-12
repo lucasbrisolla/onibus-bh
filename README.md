@@ -2,6 +2,15 @@
 
 Ônibus BH é um aplicativo semelhante ao SIU Mobile BH mas com interface web/mobile moderna, avisos de ônibus em tempo real, monitoramento para quando você precisar sair do trabalho na hora certa
 
+## Documentação
+
+- `README.md`: visão geral e comandos principais.
+- `RETOMADA.md`: estado atual e próximos passos.
+- `ARCHITECTURE.md`: estrutura técnica e fluxo de dados.
+- `DESIGN.md`: decisões visuais, UX e paleta.
+- `docs/decisions.md`: decisões estáveis de produto e arquitetura.
+- `AGENTS.md`: instruções operacionais para agentes.
+
 ## Escopo do MVP
 
 - App em Vue 3, Vite e TypeScript.

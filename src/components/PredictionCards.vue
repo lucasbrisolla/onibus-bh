@@ -2,7 +2,14 @@
 import { BusFront } from '@lucide/vue';
 import type { Prediction } from '../domain/types';
 
-defineProps<{ predictions: Prediction[] }>();
+defineProps<{
+  predictions: Prediction[];
+  selectedPredictionId?: string | null;
+}>();
+
+const emit = defineEmits<{
+  selectPrediction: [prediction: Prediction];
+}>();
 
 function describeMinutes(minutes: number): string {
   return Number.isFinite(minutes) ? `${minutes} min` : 'Sem previsão';
@@ -34,7 +41,15 @@ function describeVariant(prediction: Prediction): string | null {
         v-for="(prediction, index) in predictions"
         :key="prediction.id"
         class="prediction-card"
-        :class="{ 'is-next': index === 0 }"
+        :class="{
+          'is-next': index === 0,
+          'is-selected': prediction.id === selectedPredictionId,
+        }"
+        tabindex="0"
+        role="button"
+        @click="emit('selectPrediction', prediction)"
+        @keydown.enter.prevent="emit('selectPrediction', prediction)"
+        @keydown.space.prevent="emit('selectPrediction', prediction)"
       >
         <div class="bus-token" aria-hidden="true">
           <BusFront />

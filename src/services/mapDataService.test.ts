@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Prediction, RoutePoint, Vehicle } from '../domain/types';
-import { createMapDataLoader, selectMapServiceId } from './mapDataService';
+import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
+import { createMapDataLoader, describeSelectedVehicleApproach, selectMapServiceId } from './mapDataService';
 
 const prediction: Prediction = {
   id: '8350-53564-5',
@@ -14,6 +14,15 @@ const prediction: Prediction = {
   color: 3,
   accessibilityCode: 6,
   variant: 'direto',
+};
+
+const monitoredStop: NearbyStop = {
+  code: '13566',
+  publicCode: '40134',
+  latitude: -19.92,
+  longitude: -43.92,
+  description: 'ROD ANEL',
+  color: 4,
 };
 
 describe('selectMapServiceId', () => {
@@ -90,6 +99,74 @@ describe('createMapDataLoader', () => {
       serviceId: 'new',
       route: [{ latitude: -19.8, longitude: -43.8 }],
       vehicles: [],
+    });
+  });
+});
+
+describe('describeSelectedVehicleApproach', () => {
+  it('marks the selected vehicle as approaching when it is before the stop on the route', () => {
+    const route: RoutePoint[] = [
+      { latitude: -19.94, longitude: -43.94 },
+      { latitude: -19.93, longitude: -43.93 },
+      { latitude: -19.92, longitude: -43.92 },
+      { latitude: -19.91, longitude: -43.91 },
+    ];
+    const vehicles: Vehicle[] = [
+      {
+        latitude: -19.939,
+        longitude: -43.939,
+        color: 3,
+        lineCode: '8350',
+        vehicleId: '40743',
+        bearing: 135,
+      },
+    ];
+
+    expect(
+      describeSelectedVehicleApproach({
+        prediction,
+        monitoredStop,
+        route,
+        vehicles,
+      }),
+    ).toMatchObject({
+      state: 'approaching',
+      vehicleId: '40743',
+      lineCode: '8350',
+      minutes: 5,
+    });
+  });
+
+  it('marks the selected vehicle as already passed when it is after the stop on the route', () => {
+    const route: RoutePoint[] = [
+      { latitude: -19.94, longitude: -43.94 },
+      { latitude: -19.93, longitude: -43.93 },
+      { latitude: -19.92, longitude: -43.92 },
+      { latitude: -19.91, longitude: -43.91 },
+    ];
+    const vehicles: Vehicle[] = [
+      {
+        latitude: -19.909,
+        longitude: -43.909,
+        color: 3,
+        lineCode: '8350',
+        vehicleId: '40743',
+        bearing: 135,
+      },
+    ];
+
+    expect(
+      describeSelectedVehicleApproach({
+        prediction,
+        monitoredStop,
+        route,
+        vehicles,
+      }),
+    ).toMatchObject({
+      state: 'passed',
+      vehicleId: '40743',
+      lineCode: '8350',
+      minutes: 5,
     });
   });
 });
