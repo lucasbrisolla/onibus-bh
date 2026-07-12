@@ -7,6 +7,7 @@ export interface Prediction {
   description: string;
   destination: string;
   minutes: number;
+  departureLabel?: string | null;
   queryTime: string | null;
   serviceId: string | null;
   vehicleId: string | null;

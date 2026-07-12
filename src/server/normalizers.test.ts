@@ -28,6 +28,7 @@ describe('normalizePredictions', () => {
         description: '8350 Direto Centro',
         destination: 'Centro',
         minutes: 5,
+        departureLabel: null,
         queryTime: '10:00',
         serviceId: 'abc',
         vehicleId: null,
@@ -102,7 +103,8 @@ describe('normalizePredictions', () => {
       previsoes: [{ linha: '8208', tempo: 'SAÍDA: 20:30' }],
     });
 
-    expect(result[0]?.minutes).toBe(20);
+    expect(result[0]?.minutes).toBe(Number.POSITIVE_INFINITY);
+    expect(result[0]?.departureLabel).toBe('Saída 20h30');
   });
 
   it('calculates minutes from departure time when query time includes date and seconds', () => {
@@ -111,7 +113,8 @@ describe('normalizePredictions', () => {
       previsoes: [{ linha: '8208', tempo: 'SAÍDA: 09:19' }],
     });
 
-    expect(result[0]?.minutes).toBe(18);
+    expect(result[0]?.minutes).toBe(Number.POSITIVE_INFINITY);
+    expect(result[0]?.departureLabel).toBe('Saída 09h19');
   });
 
   it('calculates minutes from next-day departure time', () => {
@@ -120,7 +123,18 @@ describe('normalizePredictions', () => {
       previsoes: [{ linha: '8208', tempo: 'SAÍDA: 00:10' }],
     });
 
-    expect(result[0]?.minutes).toBe(20);
+    expect(result[0]?.minutes).toBe(Number.POSITIVE_INFINITY);
+    expect(result[0]?.departureLabel).toBe('Saída 00h10');
+  });
+
+  it('normalizes departure labels written with h', () => {
+    const result = normalizePredictions({
+      horaConsulta: '12/07/2026 12:10:00',
+      previsoes: [{ linha: '8208', tempo: 'SAÍDA: 12H45' }],
+    });
+
+    expect(result[0]?.departureLabel).toBe('Saída 12h45');
+    expect(result[0]?.minutes).toBe(Number.POSITIVE_INFINITY);
   });
 
   it('ignores invalid prediction items without crashing', () => {

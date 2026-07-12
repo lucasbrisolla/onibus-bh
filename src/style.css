@@ -649,11 +649,19 @@ label {
 .prediction-time strong {
   color: #16a34a;
   font-size: 1rem;
+  text-align: right;
 }
 
 .prediction-time span {
   color: #16a34a;
   font-size: 0.7rem;
+}
+
+.prediction-time strong.is-departure {
+  font-size: 0.88rem;
+  line-height: 1.15;
+  max-width: 86px;
+  white-space: normal;
 }
 
 .empty-state {

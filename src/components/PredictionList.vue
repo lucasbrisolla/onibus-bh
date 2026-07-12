@@ -3,8 +3,12 @@ import type { Prediction } from '../domain/types';
 
 defineProps<{ predictions: Prediction[] }>();
 
-function describeMinutes(minutes: number): string {
-  return Number.isFinite(minutes) ? `${minutes} min` : 'Sem previsão';
+function describePredictionTime(prediction: Prediction): string {
+  if (prediction.departureLabel) {
+    return prediction.departureLabel;
+  }
+
+  return Number.isFinite(prediction.minutes) ? `${prediction.minutes} min` : 'Sem previsão';
 }
 </script>
 
@@ -19,7 +23,7 @@ function describeMinutes(minutes: number): string {
         <span v-if="prediction.variant !== 'not-applicable'" class="badge">
           {{ prediction.variant === 'direto' ? 'Direto' : 'Não Direto' }}
         </span>
-        <span class="minutes">{{ describeMinutes(prediction.minutes) }}</span>
+        <span class="minutes">{{ describePredictionTime(prediction) }}</span>
       </li>
     </ul>
   </section>

@@ -35,12 +35,18 @@ describe('selectMapServiceId', () => {
     expect(selectMapServiceId(predictions, '8350')).toBe('53564');
   });
 
-  it('returns null without matching finite prediction service id', () => {
+  it('returns null without matching prediction service id', () => {
     expect(selectMapServiceId([{ ...prediction, serviceId: null }], '8350')).toBeNull();
-    expect(
-      selectMapServiceId([{ ...prediction, minutes: Number.POSITIVE_INFINITY }], '8350'),
-    ).toBeNull();
     expect(selectMapServiceId([prediction], '6350')).toBeNull();
+  });
+
+  it('accepts predictions that only expose departure time labels', () => {
+    expect(
+      selectMapServiceId(
+        [{ ...prediction, minutes: Number.POSITIVE_INFINITY, departureLabel: 'Saída 12h45' }],
+        '8350',
+      ),
+    ).toBe('53564');
   });
 });
 

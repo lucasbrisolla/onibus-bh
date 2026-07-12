@@ -11,8 +11,12 @@ const emit = defineEmits<{
   selectPrediction: [prediction: Prediction];
 }>();
 
-function describeMinutes(minutes: number): string {
-  return Number.isFinite(minutes) ? `${minutes} min` : 'Sem previsão';
+function describePredictionTime(prediction: Prediction): string {
+  if (prediction.departureLabel) {
+    return prediction.departureLabel;
+  }
+
+  return Number.isFinite(prediction.minutes) ? `${prediction.minutes} min` : 'Sem previsão';
 }
 
 function describeVariant(prediction: Prediction): string | null {
@@ -67,8 +71,10 @@ function describeVariant(prediction: Prediction): string | null {
           </span>
         </div>
         <div class="prediction-time">
-          <strong>{{ describeMinutes(prediction.minutes) }}</strong>
-          <span v-if="index === 0 && Number.isFinite(prediction.minutes)">Chegando</span>
+          <strong :class="{ 'is-departure': Boolean(prediction.departureLabel) }">
+            {{ describePredictionTime(prediction) }}
+          </strong>
+          <span v-if="index === 0 && Number.isFinite(prediction.minutes) && !prediction.departureLabel">Chegando</span>
         </div>
       </li>
     </ul>

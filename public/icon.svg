@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>Icone do aplicativo Onibus BH</title>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14532d" />
+      <stop offset="0.55" stop-color="#15803d" />
+      <stop offset="1" stop-color="#0f766e" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)" />
+  <g fill="none" stroke="#f8fafc" stroke-linecap="round" stroke-linejoin="round" stroke-width="28">
+    <path d="M96 160 64 176" />
+    <path d="M256 160h64" />
+    <path d="m448 176-32-16" />
+    <rect x="96" y="112" width="320" height="256" rx="48" />
+    <path d="M96 240h320" />
+    <path d="M176 304h1" />
+    <path d="M336 304h1" />
+    <path d="M144 368v32" />
+    <path d="M368 400v-32" />
+  </g>
+</svg>

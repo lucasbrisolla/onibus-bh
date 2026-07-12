@@ -37,40 +37,24 @@ function readNumber(record: UnknownRecord, keys: string[]): number | null {
   return null;
 }
 
-function minutesFromDeparture(raw: string, queryTime: string | null): number {
-  if (!queryTime) {
-    return Number.POSITIVE_INFINITY;
-  }
+function readDepartureLabel(raw: string): string | null {
+  const departureMatch = raw.match(/sa[ií]da:\s*(\d{1,2})[:hH](\d{2})/i);
 
-  const departureMatch = raw.match(/sa[ií]da:\s*(\d{1,2}):(\d{2})/i);
-  const queryMatch = queryTime.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::\d{2})?$/);
-
-  if (!departureMatch || !queryMatch) {
-    return Number.POSITIVE_INFINITY;
+  if (!departureMatch) {
+    return null;
   }
 
   const departureHour = Number(departureMatch[1]);
   const departureMinute = Number(departureMatch[2]);
-  const queryHour = Number(queryMatch[1]);
-  const queryMinute = Number(queryMatch[2]);
 
-  if (
-    departureHour > 23 ||
-    departureMinute > 59 ||
-    queryHour > 23 ||
-    queryMinute > 59
-  ) {
-    return Number.POSITIVE_INFINITY;
+  if (departureHour > 23 || departureMinute > 59) {
+    return null;
   }
 
-  const departureTotal = departureHour * 60 + departureMinute;
-  const queryTotal = queryHour * 60 + queryMinute;
-  const diff = departureTotal - queryTotal;
-
-  return diff >= 0 ? diff : diff + 24 * 60;
+  return `Saída ${String(departureHour).padStart(2, '0')}h${String(departureMinute).padStart(2, '0')}`;
 }
 
-function readMinutes(record: UnknownRecord, queryTime: string | null): number {
+function readMinutes(record: UnknownRecord): number {
   const raw =
     record.tempo ?? record.tempoMinutos ?? record.previsaoMinutos ?? record.minutos ?? record.prev;
 
@@ -84,10 +68,6 @@ function readMinutes(record: UnknownRecord, queryTime: string | null): number {
       return Number(relativeMatch[1]);
     }
 
-    if (/sa[ií]da:/i.test(raw)) {
-      return minutesFromDeparture(raw, queryTime);
-    }
-
     const numericMatch = raw.match(/^\s*(\d+)\s*$/);
     if (numericMatch) {
       return Number(numericMatch[1]);
@@ -95,6 +75,17 @@ function readMinutes(record: UnknownRecord, queryTime: string | null): number {
   }
 
   return Number.POSITIVE_INFINITY;
+}
+
+function readDeparture(record: UnknownRecord): string | null {
+  const raw =
+    record.tempo ?? record.tempoMinutos ?? record.previsaoMinutos ?? record.minutos ?? record.prev;
+
+  if (typeof raw !== 'string') {
+    return null;
+  }
+
+  return readDepartureLabel(raw);
 }
 
 export function normalizePredictions(payload: UnknownRecord): Prediction[] {
@@ -117,7 +108,8 @@ export function normalizePredictions(payload: UnknownRecord): Prediction[] {
     const vehicleId = readString(record, ['numVeicGestor', 'vehicleId'], '') || null;
     const color = readNumber(record, ['cor']);
     const accessibilityCode = readNumber(record, ['tpAcess']);
-    const minutes = readMinutes(record, queryTime);
+    const departureLabel = readDeparture(record);
+    const minutes = departureLabel ? Number.POSITIVE_INFINITY : readMinutes(record);
     const id = `${lineCode}-${serviceId ?? index}-${minutes}`;
 
     return {
@@ -126,6 +118,7 @@ export function normalizePredictions(payload: UnknownRecord): Prediction[] {
       description,
       destination,
       minutes,
+      departureLabel,
       queryTime,
       serviceId,
       vehicleId,

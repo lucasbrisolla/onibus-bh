@@ -87,6 +87,8 @@ const userLocationIconSvg = `
   </svg>
 `;
 const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const autoFitMaxZoom = 15;
+const minimumAutoFitSpan = 0.01;
 
 function describeSelectedVehicleTooltip(vehicle: Vehicle): string {
   if (
@@ -303,6 +305,20 @@ function renderVehicles() {
   }
 }
 
+function createComfortableBounds(points: L.LatLngTuple[]) {
+  const bounds = L.latLngBounds(points);
+  const southWest = bounds.getSouthWest();
+  const northEast = bounds.getNorthEast();
+  const latSpan = Math.max(northEast.lat - southWest.lat, minimumAutoFitSpan);
+  const lngSpan = Math.max(northEast.lng - southWest.lng, minimumAutoFitSpan);
+  const center = bounds.getCenter();
+
+  return L.latLngBounds(
+    [center.lat - latSpan / 2, center.lng - lngSpan / 2],
+    [center.lat + latSpan / 2, center.lng + lngSpan / 2],
+  );
+}
+
 function fitMap() {
   if (!map) {
     return;
@@ -324,7 +340,7 @@ function fitMap() {
   }
 
   markProgrammaticViewportChange();
-  map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 16 });
+  map.fitBounds(createComfortableBounds(points), { padding: [72, 72], maxZoom: autoFitMaxZoom });
 }
 
 function handleMapMoveEnd() {

@@ -40,7 +40,6 @@ export function selectMapServiceId(predictions: Prediction[], lineCode: string):
   const match = predictions.find(
     prediction =>
       prediction.lineCode.trim().toLowerCase() === normalizedLine &&
-      Number.isFinite(prediction.minutes) &&
       Boolean(prediction.serviceId),
   );
 

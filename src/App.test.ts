@@ -207,6 +207,37 @@ describe('App', () => {
     expect(notifyArrival).not.toHaveBeenCalled();
   });
 
+  it('renders departure labels without treating them as arrival minutes', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({
+          predictions: [{ ...prediction, minutes: Infinity, departureLabel: 'Saída 12h45' }],
+        }),
+      ),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Saída 12h45');
+    expect(wrapper.text()).not.toContain('Infinity min');
+    expect(notifyArrival).not.toHaveBeenCalled();
+  });
+
   it('clamps alert minutes input into the supported range', async () => {
     const wrapper = mount(App);
     await findClickableByText(wrapper, 'Monitoramento').trigger('click');
