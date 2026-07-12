@@ -101,6 +101,9 @@ const activeMapServiceId = ref<string | null>(null);
 const selectedPredictionId = ref<string | null>(null);
 const themeMode = ref(loadThemeMode());
 const favoriteStops = ref<FavoriteStop[]>(loadFavoriteStops());
+const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
+  favoriteStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
+);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
@@ -108,9 +111,17 @@ let intervalId: number | undefined;
 let isPolling = false;
 
 const canPoll = computed(() => settings.value.enabled && settings.value.stopCode.trim().length > 0);
-const monitoredStop = computed(
-  () => nearbyStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
-);
+const monitoredStop = computed(() => {
+  const stopCode = settings.value.stopCode.trim();
+  if (!stopCode) {
+    return null;
+  }
+
+  return (
+    nearbyStops.value.find(stop => stop.code === stopCode) ??
+    (selectedStopSnapshot.value?.code === stopCode ? selectedStopSnapshot.value : null)
+  );
+});
 const selectedStop = computed(() => monitoredStop.value);
 const isSelectedStopFavorite = computed(
   () => !!selectedStop.value && favoriteStops.value.some(stop => stop.code === selectedStop.value?.code),
@@ -143,6 +154,31 @@ const searchResults = computed(() => {
     })
     .slice(0, 6);
 });
+
+watch(
+  [nearbyStops, () => settings.value.stopCode],
+  ([stops, stopCode]) => {
+    const normalizedStopCode = stopCode.trim();
+    if (!normalizedStopCode) {
+      selectedStopSnapshot.value = null;
+      return;
+    }
+
+    const matchingStop = stops.find(stop => stop.code === normalizedStopCode);
+    if (matchingStop) {
+      selectedStopSnapshot.value = matchingStop;
+      return;
+    }
+
+    if (selectedStopSnapshot.value?.code === normalizedStopCode) {
+      return;
+    }
+
+    selectedStopSnapshot.value =
+      favoriteStops.value.find(stop => stop.code === normalizedStopCode) ?? null;
+  },
+  { immediate: true },
+);
 
 watch(
   settings,
@@ -185,6 +221,8 @@ function toggleTheme() {
 }
 
 function selectStop(stop: NearbyStop) {
+  selectedStopSnapshot.value = stop;
+  selectedPredictionId.value = null;
   settings.value = {
     ...settings.value,
     stopCode: stop.code,
@@ -198,6 +236,35 @@ function selectStop(stop: NearbyStop) {
 function selectPrediction(prediction: Prediction) {
   selectedPredictionId.value = prediction.id;
   void refreshMapData(predictions.value, settings.value.lineCode, prediction);
+}
+
+function findMatchingPrediction(
+  candidates: Prediction[],
+  selectedPrediction: Prediction | null,
+): Prediction | null {
+  if (!selectedPrediction) {
+    return null;
+  }
+
+  if (selectedPrediction.vehicleId) {
+    const sameVehicle = candidates.find(
+      candidate =>
+        candidate.vehicleId === selectedPrediction.vehicleId &&
+        candidate.serviceId === selectedPrediction.serviceId,
+    );
+    if (sameVehicle) {
+      return sameVehicle;
+    }
+  }
+
+  return (
+    candidates.find(
+      candidate =>
+        candidate.serviceId === selectedPrediction.serviceId &&
+        candidate.lineCode === selectedPrediction.lineCode &&
+        candidate.destination === selectedPrediction.destination,
+    ) ?? null
+  );
 }
 
 function toggleSelectedStopFavorite() {
@@ -314,18 +381,19 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
 
   try {
     const nextPredictions = await fetchStopPredictions(stopCode);
+    const previousSelectedPrediction = selectedPrediction.value;
 
     if (!hasCurrentAlertSettings(settingsSnapshot)) {
       return;
     }
 
     predictions.value = nextPredictions;
-    if (selectedPredictionId.value && !nextPredictions.some(item => item.id === selectedPredictionId.value)) {
-      selectedPredictionId.value = null;
-    }
-    if (!selectedPredictionId.value && nextPredictions.length > 0) {
-      selectedPredictionId.value = nextPredictions[0].id;
-    }
+    const selectedPredictionMatch =
+      nextPredictions.find(item => item.id === selectedPredictionId.value) ??
+      findMatchingPrediction(nextPredictions, previousSelectedPrediction) ??
+      nextPredictions[0] ??
+      null;
+    selectedPredictionId.value = selectedPredictionMatch?.id ?? null;
     lastUpdated.value = new Date().toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
@@ -351,7 +419,7 @@ async function pollPredictions({ force = false }: { force?: boolean } = {}) {
       }
     }
 
-    void refreshMapData(nextPredictions, settingsSnapshot.lineCode, selectedPrediction.value);
+    void refreshMapData(nextPredictions, settingsSnapshot.lineCode, selectedPredictionMatch);
   } catch (error) {
     if (!hasCurrentAlertSettings(settingsSnapshot)) {
       return;
@@ -441,6 +509,58 @@ onBeforeUnmount(() => {
     >
     <section v-if="activeSection === 'monitoramento'" class="dashboard-grid">
       <MonitoringPanel
+        display-mode="predictions-only"
+        :settings="settings"
+        :predictions="predictions"
+        :selected-prediction-id="selectedPredictionId"
+        :status-message="statusMessage"
+        :is-loading="isLoading"
+        :permission="permission"
+        :last-updated="lastUpdated"
+        :selected-stop="selectedStop"
+        :is-selected-stop-favorite="isSelectedStopFavorite"
+        @update="updateSettings"
+        @select-prediction="selectPrediction"
+        @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+      />
+
+      <section class="map-stage">
+        <MapView
+          :monitored-stop="monitoredStop"
+          :nearby-stops="nearbyStops"
+          :route="route"
+          :vehicles="vehicles"
+          :theme-mode="themeMode"
+          :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
+          :selected-vehicle-status="selectedVehicleStatus"
+          :user-location="userLocation"
+          :is-locating="isLocating"
+          :location-status="locationStatus"
+          @use-current-location="useCurrentLocation"
+          @move-map-area="updateNearbyStopsFromMap"
+          @select-stop="selectStop"
+        />
+      </section>
+
+      <MobileBottomSheet
+        display-mode="predictions-only"
+        :settings="settings"
+        :predictions="predictions"
+        :selected-prediction-id="selectedPredictionId"
+        :status-message="statusMessage"
+        :is-loading="isLoading"
+        :permission="permission"
+        :last-updated="lastUpdated"
+        :selected-stop="selectedStop"
+        :is-selected-stop-favorite="isSelectedStopFavorite"
+        @update="updateSettings"
+        @select-prediction="selectPrediction"
+        @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+      />
+    </section>
+
+    <section v-else-if="activeSection === 'mapa'" class="dashboard-grid">
+      <MonitoringPanel
         :settings="settings"
         :predictions="predictions"
         :selected-prediction-id="selectedPredictionId"
@@ -487,29 +607,6 @@ onBeforeUnmount(() => {
         @select-prediction="selectPrediction"
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
       />
-    </section>
-
-    <section v-else-if="activeSection === 'mapa'" class="section-page map-page">
-      <div class="section-page-header">
-        <h1>Mapa</h1>
-      </div>
-      <section class="map-stage is-full">
-        <MapView
-          :monitored-stop="monitoredStop"
-          :nearby-stops="nearbyStops"
-          :route="route"
-          :vehicles="vehicles"
-          :theme-mode="themeMode"
-          :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
-          :selected-vehicle-status="selectedVehicleStatus"
-          :user-location="userLocation"
-          :is-locating="isLocating"
-          :location-status="locationStatus"
-          @use-current-location="useCurrentLocation"
-          @move-map-area="updateNearbyStopsFromMap"
-          @select-stop="selectStop"
-        />
-      </section>
     </section>
 
     <section v-else-if="activeSection === 'favoritos'" class="section-page">

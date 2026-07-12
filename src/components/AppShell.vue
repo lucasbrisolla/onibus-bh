@@ -48,12 +48,14 @@ function toggleSidebar() {
 }
 
 const navItems: { id: DashboardSection; label: string; icon: typeof BusFront }[] = [
-  { id: 'monitoramento', label: 'Mapa', icon: LayoutDashboard },
-  { id: 'mapa', label: 'Mapa 2', icon: MapPinned },
+  { id: 'monitoramento', label: 'Mapa', icon: MapPinned },
+  { id: 'mapa', label: 'Monitoramento', icon: LayoutDashboard },
   { id: 'favoritos', label: 'Favoritos', icon: Star },
   { id: 'historico', label: 'Histórico', icon: History },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ];
+
+const mobileNavItems = navItems.filter(item => item.id !== 'mapa');
 </script>
 
 <template>
@@ -143,7 +145,7 @@ const navItems: { id: DashboardSection; label: string; icon: typeof BusFront }[]
 
       <nav class="mobile-nav" aria-label="Navegação inferior">
         <button
-          v-for="item in navItems.slice(1)"
+          v-for="item in mobileNavItems"
           :key="item.id"
           type="button"
           :class="{ active: item.id === activeSection }"

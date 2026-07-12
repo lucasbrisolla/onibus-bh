@@ -105,6 +105,15 @@ describe('normalizePredictions', () => {
     expect(result[0]?.minutes).toBe(20);
   });
 
+  it('calculates minutes from departure time when query time includes date and seconds', () => {
+    const result = normalizePredictions({
+      horaConsulta: '12/07/2026 09:01:24',
+      previsoes: [{ linha: '8208', tempo: 'SAÍDA: 09:19' }],
+    });
+
+    expect(result[0]?.minutes).toBe(18);
+  });
+
   it('calculates minutes from next-day departure time', () => {
     const result = normalizePredictions({
       horaConsulta: '23:50',

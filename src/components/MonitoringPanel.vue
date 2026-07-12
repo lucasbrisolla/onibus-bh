@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BellRing, ChevronDown, ChevronUp, MapPinned, Star } from '@lucide/vue';
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
 import PredictionCards from './PredictionCards.vue';
 import type { AlertSettings, BusVariantFilter, NearbyStop, Prediction } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
@@ -15,6 +15,7 @@ const props = defineProps<{
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
   isSelectedStopFavorite: boolean;
+  displayMode?: 'full' | 'predictions-only';
 }>();
 
 const emit = defineEmits<{
@@ -54,6 +55,18 @@ function updateMinutes(event: Event) {
   input.value = String(minutes);
   update('minutesBefore', minutes);
 }
+
+watch(
+  () => [props.selectedStop?.code ?? null, props.predictions.length] as const,
+  ([stopCode, predictionCount], [previousStopCode, previousPredictionCount]) => {
+    const hasNewStop = stopCode !== null && stopCode !== previousStopCode;
+    const hasFreshPredictions = predictionCount > 0 && previousPredictionCount === 0;
+
+    if (hasNewStop || hasFreshPredictions) {
+      collapsedSections.predictions = true;
+    }
+  },
+);
 </script>
 
 <template>
@@ -102,7 +115,7 @@ function updateMinutes(event: Event) {
       </div>
     </section>
 
-    <section class="collapse-section">
+    <section v-if="displayMode !== 'predictions-only'" class="collapse-section">
       <button
         type="button"
         class="collapse-toggle"
@@ -161,7 +174,7 @@ function updateMinutes(event: Event) {
       </div>
     </section>
 
-    <section class="collapse-section">
+    <section v-if="displayMode !== 'predictions-only'" class="collapse-section">
       <button
         type="button"
         class="collapse-toggle"
@@ -193,7 +206,7 @@ function updateMinutes(event: Event) {
       </div>
     </section>
 
-    <section class="collapse-section">
+    <section v-if="displayMode !== 'predictions-only'" class="collapse-section">
       <button
         type="button"
         class="collapse-toggle"

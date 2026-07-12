@@ -43,7 +43,7 @@ function minutesFromDeparture(raw: string, queryTime: string | null): number {
   }
 
   const departureMatch = raw.match(/sa[ií]da:\s*(\d{1,2}):(\d{2})/i);
-  const queryMatch = queryTime.match(/^(\d{1,2}):(\d{2})$/);
+  const queryMatch = queryTime.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::\d{2})?$/);
 
   if (!departureMatch || !queryMatch) {
     return Number.POSITIVE_INFINITY;

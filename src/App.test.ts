@@ -65,14 +65,9 @@ describe('App', () => {
   it('renders alert controls and initial status', () => {
     const wrapper = mount(App);
 
-    expect(wrapper.text()).toContain('Configuração do monitoramento');
-    expect(wrapper.text()).toContain('Código da parada');
-    expect(wrapper.text()).toContain('Variante da 8350');
-    expect(wrapper.text()).toContain('Ativar monitoramento');
-    expect(wrapper.text()).toContain('Parada monitorada');
     expect(wrapper.text()).toContain('Próximos ônibus');
     expect(wrapper.text()).toContain('Mapa');
-    expect(wrapper.text()).toContain('Mapa 2');
+    expect(wrapper.text()).toContain('Monitoramento');
     expect(wrapper.text()).toContain('Favoritos');
     expect(wrapper.text()).toContain('Histórico');
     expect(wrapper.text()).toContain('Configurações');
@@ -175,6 +170,7 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     expect(wrapper.text()).not.toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Não foi possível conectar à API');
     expect(wrapper.text()).toContain('Nenhuma previsão carregada.');
@@ -213,6 +209,7 @@ describe('App', () => {
 
   it('clamps alert minutes input into the supported range', async () => {
     const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     const minutesInput = wrapper.find('input[type="number"]');
 
     await minutesInput.setValue('999');
@@ -265,6 +262,7 @@ describe('App', () => {
 
     expect(fetch).toHaveBeenCalledTimes(1);
 
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     await wrapper.find('input[placeholder="Ex: 1234"]').setValue('9999');
     resolveFetch(response({ predictions: [prediction] }));
     await flushPromises();
@@ -299,6 +297,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     await wrapper.find('select').setValue('nao-direto');
 
     resolveFetch(response({ predictions: [prediction] }));
@@ -327,10 +326,12 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Configurações do app');
 
     await findClickableByText(wrapper, 'Mapa').trigger('click');
-    expect(wrapper.text()).toContain('Mapa');
+    expect(wrapper.text()).toContain('Próximos ônibus');
+    expect(wrapper.text()).not.toContain('Configuração do monitoramento');
 
-    await findClickableByText(wrapper, 'Mapa 2').trigger('click');
-    expect(wrapper.text()).toContain('Mapa');
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    expect(wrapper.text()).toContain('Configuração do monitoramento');
+    expect(wrapper.text()).toContain('Próximos ônibus');
   });
 
   it('hides and reopens the sidebar from the topbar toggle', async () => {
@@ -374,6 +375,7 @@ describe('App', () => {
     await findClickableByText(wrapper, '40134').trigger('click');
     await wrapper.vm.$nextTick();
 
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     expect((wrapper.find('input[placeholder="Ex: 1234"]').element as HTMLInputElement).value).toBe(
       '13566',
     );
@@ -403,6 +405,7 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     await wrapper.find('button[aria-label="Salvar parada"]').trigger('click');
     await wrapper.vm.$nextTick();
 
@@ -413,8 +416,72 @@ describe('App', () => {
     await findClickableByText(wrapper, 'Abrir parada').trigger('click');
     await wrapper.vm.$nextTick();
 
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
     expect(wrapper.text()).toContain('Configuração do monitoramento');
     expect(wrapper.text()).toContain('Ponto selecionado');
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+  });
+
+  it('keeps the selected stop card visible when opening a favorite outside the loaded nearby stops', async () => {
+    localStorage.setItem(
+      'onibus-bh-favorite-stops',
+      JSON.stringify([
+        {
+          code: '99999',
+          publicCode: '50001',
+          latitude: -19.9,
+          longitude: -43.9,
+          description: 'RUA TESTE, 123',
+          color: 4,
+        },
+      ]),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/99999/previsoes') {
+          return response({
+            predictions: [
+              {
+                ...prediction,
+                id: '9200-99999-5',
+                lineCode: '9200',
+                description: 'Circular Bairro',
+                destination: 'Centro',
+                serviceId: '99999',
+                vehicleId: '99901',
+              },
+            ],
+          });
+        }
+
+        if (url === '/api/itinerarios/99999') {
+          return response({ route: [] });
+        }
+
+        if (url === '/api/itinerarios/99999/veiculos') {
+          return response({ vehicles: [] });
+        }
+
+        return response({ predictions: [] });
+      }),
+    );
+
+    const wrapper = mount(App);
+
+    await findClickableByText(wrapper, 'Favoritos').trigger('click');
+    await wrapper.vm.$nextTick();
+    await findClickableByText(wrapper, 'Abrir parada').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    expect(wrapper.text()).toContain('Ponto selecionado');
+    expect(wrapper.text()).toContain('RUA TESTE, 123');
+    expect(wrapper.text()).toContain('Ponto 50001');
   });
 
   it('shows the selected bus trajectory context on the map when a prediction card is clicked', async () => {
@@ -505,14 +572,88 @@ describe('App', () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('8350 - 5 min');
+    expect(wrapper.text()).toContain('8350 • 5 min');
 
     await findClickableByText(wrapper, '2 min').trigger('click');
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('8350 - 2 min');
-    expect(wrapper.text()).toContain('Ônibus 8350 já passou da sua parada');
+    expect(wrapper.text()).toContain('8350 • 2 min');
+    expect(wrapper.find('.prediction-card.is-selected').text()).toContain('2 min');
+  });
+
+  it('keeps the selected bus highlighted after polling updates its minutes', async () => {
+    const updatedPrediction: Prediction = {
+      ...prediction,
+      id: '8350-direto-4',
+      minutes: 4,
+    };
+
+    let predictionRequests = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === '/api/paradas/1034/previsoes') {
+          predictionRequests += 1;
+          return response({
+            predictions: [predictionRequests === 1 ? prediction : updatedPrediction],
+          });
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return response({
+            route: [
+              { latitude: -19.94, longitude: -43.94 },
+              { latitude: -19.93, longitude: -43.93 },
+            ],
+          });
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return response({
+            vehicles: [
+              {
+                latitude: -19.939,
+                longitude: -43.939,
+                color: 3,
+                lineCode: '8350',
+                vehicleId: '40743',
+                bearing: 135,
+              },
+            ],
+          });
+        }
+
+        return response({});
+      }),
+    );
+
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('8350 • 5 min');
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('8350 • 4 min');
+    expect(wrapper.find('.prediction-card.is-selected').text()).toContain('4 min');
   });
 
   it('uses the geolocation control from the map', async () => {

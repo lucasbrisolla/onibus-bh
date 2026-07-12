@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
+import { createMapInteractionOptions } from './mapInteractionOptions';
 
 export interface UserLocation {
   latitude: number;
@@ -184,16 +185,29 @@ function renderStops() {
 
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
-    L.marker([stop.latitude, stop.longitude], {
+    const marker = L.marker([stop.latitude, stop.longitude], {
       icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', stopIconSvg),
       title: stop.description,
       keyboard: true,
-    })
+    });
+
+    marker
       .bindPopup(
         `<strong>${stop.publicCode || stop.code}</strong><br>${stop.description}<br><small>Clique para ver os ônibus desta parada.</small>`,
       )
-      .on('click', () => emit('selectStop', stop))
-      .addTo(stopLayer);
+      .on('click', () => emit('selectStop', stop));
+
+    if (isMonitored) {
+      marker.bindTooltip(stop.description, {
+        className: 'map-stop-tooltip',
+        direction: 'top',
+        offset: [0, -18],
+        opacity: 1,
+        permanent: true,
+      });
+    }
+
+    marker.addTo(stopLayer);
   }
 
   stopLayer.addTo(map);
@@ -368,6 +382,7 @@ onMounted(() => {
   map = L.map(mapElement.value, {
     zoomControl: false,
     attributionControl: false,
+    ...createMapInteractionOptions(),
   }).setView(defaultCenter, 14);
 
   updateBaseTileLayer();

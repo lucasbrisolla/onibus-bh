@@ -13,6 +13,7 @@ defineProps<{
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
   isSelectedStopFavorite: boolean;
+  displayMode?: 'full' | 'predictions-only';
 }>();
 
 defineEmits<{
@@ -26,6 +27,7 @@ defineEmits<{
   <div class="mobile-bottom-sheet">
     <div class="sheet-handle"></div>
     <MonitoringPanel
+      :display-mode="displayMode"
       :settings="settings"
       :predictions="predictions"
       :selected-prediction-id="selectedPredictionId"

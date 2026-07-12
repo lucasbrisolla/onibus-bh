@@ -91,6 +91,22 @@ describe('MapView', () => {
     wrapper.unmount();
   });
 
+  it('shows a small permanent label with the address for the monitored stop', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        monitoredStop: stop,
+        nearbyStops: [stop],
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    const monitoredStopLabel = wrapper.element.querySelector('.map-stop-tooltip');
+    expect(monitoredStopLabel?.textContent).toContain(stop.description);
+    wrapper.unmount();
+  });
+
   it('does not render the location badge copy when user location is active', async () => {
     const wrapper = mount(MapView, {
       props: {
