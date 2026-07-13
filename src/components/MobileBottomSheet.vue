@@ -6,6 +6,7 @@ import type { PermissionState } from '../services/notificationService';
 
 const SHEET_GESTURE_ZONE_HEIGHT = 108;
 const SWIPE_THRESHOLD_PX = 56;
+type SheetState = 'peek' | 'half' | 'full';
 
 defineProps<{
   settings: AlertSettings;
@@ -26,13 +27,22 @@ defineEmits<{
   toggleSelectedStopFavorite: [];
 }>();
 
-const isCollapsed = ref(false);
+const sheetState = ref<SheetState>('half');
 const sheetElement = ref<HTMLElement | null>(null);
 let touchStartY: number | null = null;
 let isTrackingGesture = false;
 
 function toggleSheet() {
-  isCollapsed.value = !isCollapsed.value;
+  sheetState.value = sheetState.value === 'peek' ? 'half' : 'peek';
+}
+
+function moveSheet(direction: 'up' | 'down') {
+  const states: SheetState[] = ['peek', 'half', 'full'];
+  const currentIndex = states.indexOf(sheetState.value);
+  const nextIndex = direction === 'up'
+    ? Math.min(states.length - 1, currentIndex + 1)
+    : Math.max(0, currentIndex - 1);
+  sheetState.value = states[nextIndex];
 }
 
 function onTouchStart(event: TouchEvent) {
@@ -43,7 +53,7 @@ function onTouchStart(event: TouchEvent) {
 
   const sheetTop = sheetElement.value?.getBoundingClientRect().top ?? 0;
   const canStartGesture =
-    isCollapsed.value || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
+    sheetState.value === 'peek' || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
 
   if (!canStartGesture) {
     touchStartY = null;
@@ -66,12 +76,12 @@ function onTouchEnd(event: TouchEvent) {
   isTrackingGesture = false;
 
   if (deltaY > SWIPE_THRESHOLD_PX) {
-    isCollapsed.value = true;
+    moveSheet('down');
     return;
   }
 
   if (deltaY < -SWIPE_THRESHOLD_PX) {
-    isCollapsed.value = false;
+    moveSheet('up');
   }
 }
 </script>
@@ -80,15 +90,15 @@ function onTouchEnd(event: TouchEvent) {
   <div
     ref="sheetElement"
     class="mobile-bottom-sheet"
-    :class="{ 'is-collapsed': isCollapsed }"
+    :class="`is-${sheetState}`"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
     <button
       type="button"
       class="sheet-toggle"
-      :aria-expanded="!isCollapsed"
-      :aria-label="isCollapsed ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
+      :aria-expanded="sheetState !== 'peek'"
+      :aria-label="sheetState === 'peek' ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
       @click="toggleSheet"
     >
       <div class="sheet-handle"></div>

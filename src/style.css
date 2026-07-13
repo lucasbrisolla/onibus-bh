@@ -124,8 +124,7 @@ label {
 .bell-icon svg,
 .collapse-toggle svg,
 .main-nav button svg,
-.mobile-nav button svg,
-.selected-stop-icon svg {
+.mobile-nav button svg {
   width: 18px;
   height: 18px;
   stroke-width: 2.2;
@@ -386,38 +385,19 @@ label {
 }
 
 .selected-stop-card {
+  position: relative;
   display: grid;
   gap: 6px;
   border: 1px solid #99f6e4;
   border-radius: 8px;
   background: #f0fdfa;
-  padding: 12px;
-}
-
-.selected-stop-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.selected-stop-heading {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.selected-stop-icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgba(13, 148, 136, 0.14);
-  color: #0d9488;
+  padding: 12px 54px 12px 12px;
 }
 
 .favorite-stop-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   display: grid;
   place-items: center;
   width: 34px;
@@ -617,16 +597,23 @@ label {
 
 .variant-pill {
   border-radius: 999px;
-  background: #dcfce7;
-  color: #16a34a;
   padding: 2px 7px;
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
+.variant-pill--direto {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.variant-pill--nao-direto {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 .prediction-destination,
-.prediction-vehicle,
 .muted {
   color: #667085;
   font-size: 0.8rem;
@@ -650,11 +637,6 @@ label {
   color: #16a34a;
   font-size: 1rem;
   text-align: right;
-}
-
-.prediction-time span {
-  color: #16a34a;
-  font-size: 0.7rem;
 }
 
 .prediction-time strong.is-departure {
@@ -698,13 +680,31 @@ label {
   background: #e8ece6;
 }
 
-.leaflet-tile.map-base-tiles-dark {
-  filter: brightness(0.68) saturate(0.82) contrast(1.05) hue-rotate(160deg);
-}
-
 .map-surface {
   min-height: calc(100vh - 79px);
   height: 100%;
+}
+
+.map-route-base-path {
+  filter: drop-shadow(0 0 3px rgba(124, 58, 237, 0.2));
+}
+
+.map-route-flow-path {
+  animation: route-flow 2.8s linear infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-route-flow-path {
+    animation: none;
+  }
 }
 
 .map-hint {
@@ -802,7 +802,7 @@ label {
 }
 
 .map-location-control button {
-  box-shadow: 0 12px 32px rgba(109, 40, 217, 0.25);
+  box-shadow: 0 12px 32px rgba(13, 148, 136, 0.25);
 }
 
 .map-location-button {
@@ -811,7 +811,10 @@ label {
   width: 48px;
   height: 48px;
   padding: 0;
+  border-color: #0d9488;
   border-radius: 14px;
+  background: #0d9488;
+  color: #fff;
 }
 
 .map-location-button svg {
@@ -825,6 +828,12 @@ label {
   cursor: progress;
 }
 
+.app-theme[data-theme='dark'] .map-location-button {
+  border-color: #2dd4bf;
+  background: #2dd4bf;
+  color: #082f2b;
+}
+
 .map-location-control span {
   border: 1px solid #e4e7ec;
   border-radius: 8px;
@@ -834,6 +843,68 @@ label {
   font-size: 0.78rem;
   font-weight: 700;
   box-shadow: 0 10px 24px rgba(23, 32, 26, 0.1);
+}
+
+.map-toggle-controls {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 700;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.map-compact-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #344054;
+  padding: 7px 9px 7px 11px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(23, 32, 26, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.map-theme-toggle {
+  display: none;
+}
+
+.compact-switch {
+  display: inline-flex;
+  align-items: center;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: #d0d5dd;
+  padding: 2px;
+  transition: background 160ms ease;
+}
+
+.compact-switch span {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.22);
+  transition: transform 160ms ease;
+}
+
+.map-compact-toggle.is-active {
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
+.map-compact-toggle.is-active .compact-switch {
+  background: #0d9488;
+}
+
+.map-compact-toggle.is-active .compact-switch span {
+  transform: translateX(12px);
 }
 
 .section-page {
@@ -905,7 +976,6 @@ label {
 .app-theme[data-theme='dark'] .status-card p,
 .app-theme[data-theme='dark'] .status-meta,
 .app-theme[data-theme='dark'] .prediction-destination,
-.app-theme[data-theme='dark'] .prediction-vehicle,
 .app-theme[data-theme='dark'] .muted,
 .app-theme[data-theme='dark'] .search-results span,
 .app-theme[data-theme='dark'] .search-results p,
@@ -926,6 +996,17 @@ label {
 .app-theme[data-theme='dark'] .search-results button,
 .app-theme[data-theme='dark'] .selected-stop-card {
   background: #0f2423;
+}
+
+.app-theme[data-theme='dark'] .prediction-card:hover,
+.app-theme[data-theme='dark'] .prediction-card.is-selected {
+  border-color: #2dd4bf;
+  background: #0f2423;
+}
+
+.app-theme[data-theme='dark'] .prediction-card.is-next {
+  border-color: #22c55e;
+  background: #0f2f27;
 }
 
 .app-theme[data-theme='dark'] .favorite-stop-button {
@@ -973,6 +1054,53 @@ label {
 .app-theme[data-theme='dark'] .favorite-stop-card p,
 .app-theme[data-theme='dark'] .bell-icon {
   color: #5eead4;
+}
+
+.app-theme[data-theme='dark'] .variant-pill--direto {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.app-theme[data-theme='dark'] .variant-pill--nao-direto {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.app-theme[data-theme='dark'] .map-compact-toggle {
+  border-color: #28514d;
+  background: rgba(15, 36, 35, 0.94);
+  color: #c7d7d4;
+}
+
+.app-theme[data-theme='dark'] .map-compact-toggle.is-active {
+  border-color: #2dd4bf;
+  color: #5eead4;
+}
+
+.app-theme[data-theme='dark'] .compact-switch {
+  background: #28514d;
+}
+
+.app-theme[data-theme='dark'] .map-compact-toggle.is-active .compact-switch {
+  background: #2dd4bf;
+}
+
+.app-theme[data-theme='dark'] .map-marker.is-stop {
+  border-color: #e5e7eb;
+  background: #111827;
+  color: #f9fafb;
+  box-shadow:
+    0 0 0 3px rgba(229, 231, 235, 0.16),
+    0 12px 24px rgba(0, 0, 0, 0.36);
+}
+
+.app-theme[data-theme='dark'] .map-marker.is-monitored {
+  border-color: #fbbf24;
+  background: #111827;
+  color: #fbbf24;
+  box-shadow:
+    0 0 0 4px rgba(251, 191, 36, 0.22),
+    0 12px 24px rgba(0, 0, 0, 0.38);
 }
 
 .map-page {
@@ -1147,6 +1275,16 @@ label {
   flex-shrink: 0;
 }
 
+.app-theme[data-theme='dark'] .mobile-bottom-sheet {
+  border: 1px solid #1f4a47;
+  background: rgba(15, 36, 35, 0.98);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.46);
+}
+
+.app-theme[data-theme='dark'] .sheet-handle {
+  background: #9eb7b4;
+}
+
 @media (max-width: 920px) {
   .dashboard-shell {
     grid-template-columns: 1fr;
@@ -1195,35 +1333,45 @@ label {
     bottom: 68px;
     z-index: 1000;
     display: block;
-    max-height: min(54vh, 420px);
+    height: min(42vh, 340px);
     overflow: hidden;
     border-radius: 18px 18px 8px 8px;
     background: rgba(255, 255, 255, 0.97);
     box-shadow: 0 24px 60px rgba(16, 24, 40, 0.3);
-    transition: transform 180ms ease, box-shadow 180ms ease;
+    transition: height 180ms ease, transform 180ms ease, box-shadow 180ms ease;
     backdrop-filter: blur(16px);
   }
 
-  .mobile-bottom-sheet.is-collapsed {
+  .mobile-bottom-sheet.is-peek {
+    height: 44px;
     transform: translateY(calc(100% - 34px));
     box-shadow: 0 14px 32px rgba(16, 24, 40, 0.22);
+  }
+
+  .mobile-bottom-sheet.is-half {
+    height: min(42vh, 340px);
+  }
+
+  .mobile-bottom-sheet.is-full {
+    height: calc(100vh - 104px);
   }
 
   .sheet-toggle {
     display: grid;
     place-items: center;
     width: 100%;
-    padding: 14px 0 8px;
+    min-height: 34px;
+    padding: 9px 0 6px;
     border: 0;
     background: transparent;
   }
 
   .mobile-bottom-sheet .monitoring-panel {
     display: grid;
-    max-height: calc(min(54vh, 420px) - 42px);
+    max-height: calc(100% - 34px);
     overflow-y: auto;
     border-right: 0;
-    padding: 8px 10px 12px;
+    padding: 6px 8px 10px;
   }
 
   .sheet-handle {
@@ -1233,26 +1381,20 @@ label {
     background: #d0d5dd;
   }
 
-  .mobile-bottom-sheet.is-collapsed .monitoring-panel {
+  .mobile-bottom-sheet.is-peek .monitoring-panel {
     pointer-events: none;
   }
 
   .mobile-bottom-sheet .control-card,
   .mobile-bottom-sheet .toggle-card,
   .mobile-bottom-sheet .status-card {
-    gap: 10px;
-    padding: 12px;
+    gap: 8px;
+    padding: 9px;
   }
 
   .mobile-bottom-sheet .selected-stop-card {
     gap: 4px;
-    padding: 10px;
-  }
-
-  .mobile-bottom-sheet .selected-stop-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 7px;
+    padding: 8px 44px 8px 8px;
   }
 
   .mobile-bottom-sheet .favorite-stop-button {
@@ -1275,34 +1417,30 @@ label {
   }
 
   .mobile-bottom-sheet .collapse-toggle {
-    padding: 10px 12px;
+    padding: 8px 10px;
+    min-height: 34px;
   }
 
   .prediction-card {
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px 9px;
   }
 
   .prediction-card .bus-token {
-    width: 38px;
-    height: 38px;
+    width: 30px;
+    height: 30px;
   }
 
   .prediction-line strong {
     font-size: 0.95rem;
   }
 
-  .prediction-destination,
-  .prediction-vehicle {
+  .prediction-destination {
     font-size: 0.78rem;
   }
 
   .prediction-time strong {
-    font-size: 1rem;
-  }
-
-  .prediction-time span {
-    font-size: 0.72rem;
+    font-size: 0.92rem;
   }
 
   .mobile-nav {
@@ -1334,11 +1472,29 @@ label {
   }
 
   .map-location-control {
-    top: 62px;
-    left: 12px;
+    top: 12px;
     right: 12px;
-    justify-items: stretch;
-    max-width: none;
+    max-width: 44px;
+  }
+
+  .map-location-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .map-toggle-controls {
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 72px);
+  }
+
+  .map-theme-toggle {
+    display: inline-flex;
+  }
+
+  .map-compact-toggle {
+    padding: 7px 8px 7px 10px;
   }
 }
 
@@ -1350,5 +1506,9 @@ label {
     margin-bottom: 2px;
     padding: 10px 0 4px;
     background: linear-gradient(180deg, #ffffff 78%, rgba(255, 255, 255, 0));
+  }
+
+  .app-theme[data-theme='dark'] .prediction-section {
+    background: linear-gradient(180deg, #132f2d 78%, rgba(19, 47, 45, 0));
   }
 }

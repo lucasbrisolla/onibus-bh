@@ -136,6 +136,7 @@ O `MapView.vue` recebe:
 
 - parada monitorada;
 - paradas próximas;
+- estado de exibição das paradas próximas;
 - rota atual;
 - veículos do itinerário;
 - localização do usuário;
@@ -146,7 +147,24 @@ Comportamentos arquiteturais relevantes:
 - clicar em parada troca a parada monitorada;
 - clicar em card de previsão seleciona um ônibus específico;
 - quando há seleção, o mapa prioriza somente o ônibus selecionado;
+- o usuário pode ocultar paradas próximas sem ocultar a parada monitorada;
 - o ajuste automático de viewport não deve ocorrer a cada polling.
+- o modo claro usa CartoDB Voyager e o modo escuro usa CartoDB Dark Matter.
+- a rota é renderizada em duas camadas Leaflet: base roxa contínua e traço interno sutil animado.
+
+## Interface mobile
+
+O `MobileBottomSheet.vue` usa três estados internos:
+
+- `peek`: alça recolhida;
+- `half`: painel intermediário;
+- `full`: painel expandido.
+
+Gestos verticais movem o painel um nível por vez. O mapa também expõe controles compactos para mostrar/ocultar pontos e alternar o modo escuro no mobile.
+
+## Normalização visual de textos
+
+Alguns textos vindos da SIU chegam em caixa alta. A normalização visual para caixa normal acontece na camada de apresentação, sem alterar os dados brutos usados por seleção, polling ou regras de domínio.
 
 ## Deploy
 

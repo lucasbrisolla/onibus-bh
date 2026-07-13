@@ -1,3 +1,27 @@
+<script lang="ts">
+export const routeBasePathOptions = {
+  className: 'map-route-base-path',
+  color: '#7c3aed',
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  opacity: 0.68,
+  weight: 5,
+};
+
+export const routeFlowPathOptions = {
+  className: 'map-route-flow-path',
+  color: '#ddd6fe',
+  dashArray: '2 12',
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  opacity: 0.42,
+  weight: 3,
+};
+
+export const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+export const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+</script>
+
 <script setup lang="ts">
 import { Crosshair, LocateFixed } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -23,6 +47,7 @@ const props = withDefaults(
     userLocation?: UserLocation | null;
     isLocating?: boolean;
     locationStatus?: string;
+    showNearbyStops?: boolean;
   }>(),
   {
     monitoredStop: null,
@@ -35,6 +60,7 @@ const props = withDefaults(
     userLocation: null,
     isLocating: false,
     locationStatus: 'Use sua localização para encontrar pontos por perto.',
+    showNearbyStops: true,
   },
 );
 
@@ -42,12 +68,14 @@ const emit = defineEmits<{
   useCurrentLocation: [];
   selectStop: [stop: NearbyStop];
   moveMapArea: [payload: UserLocation];
+  toggleNearbyStops: [showNearbyStops: boolean];
+  toggleTheme: [];
 }>();
 
 const mapElement = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
 let stopLayer: L.LayerGroup | null = null;
-let routeLayer: L.Polyline | null = null;
+let routeLayer: L.LayerGroup | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
 let baseTileLayer: L.TileLayer | null = null;
@@ -86,7 +114,6 @@ const userLocationIconSvg = `
     <circle cx="12" cy="12" r="8" opacity="0.35" />
   </svg>
 `;
-const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const autoFitMaxZoom = 15;
 const minimumAutoFitSpan = 0.01;
 
@@ -111,6 +138,19 @@ function createMarkerIcon(className: string, markup: string) {
   });
 }
 
+function formatDisplayText(value: string): string {
+  const hasLetters = /\p{L}/u.test(value);
+  const isAllCaps = hasLetters && value === value.toLocaleUpperCase('pt-BR');
+
+  if (!isAllCaps) {
+    return value;
+  }
+
+  return value.toLocaleLowerCase('pt-BR').replace(/\p{L}[\p{L}\p{M}]*/gu, word =>
+    word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1),
+  );
+}
+
 function updateBaseTileLayer() {
   if (!map) {
     return;
@@ -123,7 +163,7 @@ function updateBaseTileLayer() {
     baseTileLayer = null;
   }
 
-  baseTileLayer = L.tileLayer(lightTileUrl, {
+  baseTileLayer = L.tileLayer(isDarkMode ? darkTileUrl : lightTileUrl, {
     className: isDarkMode ? 'map-base-tiles map-base-tiles-dark' : 'map-base-tiles',
     maxZoom: 20,
   });
@@ -182,25 +222,33 @@ function renderStops() {
   stopLayer = L.layerGroup();
 
   const stops = props.monitoredStop
-    ? [props.monitoredStop, ...props.nearbyStops.filter(stop => stop.code !== props.monitoredStop?.code)]
-    : props.nearbyStops;
+    ? [
+        props.monitoredStop,
+        ...(props.showNearbyStops
+          ? props.nearbyStops.filter(stop => stop.code !== props.monitoredStop?.code)
+          : []),
+      ]
+    : props.showNearbyStops
+      ? props.nearbyStops
+      : [];
 
   for (const stop of stops) {
     const isMonitored = stop.code === props.monitoredStop?.code;
+    const stopDescription = formatDisplayText(stop.description);
     const marker = L.marker([stop.latitude, stop.longitude], {
       icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', stopIconSvg),
-      title: stop.description,
+      title: stopDescription,
       keyboard: true,
     });
 
     marker
       .bindPopup(
-        `<strong>${stop.publicCode || stop.code}</strong><br>${stop.description}<br><small>Clique para ver os ônibus desta parada.</small>`,
+        `<strong>${stop.publicCode || stop.code}</strong><br>${stopDescription}<br><small>Clique para ver os ônibus desta parada.</small>`,
       )
       .on('click', () => emit('selectStop', stop));
 
     if (isMonitored) {
-      marker.bindTooltip(stop.description, {
+      marker.bindTooltip(stopDescription, {
         className: 'map-stop-tooltip',
         direction: 'top',
         offset: [0, -18],
@@ -253,10 +301,10 @@ function renderRoute() {
     return;
   }
 
-  routeLayer = L.polyline(
-    props.route.map(point => [point.latitude, point.longitude]),
-    { color: '#7c3aed', weight: 5, opacity: 0.75 },
-  );
+  const routeCoordinates = props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple);
+  const routeBaseLayer = L.polyline(routeCoordinates, routeBasePathOptions);
+  const routeFlowLayer = L.polyline(routeCoordinates, routeFlowPathOptions);
+  routeLayer = L.layerGroup([routeBaseLayer, routeFlowLayer]);
 
   try {
     routeLayer.addTo(currentMap);
@@ -434,7 +482,14 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [props.monitoredStop, props.nearbyStops, props.userLocation, props.route, props.vehicles],
+  () => [
+    props.monitoredStop,
+    props.nearbyStops,
+    props.showNearbyStops,
+    props.userLocation,
+    props.route,
+    props.vehicles,
+  ],
   () => renderMapData(),
   { deep: true },
 );
@@ -456,6 +511,32 @@ watch(
 <template>
   <section class="map-panel">
     <div ref="mapElement" class="map-surface" aria-label="Mapa de ônibus e paradas"></div>
+    <div class="map-toggle-controls">
+      <button
+        type="button"
+        class="map-compact-toggle map-points-toggle"
+        :class="{ 'is-active': showNearbyStops }"
+        :aria-pressed="showNearbyStops"
+        @click="emit('toggleNearbyStops', !showNearbyStops)"
+      >
+        <span>Mostrar pontos</span>
+        <span class="compact-switch" aria-hidden="true">
+          <span></span>
+        </span>
+      </button>
+      <button
+        type="button"
+        class="map-compact-toggle map-theme-toggle"
+        :class="{ 'is-active': themeMode === 'dark' }"
+        :aria-pressed="themeMode === 'dark'"
+        @click="emit('toggleTheme')"
+      >
+        <span>Modo escuro</span>
+        <span class="compact-switch" aria-hidden="true">
+          <span></span>
+        </span>
+      </button>
+    </div>
     <div class="map-location-control">
       <button
         type="button"

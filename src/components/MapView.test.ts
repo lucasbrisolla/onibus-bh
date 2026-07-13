@@ -1,7 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
-import MapView from './MapView.vue';
+import MapView, {
+  darkTileUrl,
+  lightTileUrl,
+  routeBasePathOptions,
+  routeFlowPathOptions,
+} from './MapView.vue';
 import type { NearbyStop, Vehicle, VehicleApproachInfo } from '../domain/types';
 
 const stop: NearbyStop = {
@@ -10,6 +15,15 @@ const stop: NearbyStop = {
   latitude: -19.916136,
   longitude: -43.99563,
   description: 'ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749',
+  color: 4,
+};
+
+const nearbyStop: NearbyStop = {
+  code: '14276',
+  publicCode: '40170',
+  latitude: -19.916051,
+  longitude: -43.991969,
+  description: 'PCA CAPELA NOVA, 20',
   color: 4,
 };
 
@@ -51,7 +65,7 @@ describe('MapView', () => {
 
     await wrapper.vm.$nextTick();
     const marker = wrapper.element.querySelector(
-      '[title="ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749"]',
+      '[title="Rod Anel Rodoviario Celso Mello Azevedo, 11749"]',
     );
     expect(marker).not.toBeNull();
 
@@ -103,7 +117,8 @@ describe('MapView', () => {
     await wrapper.vm.$nextTick();
 
     const monitoredStopLabel = wrapper.element.querySelector('.map-stop-tooltip');
-    expect(monitoredStopLabel?.textContent).toContain(stop.description);
+    expect(monitoredStopLabel?.textContent).toContain('Rod Anel Rodoviario Celso Mello Azevedo, 11749');
+    expect(monitoredStopLabel?.textContent).not.toContain('ROD ANEL');
     wrapper.unmount();
   });
 
@@ -143,7 +158,75 @@ describe('MapView', () => {
     expect(wrapper.element.querySelector('[title="8350 - 40799"]')).toBeNull();
     wrapper.unmount();
   });
-  it('keeps the base tiles and applies only a subtle dark treatment in dark mode', async () => {
+
+  it('configures the route with a solid base and subtle animated inner stroke', () => {
+    expect(routeBasePathOptions).toMatchObject({
+      className: 'map-route-base-path',
+      lineCap: 'round',
+      lineJoin: 'round',
+      opacity: 0.68,
+      weight: 5,
+    });
+
+    expect(routeFlowPathOptions).toMatchObject({
+      className: 'map-route-flow-path',
+      dashArray: '2 12',
+      lineCap: 'round',
+      lineJoin: 'round',
+      opacity: 0.42,
+      weight: 3,
+    });
+  });
+
+  it('emits when the compact stop visibility toggle is clicked', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        nearbyStops: [stop],
+        showNearbyStops: true,
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.find('.map-points-toggle').trigger('click');
+
+    expect(wrapper.emitted('toggleNearbyStops')).toEqual([[false]]);
+    wrapper.unmount();
+  });
+
+  it('emits when the compact map theme toggle is clicked', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        themeMode: 'light',
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.find('.map-theme-toggle').trigger('click');
+
+    expect(wrapper.emitted('toggleTheme')).toEqual([[]]);
+    wrapper.unmount();
+  });
+
+  it('hides nearby stop markers but keeps the monitored stop visible when points are off', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        monitoredStop: stop,
+        nearbyStops: [stop, nearbyStop],
+        showNearbyStops: false,
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.element.querySelector('[title="Rod Anel Rodoviario Celso Mello Azevedo, 11749"]'),
+    ).not.toBeNull();
+    expect(wrapper.element.querySelector('[title="Pca Capela Nova, 20"]')).toBeNull();
+    wrapper.unmount();
+  });
+
+  it('marks the dark base tile layer in dark mode', async () => {
     const wrapper = mount(MapView, {
       props: {
         themeMode: 'dark',
@@ -157,6 +240,11 @@ describe('MapView', () => {
     expect(document.body.querySelector('.map-base-tiles-dark')).not.toBeNull();
     expect(document.body.querySelector('.map-label-tiles-dark')).toBeNull();
     wrapper.unmount();
+  });
+
+  it('uses Carto Voyager in light mode and Carto Dark Matter in dark mode', () => {
+    expect(lightTileUrl).toContain('/rastertiles/voyager/');
+    expect(darkTileUrl).toContain('/dark_all/');
   });
 
 });

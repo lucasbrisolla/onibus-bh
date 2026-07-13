@@ -6,6 +6,10 @@ describe('classifyBusVariant', () => {
     expect(classifyBusVariant({ lineCode: '8350', description: '8350 Direto Centro' })).toBe('direto');
   });
 
+  it('classifies 8350 direta from description text', () => {
+    expect(classifyBusVariant({ lineCode: '8350', description: '8350 DIRETA ESTACAO BARREIRO' })).toBe('direto');
+  });
+
   it('classifies 8350 without direto text as nao-direto', () => {
     expect(classifyBusVariant({ lineCode: '8350', description: '8350 Estação Barreiro' })).toBe('nao-direto');
   });

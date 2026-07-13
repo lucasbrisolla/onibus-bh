@@ -137,6 +137,22 @@ describe('normalizePredictions', () => {
     expect(result[0]?.minutes).toBe(Number.POSITIVE_INFINITY);
   });
 
+  it('uses departure labels to keep same-line scheduled predictions selectable independently', () => {
+    const result = normalizePredictions({
+      horaConsulta: '12/07/2026 18:30:00',
+      previsoes: [
+        { linha: '1145', codItinerario: 'centro', tempo: 'SAÍDA: 19:45' },
+        { linha: '1145', codItinerario: 'centro', tempo: 'SAÍDA: 20:15' },
+      ],
+    });
+
+    expect(result[0]?.id).not.toBe(result[1]?.id);
+    expect(result.map(prediction => prediction.departureLabel)).toEqual([
+      'Saída 19h45',
+      'Saída 20h15',
+    ]);
+  });
+
   it('ignores invalid prediction items without crashing', () => {
     const result = normalizePredictions({
       horaConsulta: '20:10',

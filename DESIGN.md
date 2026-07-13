@@ -32,6 +32,7 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - foco em parada selecionada, próximos ônibus, controles e status;
 - seções recolhíveis;
 - linguagem curta, sem excesso de explicação.
+- o card de parada selecionada deve ser enxuto: endereço e código, sem cabeçalho redundante.
 
 ### Mapa
 
@@ -39,6 +40,8 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - mostra parada, rota, localização e ônibus selecionado;
 - ao selecionar um card, o mapa deve priorizar apenas aquele ônibus;
 - o box principal do mapa deve usar número da linha, não `vehicleId`.
+- em mobile, controles compactos no mapa podem alternar pontos e modo escuro.
+- a rota deve parecer viva, mas discreta: linha roxa contínua com traço interno translúcido e suave.
 
 ## Paleta
 
@@ -66,6 +69,8 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - ação primária: teal;
 - alerta/erro: vermelho com versão mais clara no dark mode;
 - ônibus selecionado: destaque visual próprio no mapa e nos cards.
+- ação primária e FABs do mapa: teal, não azul.
+- variantes de linha devem usar cores distintas: `Direto` em azul e `Não Direto` em âmbar.
 
 ## Tipografia
 
@@ -73,6 +78,7 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - títulos curtos e diretos;
 - textos auxiliares discretos;
 - evitar blocos longos de descrição dentro da UI.
+- descrições de ônibus e paradas devem ser exibidas em caixa normal quando a API retornar caixa alta.
 
 ## Ícones
 
@@ -86,4 +92,8 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - código do ponto fica em menor destaque;
 - o badge do ônibus selecionado deve mostrar linha e minutos, como `8350 - 2 min`;
 - o mapa não deve recentrar automaticamente a cada polling;
-- dark mode também precisa afetar os tiles do mapa.
+- dark mode usa CartoDB Dark Matter no Leaflet;
+- light mode usa CartoDB Voyager no Leaflet;
+- marcadores de parada invertem contraste no dark mode;
+- cards de previsão não mostram `vehicleId` nem texto auxiliar `Chegando`;
+- o primeiro card só recebe destaque de próximo quando nenhum card estiver selecionado.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BellRing, ChevronDown, ChevronUp, MapPinned, Star } from '@lucide/vue';
+import { BellRing, ChevronDown, ChevronUp, Star } from '@lucide/vue';
 import { reactive, watch } from 'vue';
 import PredictionCards from './PredictionCards.vue';
 import type { AlertSettings, BusVariantFilter, NearbyStop, Prediction } from '../domain/types';
@@ -73,24 +73,16 @@ watch(
   <aside class="monitoring-panel">
     <section v-if="selectedStop" class="control-card">
       <article class="selected-stop-card">
-        <div class="selected-stop-header">
-          <div class="selected-stop-heading">
-            <span class="selected-stop-icon" aria-hidden="true">
-              <MapPinned />
-            </span>
-            <span class="section-kicker">Ponto selecionado</span>
-          </div>
-          <button
-            type="button"
-            class="favorite-stop-button"
-            :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
-            :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
-            :data-active="isSelectedStopFavorite"
-            @click="emit('toggleSelectedStopFavorite')"
-          >
-            <Star aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          class="favorite-stop-button"
+          :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
+          :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
+          :data-active="isSelectedStopFavorite"
+          @click="emit('toggleSelectedStopFavorite')"
+        >
+          <Star aria-hidden="true" />
+        </button>
         <h3>{{ selectedStop.description }}</h3>
         <p>Ponto {{ selectedStop.publicCode || selectedStop.code }}</p>
       </article>

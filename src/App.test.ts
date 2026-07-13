@@ -104,6 +104,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Direto');
     expect(wrapper.text()).toContain('5 min');
+    expect(wrapper.text()).not.toContain('Veículo 40743');
     expect(notifyArrival).toHaveBeenCalledWith({
       id: prediction.id,
       lineCode: prediction.lineCode,
@@ -562,12 +563,12 @@ describe('App', () => {
     );
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Parada monitorada');
-    expect(wrapper.text()).toContain('Ponto selecionado');
 
     const selectedStopCard = wrapper.find('.selected-stop-card');
     expect(selectedStopCard.exists()).toBe(true);
     expect(selectedStopCard.find('h3').text()).toBe('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
     expect(selectedStopCard.text()).toContain('40134');
+    expect(selectedStopCard.text()).not.toContain('Ponto selecionado');
   });
 
   it('saves the selected stop as favorite and opens it from the favorites section', async () => {
@@ -597,7 +598,8 @@ describe('App', () => {
 
     await findClickableByText(wrapper, 'Mapa').trigger('click');
     expect(wrapper.text()).toContain('Configuração do monitoramento');
-    expect(wrapper.text()).toContain('Ponto selecionado');
+    expect(wrapper.find('.selected-stop-card').text()).toContain('ROD ANEL RODOVIARIO CELSO MELLO AZEVEDO, 11749');
+    expect(wrapper.find('.selected-stop-card').text()).not.toContain('Ponto selecionado');
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
   });
 
@@ -658,9 +660,9 @@ describe('App', () => {
     await wrapper.vm.$nextTick();
 
     await findClickableByText(wrapper, 'Mapa').trigger('click');
-    expect(wrapper.text()).toContain('Ponto selecionado');
     expect(wrapper.text()).toContain('RUA TESTE, 123');
     expect(wrapper.text()).toContain('Ponto 50001');
+    expect(wrapper.find('.selected-stop-card').text()).not.toContain('Ponto selecionado');
   });
 
   it('shows the selected bus trajectory context on the map when a prediction card is clicked', async () => {

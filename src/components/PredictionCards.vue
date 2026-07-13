@@ -30,14 +30,23 @@ function describeVariant(prediction: Prediction): string | null {
 
   return null;
 }
+
+function formatDisplayText(value: string): string {
+  const hasLetters = /\p{L}/u.test(value);
+  const isAllCaps = hasLetters && value === value.toLocaleUpperCase('pt-BR');
+
+  if (!isAllCaps) {
+    return value;
+  }
+
+  return value.toLocaleLowerCase('pt-BR').replace(/\p{L}[\p{L}\p{M}]*/gu, word =>
+    word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1),
+  );
+}
 </script>
 
 <template>
   <section class="prediction-section">
-    <div class="section-title">
-      <span class="section-kicker">Próximos ônibus</span>
-    </div>
-
     <p v-if="predictions.length === 0" class="muted empty-state">Nenhuma previsão carregada.</p>
 
     <ul v-else class="prediction-cards">
@@ -46,7 +55,7 @@ function describeVariant(prediction: Prediction): string | null {
         :key="prediction.id"
         class="prediction-card"
         :class="{
-          'is-next': index === 0,
+          'is-next': index === 0 && !selectedPredictionId,
           'is-selected': prediction.id === selectedPredictionId,
         }"
         tabindex="0"
@@ -61,20 +70,20 @@ function describeVariant(prediction: Prediction): string | null {
         <div class="prediction-main">
           <div class="prediction-line">
             <strong>{{ prediction.lineCode }}</strong>
-            <span v-if="describeVariant(prediction)" class="variant-pill">
+            <span
+              v-if="describeVariant(prediction)"
+              class="variant-pill"
+              :class="`variant-pill--${prediction.variant}`"
+            >
               {{ describeVariant(prediction) }}
             </span>
           </div>
-          <span class="prediction-destination">{{ prediction.destination }}</span>
-          <span v-if="prediction.vehicleId" class="prediction-vehicle">
-            Veículo {{ prediction.vehicleId }}
-          </span>
+          <span class="prediction-destination">{{ formatDisplayText(prediction.destination) }}</span>
         </div>
         <div class="prediction-time">
           <strong :class="{ 'is-departure': Boolean(prediction.departureLabel) }">
             {{ describePredictionTime(prediction) }}
           </strong>
-          <span v-if="index === 0 && Number.isFinite(prediction.minutes) && !prediction.departureLabel">Chegando</span>
         </div>
       </li>
     </ul>

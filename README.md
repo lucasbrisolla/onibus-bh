@@ -19,6 +19,8 @@
 - Alerta local enquanto o app estiver aberto.
 - Configuração salva no `localStorage`.
 - Tratamento específico da linha 8350 Direto/Não Direto.
+- Mapa Leaflet com CartoDB Voyager no modo claro e CartoDB Dark Matter no modo escuro.
+- Interface mobile com bottom sheet retrátil, alternância de tema e controle de visibilidade dos pontos no mapa.
 
 ## Requisitos
 

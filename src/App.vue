@@ -100,6 +100,7 @@ const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
 const selectedPredictionId = ref<string | null>(null);
 const themeMode = ref(loadThemeMode());
+const showNearbyStops = ref(true);
 const favoriteStops = ref<FavoriteStop[]>(loadFavoriteStops());
 const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
   favoriteStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
@@ -218,6 +219,10 @@ function updateSearch(query: string) {
 
 function toggleTheme() {
   themeMode.value = themeMode.value === 'dark' ? 'light' : 'dark';
+}
+
+function toggleNearbyStops(nextValue: boolean) {
+  showNearbyStops.value = nextValue;
 }
 
 function selectStop(stop: NearbyStop) {
@@ -567,9 +572,12 @@ onBeforeUnmount(() => {
           :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
+          :show-nearby-stops="showNearbyStops"
           @use-current-location="useCurrentLocation"
           @move-map-area="updateNearbyStopsFromMap"
           @select-stop="selectStop"
+          @toggle-nearby-stops="toggleNearbyStops"
+          @toggle-theme="toggleTheme"
         />
       </section>
 
@@ -618,9 +626,12 @@ onBeforeUnmount(() => {
           :user-location="userLocation"
           :is-locating="isLocating"
           :location-status="locationStatus"
+          :show-nearby-stops="showNearbyStops"
           @use-current-location="useCurrentLocation"
           @move-map-area="updateNearbyStopsFromMap"
           @select-stop="selectStop"
+          @toggle-nearby-stops="toggleNearbyStops"
+          @toggle-theme="toggleTheme"
         />
       </section>
 

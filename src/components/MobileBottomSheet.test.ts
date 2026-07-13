@@ -28,7 +28,7 @@ const prediction: Prediction = {
 };
 
 describe('MobileBottomSheet', () => {
-  it('toggles between expanded and collapsed when the handle is tapped', async () => {
+  it('starts half-open and toggles between peek and half when the handle is tapped', async () => {
     const wrapper = mount(MobileBottomSheet, {
       props: {
         settings: {
@@ -50,21 +50,21 @@ describe('MobileBottomSheet', () => {
       },
     });
 
-    expect(wrapper.classes()).not.toContain('is-collapsed');
+    expect(wrapper.classes()).toContain('is-half');
     expect(wrapper.find('.sheet-toggle').attributes('aria-expanded')).toBe('true');
 
     await wrapper.find('.sheet-toggle').trigger('click');
 
-    expect(wrapper.classes()).toContain('is-collapsed');
+    expect(wrapper.classes()).toContain('is-peek');
     expect(wrapper.find('.sheet-toggle').attributes('aria-expanded')).toBe('false');
 
     await wrapper.find('.sheet-toggle').trigger('click');
 
-    expect(wrapper.classes()).not.toContain('is-collapsed');
+    expect(wrapper.classes()).toContain('is-half');
     expect(wrapper.find('.sheet-toggle').attributes('aria-expanded')).toBe('true');
   });
 
-  it('collapses and expands with a vertical swipe on the sheet body', async () => {
+  it('moves one step down or up with vertical swipes on the sheet body', async () => {
     const wrapper = mount(MobileBottomSheet, {
       props: {
         settings: {
@@ -108,7 +108,7 @@ describe('MobileBottomSheet', () => {
       changedTouches: [{ clientY: 330 }],
     });
 
-    expect(wrapper.classes()).toContain('is-collapsed');
+    expect(wrapper.classes()).toContain('is-peek');
 
     await wrapper.trigger('touchstart', {
       touches: [{ clientY: 220 }],
@@ -117,6 +117,15 @@ describe('MobileBottomSheet', () => {
       changedTouches: [{ clientY: 130 }],
     });
 
-    expect(wrapper.classes()).not.toContain('is-collapsed');
+    expect(wrapper.classes()).toContain('is-half');
+
+    await wrapper.trigger('touchstart', {
+      touches: [{ clientY: 220 }],
+    });
+    await wrapper.trigger('touchend', {
+      changedTouches: [{ clientY: 130 }],
+    });
+
+    expect(wrapper.classes()).toContain('is-full');
   });
 });

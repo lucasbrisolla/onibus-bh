@@ -10,23 +10,30 @@
 
 - Dashboard responsiva com sidebar e topbar
 - Mapa Leaflet com tema claro/escuro
+- Modo claro usa CartoDB Voyager; modo escuro usa CartoDB Dark Matter
 - Seleção de parada pelo mapa ou busca
 - Cards de previsão com seleção de ônibus específico
 - Rota e posição do ônibus selecionado no mapa
 - Filtro visual para mostrar apenas o ônibus clicado
 - Geolocalização com marcador no mapa
+- Bottom sheet mobile com estados `peek`, `half` e `full`
+- Toggles compactos no mapa para mostrar pontos e alternar modo escuro no mobile
 - Endpoints locais e serverless em `/api/*`
 - Alertas básicos com `localStorage` e Notification API
 - Sidebar e dark mode usando paleta teal
 - Badge principal do mapa mostrando linha e minutos, como `8350 - 2 min`
 - Viewport do mapa não deve mais dar zoom out a cada atualização
 - O box textual de `Sua posição` já foi removido
+- Cards de previsão não mostram `vehicleId` nem `Chegando`
+- Textos em caixa alta vindos da SIU são normalizados visualmente para caixa normal
 
 ## Observações de domínio
 
 - Previsões usam `cod` da parada
 - A UI mostra `siu` quando existir
 - A linha `8350` continua com tratamento específico
+- A classificação da `8350` reconhece `Direto` e `Direta`
+- Previsões programadas por horário de saída têm ids distintos por horário
 
 ## Pendentes
 
@@ -71,7 +78,6 @@
 - [ ] Ajustar ícones para estados como ativo, parado e em movimento
 - [ ] Exibir linhas de itinerário dos ônibus
 - [ ] `8350 Direto` e `Não Direto` não devem usar cores que passem sensação de certo e errado
-- [ ] `Usar minha localização` deve virar um ícone; o ícone atual de localização é um quadrado azul
 - [ ] Retirar descrições explicativas para deixar a interface mais intuitiva
 - [ ] Números de linha e códigos de parada devem ter tratamento tipográfico diferenciado
 - [ ] Melhorar o contraste do texto secundário e de itens inativos para atender melhor ao WCAG AA
@@ -79,9 +85,6 @@
 - [ ] Definir se o pin laranja é uma cor semântica exclusiva e reforçar esse padrão em outros pontos da UI
 - [ ] Diferenciar visualmente setup/configuração de ações principais
 - [ ] Considerar esconder a variante da `8350` por padrão, se ainda existir algum controle equivalente
-- [ ] Mobile - reduzir tipografia e altura dos boxes em `Ponto selecionado` e áreas próximas
-- [ ] Melhorar o `MobileBottomSheet` para permitir fechar e abrir com gesto vertical mais amplo, confortável para o dedão
-- [ ] Opção no mapa de Mostrar pontos com um button de ativar e desativar (toggle switch) (útil para quando uma viagem estiver selecionada não fique poluído)
 - [ ] Acesso rápido de Paradas sem ter que ficar clicando na aba Favoritos
 
 
@@ -119,3 +122,17 @@ npm run build
 - [x] Remover as letras iniciais das abas na sidebar
 - [x] Remover o box textual `Sua posição`
 - [x] Corrigir o ícone gerado ao instalar/criar atalho no celular e também na web
+- [x] Usar CartoDB Voyager no modo claro e CartoDB Dark Matter no modo escuro
+- [x] Adicionar toggle compacto `Mostrar pontos` no mapa
+- [x] Adicionar toggle compacto `Modo escuro` no mapa mobile
+- [x] Melhorar o `MobileBottomSheet` com estados `peek`, `half` e `full`
+- [x] Reduzir tipografia e altura dos boxes no mobile
+- [x] Remover header redundante do card de parada selecionada
+- [x] Remover `vehicleId` e `Chegando` dos cards de previsão
+- [x] Corrigir seleção duplicada de previsões programadas com mesmo itinerário
+- [x] Normalizar visualmente descrições em caixa alta para caixa normal
+- [x] Corrigir `Direta` da linha `8350` para variante direta
+- [x] Diferenciar visualmente `Direto` e `Não Direto` nos cards
+- [x] Fazer o FAB de localização usar a paleta teal
+- [x] Inverter contraste dos marcadores de parada no dark mode
+- [x] Animar a rota com linha roxa contínua e traço interno sutil

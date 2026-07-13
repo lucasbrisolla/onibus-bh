@@ -39,22 +39,26 @@ Este arquivo registra decisões estáveis do produto e da arquitetura para evita
 ## 7. Dark mode também afeta os tiles do mapa
 
 - O modo escuro não é só troca de cards e shell.
-- O mapa deve trocar a camada base para tiles escuros.
+- O mapa troca a camada base do Leaflet.
+- Modo claro usa CartoDB Voyager.
+- Modo escuro usa CartoDB Dark Matter.
 
 ## 8. A sidebar segue a identidade teal
 
 - A identidade principal do produto usa escala teal.
-- Isso vale para sidebar, estados ativos, botões primários e dark mode.
+- Isso vale para sidebar, estados ativos, botões primários, FABs e dark mode.
 
 ## 9. O endereço da parada é mais importante que o código
 
-- Em `Ponto selecionado`, o endereço é o elemento de maior destaque.
+- No card de parada selecionada, o endereço é o elemento de maior destaque.
 - O código do ponto fica em segundo plano.
+- O card não deve ter cabeçalho redundante como `Ponto selecionado`.
 
 ## 10. Geolocalização no mapa é discreta
 
 - A localização do usuário pode aparecer como marcador no mapa.
 - O box textual de `Sua posição` não faz parte da UI principal.
+- O FAB de localização usa a paleta teal, não azul.
 
 ## 11. O middleware local do Vite é parte da experiência de desenvolvimento
 
@@ -68,3 +72,29 @@ Este arquivo registra decisões estáveis do produto e da arquitetura para evita
 - `ARCHITECTURE.md`: estrutura técnica e fluxo de dados.
 - `DESIGN.md`: decisões visuais e UX.
 - `docs/decisions.md`: decisões estáveis do projeto.
+
+## 13. Cards de previsão são compactos e orientados ao usuário
+
+- Cards não mostram `vehicleId`.
+- Cards não mostram texto auxiliar `Chegando`.
+- O primeiro card só recebe destaque de próximo quando nenhum card específico estiver selecionado.
+- Previsões programadas com horários diferentes precisam ter ids diferentes para permitir seleção individual.
+
+## 14. Textos da SIU em caixa alta são normalizados visualmente
+
+- Descrições de ônibus e paradas podem chegar em caixa alta pela SIU.
+- A UI exibe esses textos em caixa normal para melhorar leitura.
+- A normalização é visual e não muda os dados usados para chamadas, seleção ou regras de domínio.
+
+## 15. Mobile prioriza mapa e controles compactos
+
+- O bottom sheet mobile tem estados `peek`, `half` e `full`.
+- Gestos verticais movem o painel um nível por vez.
+- O mapa mobile expõe toggles compactos para `Mostrar pontos` e `Modo escuro`.
+- Ocultar pontos próximos não deve ocultar a parada monitorada.
+
+## 16. Rota no mapa deve indicar movimento com discrição
+
+- A rota usa base roxa contínua.
+- Um traço interno translúcido e animado indica movimento.
+- A animação deve respeitar `prefers-reduced-motion`.

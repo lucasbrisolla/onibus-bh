@@ -110,7 +110,8 @@ export function normalizePredictions(payload: UnknownRecord): Prediction[] {
     const accessibilityCode = readNumber(record, ['tpAcess']);
     const departureLabel = readDeparture(record);
     const minutes = departureLabel ? Number.POSITIVE_INFINITY : readMinutes(record);
-    const id = `${lineCode}-${serviceId ?? index}-${minutes}`;
+    const timeKey = departureLabel ?? String(minutes);
+    const id = `${lineCode}-${serviceId ?? index}-${timeKey}`;
 
     return {
       id,

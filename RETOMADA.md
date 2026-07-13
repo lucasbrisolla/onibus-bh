@@ -28,14 +28,21 @@ git status --short --branch
 - rota e posição do ônibus selecionado no mapa;
 - filtro visual para mostrar apenas o ônibus clicado;
 - geolocalização com marcador no mapa;
+- bottom sheet mobile com estados `peek`, `half` e `full`;
+- toggles compactos no mapa para mostrar pontos e alternar modo escuro no mobile;
 - endpoints locais e serverless em `/api/*`;
 - alertas básicos com `localStorage` e Notification API.
 
 ## Estado atual da interface
 
 - sidebar e dark mode usam paleta teal;
-- mapa troca tiles no dark mode;
+- mapa usa CartoDB Voyager no modo claro e CartoDB Dark Matter no modo escuro;
+- FAB de localização usa teal;
+- marcadores de parada invertem contraste no dark mode;
 - badge principal do mapa mostra linha e minutos, como `8350 - 2 min`;
+- cards de previsão não exibem `vehicleId` nem `Chegando`;
+- descrições em caixa alta vindas da SIU são normalizadas visualmente para caixa normal;
+- rota do ônibus usa linha roxa contínua com traço interno translúcido animado;
 - box textual de `Sua posição` foi removido;
 - viewport do mapa não deve mais dar zoom out a cada atualização.
 
@@ -67,4 +74,6 @@ npm run build
 
 - previsões usam `cod` da parada;
 - UI mostra `siu` quando existir;
-- a linha `8350` continua com tratamento específico.
+- a linha `8350` continua com tratamento específico;
+- a classificação da `8350` reconhece `Direto` e `Direta`;
+- previsões programadas por horário de saída precisam ter ids únicos por horário.

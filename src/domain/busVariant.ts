@@ -18,7 +18,7 @@ export function classifyBusVariant(input: VariantInput): BusVariant {
     return 'not-applicable';
   }
 
-  return normalize(input.description).includes('direto') ? 'direto' : 'nao-direto';
+  return /\bdiret[ao]\b/.test(normalize(input.description)) ? 'direto' : 'nao-direto';
 }
 
 export function matchesVariantFilter(variant: BusVariant, filter: BusVariantFilter): boolean {
