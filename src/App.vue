@@ -8,7 +8,6 @@ import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
 import type {
   AlertSettings,
-  FavoriteStop,
   NearbyStop,
   Prediction,
   RoutePoint,
@@ -30,6 +29,7 @@ import {
   saveSettings,
   saveThemeMode,
 } from './services/settingsStore';
+import { createStopSelection, type SelectableStop } from './services/stopSelection';
 
 const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
   {
@@ -86,14 +86,11 @@ const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
 const userLocation = ref<UserLocation | null>(null);
 const activeSection = ref<DashboardSection>('monitoramento');
-const searchQuery = ref('');
-const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
 const themeMode = ref(loadThemeMode());
 const showNearbyStops = ref(true);
-const favoriteStops = ref<FavoriteStop[]>(loadFavoriteStops());
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
@@ -105,28 +102,32 @@ const predictionMonitor = createPredictionMonitor({
     void refreshMapData(context.predictions, context.settings.lineCode, context.selectedPrediction);
   },
 });
+const stopSelection = createStopSelection({
+  initialNearbyStops: DEFAULT_NEARBY_STOPS,
+  initialSelectedStopCode: predictionMonitor.state.settings.stopCode,
+  favorites: {
+    load: loadFavoriteStops,
+    save: saveFavoriteStops,
+  },
+  effects: {
+    onStopSelected: stop => {
+      activeSection.value = 'monitoramento';
+      predictionMonitor.selectStop(stop);
+    },
+  },
+});
 const settings = toRef(predictionMonitor.state, 'settings');
 const predictions = toRef(predictionMonitor.state, 'predictions');
 const lastUpdated = toRef(predictionMonitor.state, 'lastUpdated');
 const statusMessage = toRef(predictionMonitor.state, 'statusMessage');
 const isLoading = toRef(predictionMonitor.state, 'isLoading');
 const selectedPredictionId = toRef(predictionMonitor.state, 'selectedPredictionId');
-const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
-  favoriteStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
-);
-
-const monitoredStop = computed(() => {
-  const stopCode = settings.value.stopCode.trim();
-  if (!stopCode) {
-    return null;
-  }
-
-  return (
-    nearbyStops.value.find(stop => stop.code === stopCode) ??
-    (selectedStopSnapshot.value?.code === stopCode ? selectedStopSnapshot.value : null)
-  );
-});
-const selectedStop = computed(() => monitoredStop.value);
+const nearbyStops = toRef(stopSelection.state, 'nearbyStops');
+const searchQuery = toRef(stopSelection.state, 'searchQuery');
+const searchResults = toRef(stopSelection.state, 'searchResults');
+const favoriteStops = toRef(stopSelection.state, 'favoriteStops');
+const monitoredStop = toRef(stopSelection.state, 'monitoredStop');
+const selectedStop = monitoredStop;
 const isSelectedStopFavorite = computed(
   () => !!selectedStop.value && favoriteStops.value.some(stop => stop.code === selectedStop.value?.code),
 );
@@ -141,48 +142,6 @@ const selectedVehicleStatus = computed(() =>
     vehicles: vehicles.value,
   }),
 );
-const searchResults = computed(() => {
-  const query = searchQuery.value.trim().toLocaleLowerCase('pt-BR');
-
-  if (!query) {
-    return [];
-  }
-
-  return nearbyStops.value
-    .filter(stop => {
-      const searchable = [stop.code, stop.publicCode, stop.description]
-        .filter(Boolean)
-        .join(' ')
-        .toLocaleLowerCase('pt-BR');
-      return searchable.includes(query);
-    })
-    .slice(0, 6);
-});
-
-watch(
-  [nearbyStops, () => settings.value.stopCode],
-  ([stops, stopCode]) => {
-    const normalizedStopCode = stopCode.trim();
-    if (!normalizedStopCode) {
-      selectedStopSnapshot.value = null;
-      return;
-    }
-
-    const matchingStop = stops.find(stop => stop.code === normalizedStopCode);
-    if (matchingStop) {
-      selectedStopSnapshot.value = matchingStop;
-      return;
-    }
-
-    if (selectedStopSnapshot.value?.code === normalizedStopCode) {
-      return;
-    }
-
-    selectedStopSnapshot.value =
-      favoriteStops.value.find(stop => stop.code === normalizedStopCode) ?? null;
-  },
-  { immediate: true },
-);
 
 watch(
   settings,
@@ -196,19 +155,12 @@ watch(themeMode, value => {
   saveThemeMode(value);
 });
 
-watch(
-  favoriteStops,
-  value => {
-    saveFavoriteStops(value);
-  },
-  { deep: true },
-);
-
 async function requestPermission() {
   permission.value = await notificationService.requestPermission();
 }
 
 function updateSettings(next: AlertSettings) {
+  stopSelection.syncSelectedStopCode(next.stopCode);
   predictionMonitor.updateSettings(next);
 }
 
@@ -217,7 +169,7 @@ function navigate(section: DashboardSection) {
 }
 
 function updateSearch(query: string) {
-  searchQuery.value = query;
+  stopSelection.updateSearch(query);
 }
 
 function toggleTheme() {
@@ -228,14 +180,8 @@ function toggleNearbyStops(nextValue: boolean) {
   showNearbyStops.value = nextValue;
 }
 
-function selectStop(stop: NearbyStop) {
-  selectedStopSnapshot.value = stop;
-  searchQuery.value = '';
-  activeSection.value = 'monitoramento';
-  predictionMonitor.selectStop({
-    code: stop.code,
-    publicCode: stop.publicCode || stop.code,
-  });
+function selectStop(stop: SelectableStop) {
+  stopSelection.selectStop(stop);
 }
 
 function selectPrediction(prediction: Prediction) {
@@ -243,30 +189,11 @@ function selectPrediction(prediction: Prediction) {
 }
 
 function toggleSelectedStopFavorite() {
-  if (!selectedStop.value) {
-    return;
-  }
-
-  const currentStop = selectedStop.value;
-  const isFavorite = favoriteStops.value.some(stop => stop.code === currentStop.code);
-
-  favoriteStops.value = isFavorite
-    ? favoriteStops.value.filter(stop => stop.code !== currentStop.code)
-    : [
-        {
-          code: currentStop.code,
-          publicCode: currentStop.publicCode,
-          latitude: currentStop.latitude,
-          longitude: currentStop.longitude,
-          description: currentStop.description,
-          color: currentStop.color,
-        },
-        ...favoriteStops.value,
-      ];
+  stopSelection.toggleFavorite();
 }
 
 function removeFavoriteStop(stopCode: string) {
-  favoriteStops.value = favoriteStops.value.filter(stop => stop.code !== stopCode);
+  stopSelection.removeFavorite(stopCode);
 }
 
 async function useCurrentLocation() {
@@ -304,7 +231,7 @@ async function loadNearbyStops(
   source: 'user-location' | 'map-area' = 'user-location',
 ) {
   try {
-    nearbyStops.value = await fetchNearbyStops(latitude, longitude);
+    stopSelection.setNearbyStops(await fetchNearbyStops(latitude, longitude));
     if (source === 'user-location') {
       locationStatus.value = 'Você está aqui. Pontos próximos atualizados pelo GPS.';
       return;
