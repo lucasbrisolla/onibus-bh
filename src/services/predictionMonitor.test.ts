@@ -149,7 +149,7 @@ describe('createPredictionMonitor', () => {
     const monitor = createMonitor(fetchPredictions);
 
     monitor.start();
-    monitor.selectStop('5678', '40199');
+    monitor.selectStop({ code: '5678', publicCode: '40199' });
 
     expect(fetchPredictions).toHaveBeenCalledTimes(1);
 
@@ -189,7 +189,37 @@ describe('createPredictionMonitor', () => {
     expect(fakeScheduler.pendingCount()).toBe(1);
   });
 
-  it('preserva a previsão por id, veículo e serviço, ou por serviço, linha e destino', async () => {
+  it('consulta imediatamente quando uma parada é configurada pelo formulário', async () => {
+    const fetchPredictions = vi.fn(async () => [firstPrediction]);
+    const fakeScheduler = createScheduler();
+    const monitor = createMonitor(fetchPredictions, { scheduler: fakeScheduler.scheduler });
+
+    monitor.start();
+    await flushPromises();
+
+    monitor.updateSettings({ ...baseSettings, stopCode: '5678' });
+    await flushPromises();
+
+    expect(fetchPredictions).toHaveBeenCalledTimes(2);
+    expect(fetchPredictions).toHaveBeenLastCalledWith('5678');
+  });
+
+  it('atualiza o status imediatamente quando as configurações do alerta mudam', async () => {
+    const monitor = createMonitor(vi.fn(async () => [firstPrediction]), {
+      initialSettings: { ...baseSettings, enabled: true },
+    });
+
+    monitor.start();
+    await flushPromises();
+    expect(monitor.state.statusMessage).toBe('Ônibus dentro do limite configurado.');
+
+    monitor.updateSettings({ ...monitor.state.settings, enabled: false });
+
+    expect(monitor.state.statusMessage).toBe('Monitoramento pausado.');
+  });
+
+  it('preserva a previsão priorizando id, depois veículo e serviço, e depois equivalência de serviço', async () => {
+    const sameId = { ...firstPrediction, minutes: 4 };
     const sameVehicle = { ...firstPrediction, id: 'id-renovado', minutes: 4 };
     const sameService = {
       ...firstPrediction,
@@ -201,14 +231,18 @@ describe('createPredictionMonitor', () => {
     const fetchPredictions = vi
       .fn<(_: string) => Promise<Prediction[]>>()
       .mockResolvedValueOnce([firstPrediction])
-      .mockResolvedValueOnce([sameVehicle])
-      .mockResolvedValueOnce([sameService])
+      .mockResolvedValueOnce([sameVehicle, sameId])
+      .mockResolvedValueOnce([sameService, sameVehicle])
+      .mockResolvedValueOnce([fallback, sameService])
       .mockResolvedValueOnce([fallback]);
     const monitor = createMonitor(fetchPredictions);
 
     monitor.start();
     await flushPromises();
     expect(monitor.state.selectedPredictionId).toBe(firstPrediction.id);
+
+    await monitor.refresh();
+    expect(monitor.state.selectedPredictionId).toBe(sameId.id);
 
     await monitor.refresh();
     expect(monitor.state.selectedPredictionId).toBe(sameVehicle.id);

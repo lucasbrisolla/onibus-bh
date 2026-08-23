@@ -232,7 +232,10 @@ function selectStop(stop: NearbyStop) {
   selectedStopSnapshot.value = stop;
   searchQuery.value = '';
   activeSection.value = 'monitoramento';
-  predictionMonitor.selectStop(stop.code, stop.publicCode || stop.code);
+  predictionMonitor.selectStop({
+    code: stop.code,
+    publicCode: stop.publicCode || stop.code,
+  });
 }
 
 function selectPrediction(prediction: Prediction) {

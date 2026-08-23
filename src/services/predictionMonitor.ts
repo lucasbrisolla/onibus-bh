@@ -38,6 +38,11 @@ export interface PredictionMonitorState {
   isLoading: boolean;
 }
 
+export interface PredictionMonitorStopSelection {
+  code: string;
+  publicCode?: string;
+}
+
 export interface PredictionMonitorDependencies {
   initialSettings: AlertSettings;
   fetchPredictions: (stopCode: string) => Promise<Prediction[]>;
@@ -55,7 +60,7 @@ export interface PredictionMonitor {
   refresh(): Promise<void>;
   resume(): void;
   updateSettings(nextSettings: AlertSettings): void;
-  selectStop(stopCode: string, publicCode?: string): void;
+  selectStop(stop: PredictionMonitorStopSelection): void;
   selectPrediction(predictionId: string): void;
 }
 
@@ -195,7 +200,7 @@ export function createPredictionMonitor(
     return version === settingsVersion && hasSameAlertSettings(state.settings, snapshot);
   }
 
-  function updateLoadingAfterRequest(): void {
+  function completeRequestCycle(): void {
     if (refreshRequested) {
       refreshRequested = false;
       void executeRequest();
@@ -239,10 +244,7 @@ export function createPredictionMonitor(
         state.selectedPredictionId = selectedPredictionMatch?.id ?? null;
         state.lastUpdated = formatUpdatedAt(clock.now());
 
-        const finitePredictions = nextPredictions.filter(prediction =>
-          Number.isFinite(prediction.minutes),
-        );
-        const alertMatch = findAlertMatch(settingsSnapshot, finitePredictions);
+        const alertMatch = findAlertMatch(settingsSnapshot, nextPredictions);
         state.statusMessage = describeAlertMatch(alertMatch.reason);
 
         if (alertMatch.shouldNotify && alertMatch.prediction) {
@@ -280,7 +282,7 @@ export function createPredictionMonitor(
       } finally {
         if (request !== null && activeRequest === request) {
           activeRequest = null;
-          updateLoadingAfterRequest();
+          completeRequestCycle();
         }
       }
     })();
@@ -329,6 +331,7 @@ export function createPredictionMonitor(
   function updateSettings(nextSettings: AlertSettings): void {
     const previousSettings = state.settings;
     const querySettingsChanged = !hasSameAlertSettings(previousSettings, nextSettings);
+    const stopChanged = previousSettings.stopCode !== nextSettings.stopCode;
     state.settings = cloneSettings(nextSettings);
 
     if (!querySettingsChanged) {
@@ -337,17 +340,26 @@ export function createPredictionMonitor(
 
     settingsVersion += 1;
 
-    if (previousSettings.stopCode !== nextSettings.stopCode) {
+    if (stopChanged) {
       state.predictions = [];
       state.selectedPredictionId = null;
       state.lastUpdated = null;
       state.statusMessage = INITIAL_STATUS;
-      emitContext();
+    } else {
+      const alertMatch = findAlertMatch(state.settings, state.predictions);
+      state.statusMessage = describeAlertMatch(alertMatch.reason);
+    }
+
+    emitContext();
+
+    if (stopChanged && isStarted) {
+      void refresh();
     }
   }
 
-  function selectStop(stopCode: string, publicCode = stopCode): void {
-    const normalizedStopCode = stopCode.trim();
+  function selectStop(stop: PredictionMonitorStopSelection): void {
+    const normalizedStopCode = stop.code.trim();
+    const publicCode = stop.publicCode ?? normalizedStopCode;
     const isSameStop = state.settings.stopCode.trim() === normalizedStopCode;
     state.settings = {
       ...state.settings,

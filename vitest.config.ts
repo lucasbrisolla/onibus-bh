@@ -1,11 +1,11 @@
 import vue from '@vitejs/plugin-vue';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [vue()],
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/.worktrees/**'],
+    exclude: [...configDefaults.exclude, '**/.worktrees/**'],
   },
 });
