@@ -12,6 +12,7 @@ export function findAlertMatch(settings: AlertSettings, predictions: Prediction[
 
   const matchingLine = predictions.filter(
     prediction =>
+      Number.isFinite(prediction.minutes) &&
       prediction.lineCode === settings.lineCode.trim() &&
       matchesVariantFilter(prediction.variant, settings.variantFilter),
   );

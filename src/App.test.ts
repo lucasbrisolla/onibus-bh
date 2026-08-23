@@ -158,6 +158,46 @@ describe('App', () => {
     ).toBeGreaterThan(requestsBeforeFocus);
   });
 
+  it('retoma imediatamente em pageshow e ao voltar para uma aba visível', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: false,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ predictions: [prediction] })),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    const predictionRequests = () =>
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/paradas/1034/previsoes').length;
+    const requestsBeforeResume = predictionRequests();
+
+    window.dispatchEvent(new Event('pageshow'));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    expect(predictionRequests()).toBeGreaterThan(requestsBeforeResume);
+
+    const requestsBeforeVisibility = predictionRequests();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(predictionRequests()).toBeGreaterThan(requestsBeforeVisibility);
+  });
+
   it('keeps polling after selecting a stop while alerts are paused', async () => {
     vi.stubGlobal(
       'fetch',

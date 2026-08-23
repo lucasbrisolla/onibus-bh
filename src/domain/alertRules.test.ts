@@ -76,4 +76,14 @@ describe('findAlertMatch', () => {
     const settings = { ...baseSettings, lastNotifiedPredictionId: diretoPrediction.id };
     expect(findAlertMatch(settings, [diretoPrediction]).reason).toBe('already-notified');
   });
+
+  it('ignora previsões sem minutos finitos', () => {
+    const scheduledPrediction = { ...diretoPrediction, minutes: Infinity };
+
+    expect(findAlertMatch(baseSettings, [scheduledPrediction])).toEqual({
+      shouldNotify: false,
+      prediction: null,
+      reason: 'no-matching-line',
+    });
+  });
 });

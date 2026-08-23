@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue';
 import AppShell from './components/AppShell.vue';
 import type { DashboardSection } from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
 import type { UserLocation } from './components/MapView.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
-import { findAlertMatch } from './domain/alertRules';
 import type {
-  AlertMatch,
   AlertSettings,
   FavoriteStop,
   NearbyStop,
@@ -23,6 +21,7 @@ import {
   selectMapServiceId,
 } from './services/mapDataService';
 import { createNotificationService } from './services/notificationService';
+import { createPredictionMonitor } from './services/predictionMonitor';
 import {
   loadFavoriteStops,
   loadSettings,
@@ -32,7 +31,6 @@ import {
   saveThemeMode,
 } from './services/settingsStore';
 
-const POLL_INTERVAL_MS = 10_000;
 const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
   {
     code: '11073',
@@ -84,11 +82,6 @@ const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
   },
 ];
 
-const settings = ref<AlertSettings>(loadSettings());
-const predictions = ref<Prediction[]>([]);
-const lastUpdated = ref<string | null>(null);
-const statusMessage = ref('Configure uma parada e ative o monitoramento.');
-const isLoading = ref(false);
 const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
 const userLocation = ref<UserLocation | null>(null);
@@ -98,20 +91,30 @@ const nearbyStops = ref<NearbyStop[]>(DEFAULT_NEARBY_STOPS);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
-const selectedPredictionId = ref<string | null>(null);
 const themeMode = ref(loadThemeMode());
 const showNearbyStops = ref(true);
 const favoriteStops = ref<FavoriteStop[]>(loadFavoriteStops());
-const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
-  favoriteStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
-);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
-let pollTimeoutId: number | undefined;
-let isPolling = false;
+const predictionMonitor = createPredictionMonitor({
+  initialSettings: loadSettings(),
+  fetchPredictions: fetchStopPredictions,
+  notifyArrival: input => notificationService.notifyArrival(input),
+  onContextChange: context => {
+    void refreshMapData(context.predictions, context.settings.lineCode, context.selectedPrediction);
+  },
+});
+const settings = toRef(predictionMonitor.state, 'settings');
+const predictions = toRef(predictionMonitor.state, 'predictions');
+const lastUpdated = toRef(predictionMonitor.state, 'lastUpdated');
+const statusMessage = toRef(predictionMonitor.state, 'statusMessage');
+const isLoading = toRef(predictionMonitor.state, 'isLoading');
+const selectedPredictionId = toRef(predictionMonitor.state, 'selectedPredictionId');
+const selectedStopSnapshot = ref<NearbyStop | FavoriteStop | null>(
+  favoriteStops.value.find(stop => stop.code === settings.value.stopCode.trim()) ?? null,
+);
 
-const canPoll = computed(() => settings.value.stopCode.trim().length > 0);
 const monitoredStop = computed(() => {
   const stopCode = settings.value.stopCode.trim();
   if (!stopCode) {
@@ -206,7 +209,7 @@ async function requestPermission() {
 }
 
 function updateSettings(next: AlertSettings) {
-  settings.value = next;
+  predictionMonitor.updateSettings(next);
 }
 
 function navigate(section: DashboardSection) {
@@ -227,49 +230,13 @@ function toggleNearbyStops(nextValue: boolean) {
 
 function selectStop(stop: NearbyStop) {
   selectedStopSnapshot.value = stop;
-  selectedPredictionId.value = null;
-  settings.value = {
-    ...settings.value,
-    stopCode: stop.code,
-  };
   searchQuery.value = '';
   activeSection.value = 'monitoramento';
-  statusMessage.value = `Parada ${stop.publicCode || stop.code} selecionada. Buscando ônibus que passam nela...`;
-  void pollPredictions({ force: true });
+  predictionMonitor.selectStop(stop.code, stop.publicCode || stop.code);
 }
 
 function selectPrediction(prediction: Prediction) {
-  selectedPredictionId.value = prediction.id;
-  void refreshMapData(predictions.value, settings.value.lineCode, prediction);
-}
-
-function findMatchingPrediction(
-  candidates: Prediction[],
-  selectedPrediction: Prediction | null,
-): Prediction | null {
-  if (!selectedPrediction) {
-    return null;
-  }
-
-  if (selectedPrediction.vehicleId) {
-    const sameVehicle = candidates.find(
-      candidate =>
-        candidate.vehicleId === selectedPrediction.vehicleId &&
-        candidate.serviceId === selectedPrediction.serviceId,
-    );
-    if (sameVehicle) {
-      return sameVehicle;
-    }
-  }
-
-  return (
-    candidates.find(
-      candidate =>
-        candidate.serviceId === selectedPrediction.serviceId &&
-        candidate.lineCode === selectedPrediction.lineCode &&
-        candidate.destination === selectedPrediction.destination,
-    ) ?? null
-  );
+  predictionMonitor.selectPrediction(prediction.id);
 }
 
 function toggleSelectedStopFavorite() {
@@ -355,91 +322,6 @@ function updateNearbyStopsFromMap(center: UserLocation) {
   void loadNearbyStops(center.latitude, center.longitude, 'map-area');
 }
 
-function hasCurrentAlertSettings(snapshot: AlertSettings): boolean {
-  return (
-    settings.value.enabled === snapshot.enabled &&
-    settings.value.stopCode === snapshot.stopCode &&
-    settings.value.lineCode === snapshot.lineCode &&
-    settings.value.variantFilter === snapshot.variantFilter &&
-    settings.value.minutesBefore === snapshot.minutesBefore
-  );
-}
-
-async function pollPredictions({ force = false }: { force?: boolean } = {}) {
-  if (!settings.value.stopCode.trim()) {
-    return;
-  }
-
-  if (!force && !canPoll.value) {
-    return;
-  }
-
-  if (isPolling) {
-    return;
-  }
-
-  const settingsSnapshot = { ...settings.value };
-  const stopCode = settingsSnapshot.stopCode.trim();
-  isPolling = true;
-  isLoading.value = true;
-  statusMessage.value = 'Consultando previsões...';
-
-  try {
-    const nextPredictions = await fetchStopPredictions(stopCode);
-    const previousSelectedPrediction = selectedPrediction.value;
-
-    if (!hasCurrentAlertSettings(settingsSnapshot)) {
-      return;
-    }
-
-    predictions.value = nextPredictions;
-    const selectedPredictionMatch =
-      nextPredictions.find(item => item.id === selectedPredictionId.value) ??
-      findMatchingPrediction(nextPredictions, previousSelectedPrediction) ??
-      nextPredictions[0] ??
-      null;
-    selectedPredictionId.value = selectedPredictionMatch?.id ?? null;
-    lastUpdated.value = new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-
-    const finitePredictions = nextPredictions.filter(prediction =>
-      Number.isFinite(prediction.minutes),
-    );
-    const match = findAlertMatch(settingsSnapshot, finitePredictions);
-    statusMessage.value = describeMatch(match.reason);
-
-    if (match.shouldNotify && match.prediction) {
-      const didNotify = notificationService.notifyArrival({
-        id: match.prediction.id,
-        lineCode: match.prediction.lineCode,
-        minutes: match.prediction.minutes,
-        destination: match.prediction.destination,
-      });
-
-      if (didNotify) {
-        settings.value = { ...settings.value, lastNotifiedPredictionId: match.prediction.id };
-      }
-    }
-
-    void refreshMapData(nextPredictions, settingsSnapshot.lineCode, selectedPredictionMatch);
-  } catch (error) {
-    if (!hasCurrentAlertSettings(settingsSnapshot)) {
-      return;
-    }
-
-    predictions.value = [];
-    selectedPredictionId.value = null;
-    lastUpdated.value = null;
-    statusMessage.value = error instanceof Error ? error.message : 'Erro ao consultar previsões.';
-  } finally {
-    isLoading.value = false;
-    isPolling = false;
-  }
-}
-
 async function refreshMapData(
   nextPredictions: Prediction[],
   lineCode: string,
@@ -473,39 +355,8 @@ async function refreshMapData(
   }
 }
 
-function describeMatch(reason: AlertMatch['reason']): string {
-  const messages: Record<AlertMatch['reason'], string> = {
-    matched: 'Ônibus dentro do limite configurado.',
-    disabled: 'Monitoramento pausado.',
-    'missing-settings': 'Informe uma parada e uma linha.',
-    'no-matching-line': 'Nenhuma previsão bate com a linha/variante configurada.',
-    'above-threshold': 'Há previsão, mas ainda acima do limite configurado.',
-    'already-notified': 'Previsão já notificada.',
-  };
-
-  return messages[reason];
-}
-
-function clearPollTimer() {
-  if (pollTimeoutId !== undefined) {
-    window.clearTimeout(pollTimeoutId);
-    pollTimeoutId = undefined;
-  }
-}
-
-function scheduleNextPoll(delayMs = POLL_INTERVAL_MS) {
-  clearPollTimer();
-  pollTimeoutId = window.setTimeout(() => void runPollCycle(), delayMs);
-}
-
-async function runPollCycle() {
-  clearPollTimer();
-  await pollPredictions();
-  scheduleNextPoll();
-}
-
 function handlePollingResume() {
-  void runPollCycle();
+  predictionMonitor.resume();
 }
 
 function handleVisibilityChange() {
@@ -515,14 +366,14 @@ function handleVisibilityChange() {
 }
 
 onMounted(() => {
-  void runPollCycle();
+  predictionMonitor.start();
   window.addEventListener('focus', handlePollingResume);
   window.addEventListener('pageshow', handlePollingResume);
   document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
-  clearPollTimer();
+  predictionMonitor.stop();
   window.removeEventListener('focus', handlePollingResume);
   window.removeEventListener('pageshow', handlePollingResume);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
