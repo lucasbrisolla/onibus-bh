@@ -1,6 +1,6 @@
 import { reactive } from 'vue';
 import { findAlertMatch } from '../domain/alertRules';
-import type { AlertMatch, AlertSettings, Prediction } from '../domain/types';
+import type { AlertMatch, AlertSettings, Prediction, StopIdentity } from '../domain/types';
 
 export const PREDICTION_POLL_INTERVAL_MS = 10_000;
 
@@ -38,11 +38,6 @@ export interface PredictionMonitorState {
   isLoading: boolean;
 }
 
-export interface PredictionMonitorStopSelection {
-  code: string;
-  publicCode?: string;
-}
-
 export interface PredictionMonitorDependencies {
   initialSettings: AlertSettings;
   fetchPredictions: (stopCode: string) => Promise<Prediction[]>;
@@ -60,7 +55,7 @@ export interface PredictionMonitor {
   refresh(): Promise<void>;
   resume(): void;
   updateSettings(nextSettings: AlertSettings): void;
-  selectStop(stop: PredictionMonitorStopSelection): void;
+  selectStop(stop: StopIdentity): void;
   selectPrediction(predictionId: string): void;
 }
 
@@ -357,9 +352,9 @@ export function createPredictionMonitor(
     }
   }
 
-  function selectStop(stop: PredictionMonitorStopSelection): void {
+  function selectStop(stop: StopIdentity): void {
     const normalizedStopCode = stop.code.trim();
-    const publicCode = stop.publicCode ?? normalizedStopCode;
+    const publicCode = stop.publicCode.trim() || normalizedStopCode;
     const isSameStop = state.settings.stopCode.trim() === normalizedStopCode;
     state.settings = {
       ...state.settings,

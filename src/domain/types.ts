@@ -1,6 +1,11 @@
 export type BusVariant = 'direto' | 'nao-direto' | 'not-applicable';
 export type BusVariantFilter = 'qualquer' | 'direto' | 'nao-direto';
 
+export interface StopIdentity {
+  code: string;
+  publicCode: string;
+}
+
 export interface Prediction {
   id: string;
   lineCode: string;
@@ -16,18 +21,14 @@ export interface Prediction {
   variant: BusVariant;
 }
 
-export interface NearbyStop {
-  code: string;
-  publicCode: string;
+export interface NearbyStop extends StopIdentity {
   latitude: number;
   longitude: number;
   description: string;
   color: number | null;
 }
 
-export interface FavoriteStop {
-  code: string;
-  publicCode: string;
+export interface FavoriteStop extends StopIdentity {
   latitude: number;
   longitude: number;
   description: string;

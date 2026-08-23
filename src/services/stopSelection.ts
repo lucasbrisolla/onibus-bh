@@ -1,9 +1,9 @@
 import { reactive } from 'vue';
-import type { FavoriteStop, NearbyStop } from '../domain/types';
+import type { FavoriteStop, NearbyStop, StopIdentity } from '../domain/types';
 
 /**
- * A parada keeps the SIU identifiers distinct: `code` is the SIU `cod` used
- * for predictions, while `publicCode` is the SIU `siu` shown to the user.
+ * Mantém distintos os identificadores SIU: `code` é o `cod` usado nas
+ * previsões, enquanto `publicCode` é o `siu` apresentado ao usuário.
  */
 export type SelectableStop = NearbyStop | FavoriteStop;
 
@@ -15,19 +15,19 @@ export interface StopSelectionState {
   searchResults: SelectableStop[];
 }
 
-export interface StopSelectionAdapters {
+export interface FavoriteStopStore {
   load: () => FavoriteStop[];
   save: (favorites: FavoriteStop[]) => void;
 }
 
 export interface StopSelectionEffects {
-  onStopSelected: (stop: { code: string; publicCode: string }) => void;
+  onStopSelected: (stop: StopIdentity) => void;
 }
 
 export interface StopSelectionDependencies {
   initialNearbyStops: NearbyStop[];
   initialSelectedStopCode: string;
-  favorites: StopSelectionAdapters;
+  favorites: FavoriteStopStore;
   effects: StopSelectionEffects;
 }
 
