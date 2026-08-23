@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import L from 'leaflet';
+import { describe, expect, it, vi } from 'vitest';
 
 import MapView, {
   darkTileUrl,
@@ -261,6 +262,60 @@ describe('MapView', () => {
   it('uses Carto Voyager in light mode and Carto Dark Matter in dark mode', () => {
     expect(lightTileUrl).toContain('/rastertiles/voyager/');
     expect(darkTileUrl).toContain('/dark_all/');
+  });
+
+  it('executes the default viewport command when the scene has no bounds', async () => {
+    const setView = vi.spyOn(L.Map.prototype, 'setView');
+    const wrapper = mount(MapView, { attachTo: document.body });
+
+    await wrapper.vm.$nextTick();
+
+    expect(setView).toHaveBeenCalledWith([-19.916342, -43.993759], 14);
+    wrapper.unmount();
+  });
+
+  it('executes the scene bounds with the declarative comfort options', async () => {
+    const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+    const wrapper = mount(MapView, {
+      props: { nearbyStops: [stop] },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(fitBounds).toHaveBeenCalledWith(expect.anything(), {
+      padding: [72, 72],
+      maxZoom: 15,
+    });
+    wrapper.unmount();
+  });
+
+  it('consumes programmatic moveend and emits the center of a later manual move', async () => {
+    const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds').mockImplementation(function (this: L.Map) {
+      return this;
+    });
+    const mapFactory = vi.spyOn(L, 'map');
+    const wrapper = mount(MapView, {
+      props: { nearbyStops: [stop] },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    const map = mapFactory.mock.results[0]?.value as L.Map;
+    const center = L.latLng(-19.93, -44.01);
+    vi.spyOn(map, 'getCenter').mockReturnValue(center);
+
+    map.fire('moveend');
+    expect(wrapper.emitted('moveMapArea')).toBeUndefined();
+
+    map.fire('moveend');
+    expect(wrapper.emitted('moveMapArea')).toEqual([
+      [{ latitude: center.lat, longitude: center.lng }],
+    ]);
+
+    fitBounds.mockRestore();
+    wrapper.unmount();
   });
 
 });

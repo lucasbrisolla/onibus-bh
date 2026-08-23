@@ -32,13 +32,16 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
+import { createMapBehavior } from './mapBehavior';
 import { createMapInteractionOptions } from './mapInteractionOptions';
 import {
-  createMapScene,
+  type MapBounds,
   type MapScene,
+  type MapSceneInput,
   type MapScenePopup,
   type UserLocation as MapUserLocation,
 } from './mapScene';
+import type { MapViewportCommand } from './mapViewportPolicy';
 
 const props = withDefaults(
   defineProps<{
@@ -86,10 +89,8 @@ let userLocationLayer: L.LayerGroup | null = null;
 let baseTileLayer: L.TileLayer | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let resizeFrameId: number | null = null;
-let hasAutoFramedMap = false;
-let suppressNextAreaSync = false;
+const mapBehavior = createMapBehavior();
 
-const defaultCenter: L.LatLngTuple = [-19.916342, -43.993759];
 const stopIconSvg = `
   <svg data-map-icon="stop" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
@@ -119,8 +120,6 @@ const userLocationIconSvg = `
     <circle cx="12" cy="12" r="8" opacity="0.35" />
   </svg>
 `;
-const autoFitMaxZoom = 15;
-const minimumAutoFitSpan = 0.01;
 
 function createMarkerIcon(className: string, markup: string) {
   return L.divIcon({
@@ -157,10 +156,6 @@ function clearLayer(layer: L.Layer | null) {
   }
 }
 
-function markProgrammaticViewportChange() {
-  suppressNextAreaSync = true;
-}
-
 function invalidateMapSize() {
   if (!map || !mapElement.value) {
     return;
@@ -185,8 +180,8 @@ function invalidateMapSize() {
   });
 }
 
-function buildMapScene(): MapScene {
-  return createMapScene({
+function buildMapSceneInput(): MapSceneInput {
+  return {
     monitoredStop: props.monitoredStop,
     nearbyStops: props.nearbyStops,
     route: props.route,
@@ -195,7 +190,7 @@ function buildMapScene(): MapScene {
     selectedVehicleStatus: props.selectedVehicleStatus,
     userLocation: props.userLocation,
     showNearbyStops: props.showNearbyStops,
-  });
+  };
 }
 
 function escapePopupText(value: string): string {
@@ -345,13 +340,16 @@ function renderVehicles(scene: MapScene) {
   }
 }
 
-function createComfortableBounds(points: L.LatLngTuple[]) {
-  const bounds = L.latLngBounds(points);
-  const southWest = bounds.getSouthWest();
-  const northEast = bounds.getNorthEast();
-  const latSpan = Math.max(northEast.lat - southWest.lat, minimumAutoFitSpan);
-  const lngSpan = Math.max(northEast.lng - southWest.lng, minimumAutoFitSpan);
-  const center = bounds.getCenter();
+function createComfortableBounds(bounds: MapBounds, minimumSpan: number) {
+  const leafletBounds = L.latLngBounds(
+    [bounds.southWest.latitude, bounds.southWest.longitude],
+    [bounds.northEast.latitude, bounds.northEast.longitude],
+  );
+  const southWest = leafletBounds.getSouthWest();
+  const northEast = leafletBounds.getNorthEast();
+  const latSpan = Math.max(northEast.lat - southWest.lat, minimumSpan);
+  const lngSpan = Math.max(northEast.lng - southWest.lng, minimumSpan);
+  const center = leafletBounds.getCenter();
 
   return L.latLngBounds(
     [center.lat - latSpan / 2, center.lng - lngSpan / 2],
@@ -359,26 +357,26 @@ function createComfortableBounds(points: L.LatLngTuple[]) {
   );
 }
 
-function fitMap() {
+function executeViewportCommand(command: MapViewportCommand) {
   if (!map) {
     return;
   }
 
-  const scene = buildMapScene();
-
-  if (!scene.bounds) {
-    markProgrammaticViewportChange();
-    map.setView(defaultCenter, 14);
-    return;
+  switch (command.type) {
+    case 'keep':
+      return;
+    case 'set-default-view':
+      map.setView([command.center.latitude, command.center.longitude], command.zoom);
+      return;
+    case 'fit-bounds':
+      map.fitBounds(createComfortableBounds(command.bounds, command.minimumSpan), {
+        padding: [...command.padding],
+        maxZoom: command.maxZoom,
+      });
+      return;
+    case 'emit-area-change':
+      emit('moveMapArea', command.center);
   }
-
-  const points: L.LatLngTuple[] = [
-    [scene.bounds.southWest.latitude, scene.bounds.southWest.longitude],
-    [scene.bounds.northEast.latitude, scene.bounds.northEast.longitude],
-  ];
-
-  markProgrammaticViewportChange();
-  map.fitBounds(createComfortableBounds(points), { padding: [72, 72], maxZoom: autoFitMaxZoom });
 }
 
 function handleMapMoveEnd() {
@@ -386,45 +384,31 @@ function handleMapMoveEnd() {
     return;
   }
 
-  if (suppressNextAreaSync) {
-    suppressNextAreaSync = false;
-    return;
-  }
-
   const center = map.getCenter();
-  emit('moveMapArea', {
-    latitude: center.lat,
-    longitude: center.lng,
+  const result = mapBehavior.dispatch({
+    type: 'moveend',
+    center: {
+      latitude: center.lat,
+      longitude: center.lng,
+    },
   });
+  executeViewportCommand(result.viewport);
 }
 
-function buildAutoFrameSignature() {
-  if (!props.userLocation) {
-    return 'no-location';
-  }
-
-  return `${props.userLocation.latitude}:${props.userLocation.longitude}`;
-}
-
-function autoFrameMap(force = false) {
+function renderMapData() {
   if (!map) {
     return;
   }
 
-  if (!force && hasAutoFramedMap) {
-    return;
-  }
-
-  fitMap();
-  hasAutoFramedMap = true;
-}
-
-function renderMapData() {
-  const scene = buildMapScene();
-  renderStops(scene);
-  renderUserLocation(scene);
-  renderRoute(scene);
-  renderVehicles(scene);
+  const result = mapBehavior.dispatch({
+    type: 'scene-updated',
+    input: buildMapSceneInput(),
+  });
+  renderStops(result.scene);
+  renderUserLocation(result.scene);
+  renderRoute(result.scene);
+  renderVehicles(result.scene);
+  executeViewportCommand(result.viewport);
   invalidateMapSize();
 }
 
@@ -433,12 +417,11 @@ onMounted(() => {
     return;
   }
 
-  markProgrammaticViewportChange();
   map = L.map(mapElement.value, {
     zoomControl: false,
     attributionControl: false,
     ...createMapInteractionOptions(),
-  }).setView(defaultCenter, 14);
+  });
 
   updateBaseTileLayer();
 
@@ -454,7 +437,6 @@ onMounted(() => {
 
   window.addEventListener('resize', invalidateMapSize);
   renderMapData();
-  autoFrameMap(true);
   invalidateMapSize();
 });
 
@@ -485,14 +467,6 @@ watch(
   ],
   () => renderMapData(),
   { deep: true },
-);
-
-watch(
-  () => buildAutoFrameSignature(),
-  () => {
-    invalidateMapSize();
-    autoFrameMap(true);
-  },
 );
 
 watch(
