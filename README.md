@@ -1,59 +1,68 @@
 # Ônibus BH
 
-Ônibus BH é um aplicativo semelhante ao SIU Mobile BH mas com interface web/mobile moderna, avisos de ônibus em tempo real, monitoramento para quando você precisar sair do trabalho na hora certa
+Ônibus BH é um produto web e mobile para acompanhar o transporte público de Belo Horizonte. O usuário encontra pontos próximos, consulta previsões de chegada e acompanha no mapa a rota e a posição do ônibus selecionado.
+
+![Tela principal do Ônibus BH, com um ponto selecionado, previsões de chegada e a rota de um ônibus no mapa](public/onibus-bh-screenshot.png)
+
+## O produto
+
+O Ônibus BH reúne, em um painel responsivo:
+
+- mapa com localização do usuário, pontos próximos e rota do ônibus;
+- busca e seleção de paradas pelo mapa ou pelo endereço/código do ponto;
+- previsões de chegada em tempo real;
+- seleção de um ônibus específico para acompanhar sua trajetória;
+- alertas locais para avisar quando o ônibus se aproxima;
+- favoritos salvos no dispositivo;
+- tema claro e escuro;
+- experiência mobile com painel retrátil e controles compactos no mapa.
+
+A aplicação consulta a SIU Mobile BH no servidor e expõe os dados ao navegador por meio de `/api/*`. Essa separação permite evoluir as fontes de transporte sem expor diretamente as integrações externas ao navegador.
+
+## Stack
+
+- Vue 3
+- Vite
+- TypeScript
+- Leaflet
+- Vitest
+- Vercel Functions
+- Node.js `>=20`
 
 ## Documentação
 
-- `README.md`: visão geral e comandos principais.
-- `RETOMADA.md`: estado atual e próximos passos.
-- `ARCHITECTURE.md`: estrutura técnica e fluxo de dados.
-- `DESIGN.md`: decisões visuais, UX e paleta.
-- `docs/decisions.md`: decisões estáveis de produto e arquitetura.
-- `AGENTS.md`: instruções operacionais para agentes.
-
-## Escopo do MVP
-
-- App em Vue 3, Vite e TypeScript.
-- Deploy pela Vercel.
-- API serverless em `/api/*` para consultar a SIU Mobile.
-- Alerta local enquanto o app estiver aberto.
-- Configuração salva no `localStorage`.
-- Tratamento específico da linha 8350 Direto/Não Direto.
-- Mapa Leaflet com CartoDB Voyager no modo claro e CartoDB Dark Matter no modo escuro.
-- Interface mobile com bottom sheet retrátil, alternância de tema e controle de visibilidade dos pontos no mapa.
-
-## Requisitos
-
-- Node.js `>=20`.
+- [`RETOMADA.md`](RETOMADA.md): estado do produto e próximos passos.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): estrutura técnica e fluxo de dados.
+- [`DESIGN.md`](DESIGN.md): decisões visuais, UX e paleta.
+- [`docs/decisions.md`](docs/decisions.md): decisões estáveis de produto e arquitetura.
+- [`docs/mobilibus-otimo-api-research.md`](docs/mobilibus-otimo-api-research.md): pesquisa técnica sobre integrações Mobilibus, Bus2, Ótimo e SIU.
+- [`AGENTS.md`](AGENTS.md): instruções operacionais para agentes.
 
 ## Desenvolvimento
+
+Requer Node.js `>=20`.
 
 ```sh
 npm install
 npm run dev
 ```
 
-## Testes e build
+Para testar, verificar tipos e gerar a build de produção:
 
 ```sh
 npm run test
-npm run build
-```
-
-Para verificação de tipos:
-
-```sh
 npm run lint
+npm run build
 ```
 
 ## Deploy na Vercel
 
-O projeto foi desenhado para Vercel conectada ao GitHub. A Vercel deve usar:
+O projeto pode ser conectado a um repositório GitHub na Vercel com estas configurações:
 
-- Build command: `npm run build`
-- Output directory: `dist`
-- Framework preset: Vite
+- Build command: `npm run build`;
+- Output directory: `dist`;
+- Framework preset: Vite.
 
-## Limitação do MVP
+## Limitações conhecidas
 
-As notificações funcionam enquanto o app está aberto. Notificações com o app fechado exigem Web Push, Service Worker e persistência de alertas, que ficaram fora do primeiro corte.
+As notificações funcionam enquanto o app está aberto. Para notificar o usuário com o app fechado, ainda são necessários Web Push, Service Worker e persistência de alertas.

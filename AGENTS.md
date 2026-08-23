@@ -49,6 +49,20 @@ Não duplicar aqui:
 - Vercel Functions em `api/`
 - Node.js `>=20`
 
+## Agent skills
+
+### Issue tracker
+
+Specs e tickets são arquivos Markdown locais em `.scratch/`. Consulte `docs/agents/issue-tracker.md`.
+
+### Rótulos de triagem
+
+Os skills usam o vocabulário padrão de triagem. Consulte `docs/agents/triage-labels.md`.
+
+### Documentação de domínio
+
+O projeto usa um único contexto de domínio. Consulte `docs/agents/domain.md`.
+
 ## Comandos úteis
 
 ```sh

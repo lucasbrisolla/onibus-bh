@@ -12,3 +12,8 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+
+# Referências locais de pesquisa
+/research-local/
+/*.apk
+/architecture-review-*.html

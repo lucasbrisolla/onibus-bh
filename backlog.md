@@ -47,10 +47,60 @@
 
 - [ ] Criar uma análise estatística para estimar o horário em que o ônibus passou no ponto
 - [ ] Verificar se existe histórico suficiente para inferir horários por ponto
+- [ ] Implementar integração futura Mobilibus/Bus2/Ótimo a partir de `docs/mobilibus-otimo-api-research.md`
 - [ ] Revisar favoritos e histórico, que ainda estão como placeholders
 - [ ] Evoluir PWA e notificações com app em segundo plano
 - [ ] Validar build e fluxo de deploy na Vercel após os ajustes recentes
 - [ ] Reduzir a complexidade de `App.vue` se continuar crescendo
+
+### Roadmap futuro Mobilibus/Bus2/Ótimo
+
+Contexto:
+
+- Pesquisa detalhada em `docs/mobilibus-otimo-api-research.md`
+- Projeto Mobilibus `501`: Região Metropolitana de Belo Horizonte, MG, hash `1sb79`
+- Projeto Mobilibus `603`: Belo Horizonte, MG, hash `4ch6j`
+- Linha `2890` validada no projeto `501`: `Morada Nova / Pindorama / Cidade Industrial`
+- Paradas Mobilibus destravadas via `stops?project_id={projectId}&tile={x},{y},{zoomLeaflet}`
+- `stopId` Mobilibus alimenta `departures` e `timetable-by-stop`
+
+Fase 1: cliente e contratos Mobilibus
+
+- [ ] Criar `src/server/mobilibusClient.ts` separado de `siuClient.ts`
+- [ ] Criar tipos próprios para `projectId`, `routeId`, `stopId`, `tripId`, `serviceId` e `agencyId`
+- [ ] Criar normalizadores Mobilibus sem reaproveitar os tipos SIU
+- [ ] Adicionar endpoints locais/serverless para projetos, linhas e horários Mobilibus
+
+Fase 2: linhas e horários metropolitanos
+
+- [ ] Listar linhas do projeto `501`
+- [ ] Exibir a linha `2890` e validar destino `Cidade Industrial`
+- [ ] Exibir tabela horária por linha com `timetable?project_id=501&route_id=...`
+- [ ] Comparar `timetable` com `timetable?v=2` antes de fixar contrato final
+
+Fase 3: paradas por viewport
+
+- [ ] Implementar cálculo Web Mercator de tile usando `zoomLeaflet - 2`
+- [ ] Buscar paradas com `stops?project_id={projectId}&tile=x,y,zoomLeaflet`
+- [ ] Buscar apenas com zoom `>= 14`, seguindo o webapp Bus2
+- [ ] Deduplicar paradas por `stopId`
+- [ ] Decidir cache local de paradas por tile
+- [ ] Evitar misturar `cod`/`siu` da SIU com `stopId` Mobilibus
+
+Fase 4: previsões por parada Mobilibus
+
+- [ ] Consultar `departures?stop_id={stopId}&project_id={projectId}`
+- [ ] Exibir partidas metropolitanas com `shortName`, `longName`, `headsign` e `time`
+- [ ] Aproveitar tempo real quando vier `vehicleId`, `gpsTime`, `positionAge`, `bearing` e `delay`
+- [ ] Consultar `timetable-by-stop?project_id={projectId}&stop_id={stopId}` para grade por parada
+- [ ] Definir UX para diferenciar previsão SIU e previsão Mobilibus
+
+Fase 5: mapa e unificação de UX
+
+- [ ] Permitir alternar fonte do mapa entre SIU municipal, Mobilibus `501` e Mobilibus `603`
+- [ ] Avaliar deduplicação visual entre paradas SIU e Mobilibus no centro de BH
+- [ ] Mostrar linhas metropolitanas no fluxo de busca
+- [ ] Investigar endpoint de veículos livres por linha; não bloquear previsão por parada nisso
 
 ### Busca, mapa e monitoramento
 
