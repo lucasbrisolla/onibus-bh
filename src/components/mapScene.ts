@@ -12,10 +12,7 @@ export interface MapBounds {
   northEast: MapCoordinate;
 }
 
-export type MapSceneLabelKind = 'stop' | 'vehicle';
-
 export interface MapSceneLabel {
-  kind: MapSceneLabelKind;
   text: string;
   permanent: boolean;
 }
@@ -174,7 +171,6 @@ export function createMapScene(input: MapSceneInput = {}): MapScene {
       label:
         role === 'monitored'
           ? {
-              kind: 'stop',
               text: displayDescription,
               permanent: true,
             }
@@ -224,7 +220,6 @@ export function createMapScene(input: MapSceneInput = {}): MapScene {
       isHighlighted,
       label: isHighlighted
         ? {
-            kind: 'vehicle',
             text: hasFiniteMinutes ? `${source.lineCode} • ${input.selectedVehicleStatus?.minutes} min` : source.lineCode,
             permanent: true,
           }

@@ -37,7 +37,6 @@ import {
   createMapScene,
   type MapScene,
   type MapScenePopup,
-  type MapSceneRouteLayer,
   type UserLocation as MapUserLocation,
 } from './mapScene';
 
@@ -220,18 +219,6 @@ function renderPopup(popup: MapScenePopup): string {
   ].join('');
 }
 
-function createLeafletPathOptions(layer: MapSceneRouteLayer) {
-  return {
-    className: layer.kind === 'base' ? 'map-route-base-path' : 'map-route-flow-path',
-    color: layer.color,
-    ...(layer.dashPattern ? { dashArray: layer.dashPattern } : {}),
-    lineCap: layer.lineCap,
-    lineJoin: layer.lineJoin,
-    opacity: layer.opacity,
-    weight: layer.weight,
-  };
-}
-
 function renderStops(scene: MapScene) {
   if (!map) {
     return;
@@ -255,7 +242,7 @@ function renderStops(scene: MapScene) {
         direction: 'top',
         offset: [0, -18],
         opacity: 1,
-        permanent: true,
+        permanent: stop.label.permanent,
       });
     }
 
@@ -307,7 +294,7 @@ function renderRoute(scene: MapScene) {
     point => [point.latitude, point.longitude] as L.LatLngTuple,
   );
   const routePaths = scene.route.layers.map(layer =>
-    L.polyline(routeCoordinates, createLeafletPathOptions(layer)),
+    L.polyline(routeCoordinates, createRoutePathOptions(layer)),
   );
   routeLayer = L.layerGroup(routePaths);
 
@@ -344,7 +331,7 @@ function renderVehicles(scene: MapScene) {
         direction: 'top',
         offset: [0, -18],
         opacity: 1,
-        permanent: true,
+        permanent: vehicle.label.permanent,
       });
     }
 

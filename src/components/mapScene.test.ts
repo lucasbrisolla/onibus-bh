@@ -84,7 +84,6 @@ describe('createMapScene', () => {
         body: ['Rod Anel Rodoviario Celso Mello Azevedo, 11749', 'Clique para ver os ônibus desta parada.'],
       },
       label: {
-        kind: 'stop',
         permanent: true,
         text: 'Rod Anel Rodoviario Celso Mello Azevedo, 11749',
       },
@@ -124,7 +123,6 @@ describe('createMapScene', () => {
     expect(scene.vehicles[0]).toMatchObject({
       isHighlighted: true,
       label: {
-        kind: 'vehicle',
         permanent: true,
         text: '8350 • 2 min',
       },
