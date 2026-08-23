@@ -159,6 +159,22 @@ describe('MapView', () => {
     wrapper.unmount();
   });
 
+  it('renders the selected vehicle label supplied by the declarative scene', async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        vehicles: [vehicles[0]],
+        selectedVehicleId: '40743',
+        selectedVehicleStatus,
+      },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.element.querySelector('.map-vehicle-tooltip')?.textContent).toContain('8350 • 2 min');
+    wrapper.unmount();
+  });
+
   it('configures the route with a solid base and subtle animated inner stroke', () => {
     expect(routeBasePathOptions).toMatchObject({
       className: 'map-route-base-path',

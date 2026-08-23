@@ -1,25 +1,29 @@
 <script lang="ts">
+import { mapRouteLayerStyles, type MapSceneRouteLayer as SceneRouteLayer } from './mapScene';
+
+function createRoutePathOptions(layer: SceneRouteLayer) {
+  return {
+    className: layer.kind === 'base' ? 'map-route-base-path' : 'map-route-flow-path',
+    color: layer.color,
+    ...(layer.dashPattern ? { dashArray: layer.dashPattern } : {}),
+    lineCap: layer.lineCap,
+    lineJoin: layer.lineJoin,
+    opacity: layer.opacity,
+    weight: layer.weight,
+  };
+}
+
 export const routeBasePathOptions = {
-  className: 'map-route-base-path',
-  color: '#7c3aed',
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-  opacity: 0.68,
-  weight: 5,
+  ...createRoutePathOptions(mapRouteLayerStyles.base),
 };
 
 export const routeFlowPathOptions = {
-  className: 'map-route-flow-path',
-  color: '#ddd6fe',
-  dashArray: '2 12',
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-  opacity: 0.42,
-  weight: 3,
+  ...createRoutePathOptions(mapRouteLayerStyles.flow),
 };
 
 export const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 export const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+export type { UserLocation } from './mapScene';
 </script>
 
 <script setup lang="ts">
@@ -29,11 +33,13 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
 import { createMapInteractionOptions } from './mapInteractionOptions';
-
-export interface UserLocation {
-  latitude: number;
-  longitude: number;
-}
+import {
+  createMapScene,
+  type MapScene,
+  type MapScenePopup,
+  type MapSceneRouteLayer,
+  type UserLocation as MapUserLocation,
+} from './mapScene';
 
 const props = withDefaults(
   defineProps<{
@@ -44,7 +50,7 @@ const props = withDefaults(
     themeMode?: 'light' | 'dark';
     selectedVehicleId?: string | null;
     selectedVehicleStatus?: VehicleApproachInfo | null;
-    userLocation?: UserLocation | null;
+    userLocation?: MapUserLocation | null;
     isLocating?: boolean;
     locationStatus?: string;
     showNearbyStops?: boolean;
@@ -67,7 +73,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   useCurrentLocation: [];
   selectStop: [stop: NearbyStop];
-  moveMapArea: [payload: UserLocation];
+  moveMapArea: [payload: MapUserLocation];
   toggleNearbyStops: [showNearbyStops: boolean];
   toggleTheme: [];
 }>();
@@ -117,18 +123,6 @@ const userLocationIconSvg = `
 const autoFitMaxZoom = 15;
 const minimumAutoFitSpan = 0.01;
 
-function describeSelectedVehicleTooltip(vehicle: Vehicle): string {
-  if (
-    props.selectedVehicleStatus &&
-    vehicle.vehicleId === props.selectedVehicleId &&
-    Number.isFinite(props.selectedVehicleStatus.minutes)
-  ) {
-    return `${vehicle.lineCode} • ${props.selectedVehicleStatus.minutes} min`;
-  }
-
-  return vehicle.lineCode;
-}
-
 function createMarkerIcon(className: string, markup: string) {
   return L.divIcon({
     className: `map-marker ${className}`,
@@ -136,19 +130,6 @@ function createMarkerIcon(className: string, markup: string) {
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });
-}
-
-function formatDisplayText(value: string): string {
-  const hasLetters = /\p{L}/u.test(value);
-  const isAllCaps = hasLetters && value === value.toLocaleUpperCase('pt-BR');
-
-  if (!isAllCaps) {
-    return value;
-  }
-
-  return value.toLocaleLowerCase('pt-BR').replace(/\p{L}[\p{L}\p{M}]*/gu, word =>
-    word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1),
-  );
 }
 
 function updateBaseTileLayer() {
@@ -181,14 +162,6 @@ function markProgrammaticViewportChange() {
   suppressNextAreaSync = true;
 }
 
-function getVisibleVehicles() {
-  if (!props.selectedVehicleId) {
-    return props.vehicles;
-  }
-
-  return props.vehicles.filter(vehicle => vehicle.vehicleId === props.selectedVehicleId);
-}
-
 function invalidateMapSize() {
   if (!map || !mapElement.value) {
     return;
@@ -213,7 +186,53 @@ function invalidateMapSize() {
   });
 }
 
-function renderStops() {
+function buildMapScene(): MapScene {
+  return createMapScene({
+    monitoredStop: props.monitoredStop,
+    nearbyStops: props.nearbyStops,
+    route: props.route,
+    vehicles: props.vehicles,
+    selectedVehicleId: props.selectedVehicleId,
+    selectedVehicleStatus: props.selectedVehicleStatus,
+    userLocation: props.userLocation,
+    showNearbyStops: props.showNearbyStops,
+  });
+}
+
+function escapePopupText(value: string): string {
+  return value.replace(/[&<>"']/g, character => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+
+    return entities[character] ?? character;
+  });
+}
+
+function renderPopup(popup: MapScenePopup): string {
+  return [
+    `<strong>${escapePopupText(popup.title)}</strong>`,
+    ...popup.body.map(line => `<br>${escapePopupText(line)}`),
+  ].join('');
+}
+
+function createLeafletPathOptions(layer: MapSceneRouteLayer) {
+  return {
+    className: layer.kind === 'base' ? 'map-route-base-path' : 'map-route-flow-path',
+    color: layer.color,
+    ...(layer.dashPattern ? { dashArray: layer.dashPattern } : {}),
+    lineCap: layer.lineCap,
+    lineJoin: layer.lineJoin,
+    opacity: layer.opacity,
+    weight: layer.weight,
+  };
+}
+
+function renderStops(scene: MapScene) {
   if (!map) {
     return;
   }
@@ -221,34 +240,17 @@ function renderStops() {
   clearLayer(stopLayer);
   stopLayer = L.layerGroup();
 
-  const stops = props.monitoredStop
-    ? [
-        props.monitoredStop,
-        ...(props.showNearbyStops
-          ? props.nearbyStops.filter(stop => stop.code !== props.monitoredStop?.code)
-          : []),
-      ]
-    : props.showNearbyStops
-      ? props.nearbyStops
-      : [];
-
-  for (const stop of stops) {
-    const isMonitored = stop.code === props.monitoredStop?.code;
-    const stopDescription = formatDisplayText(stop.description);
-    const marker = L.marker([stop.latitude, stop.longitude], {
-      icon: createMarkerIcon(isMonitored ? 'is-monitored' : 'is-stop', stopIconSvg),
-      title: stopDescription,
+  for (const stop of scene.stops) {
+    const marker = L.marker([stop.coordinate.latitude, stop.coordinate.longitude], {
+      icon: createMarkerIcon(stop.role === 'monitored' ? 'is-monitored' : 'is-stop', stopIconSvg),
+      title: stop.markerTitle,
       keyboard: true,
     });
 
-    marker
-      .bindPopup(
-        `<strong>${stop.publicCode || stop.code}</strong><br>${stopDescription}<br><small>Clique para ver os ônibus desta parada.</small>`,
-      )
-      .on('click', () => emit('selectStop', stop));
+    marker.bindPopup(renderPopup(stop.popup)).on('click', () => emit('selectStop', stop.source));
 
-    if (isMonitored) {
-      marker.bindTooltip(stopDescription, {
+    if (stop.label) {
+      marker.bindTooltip(stop.label.text, {
         className: 'map-stop-tooltip',
         direction: 'top',
         offset: [0, -18],
@@ -263,7 +265,7 @@ function renderStops() {
   stopLayer.addTo(map);
 }
 
-function renderUserLocation() {
+function renderUserLocation(scene: MapScene) {
   if (!map) {
     return;
   }
@@ -271,23 +273,23 @@ function renderUserLocation() {
   clearLayer(userLocationLayer);
   userLocationLayer = null;
 
-  if (!props.userLocation) {
+  if (!scene.userLocation) {
     return;
   }
 
   userLocationLayer = L.layerGroup();
-  L.marker([props.userLocation.latitude, props.userLocation.longitude], {
+  L.marker([scene.userLocation.coordinate.latitude, scene.userLocation.coordinate.longitude], {
     icon: createMarkerIcon('is-user-location', userLocationIconSvg),
-    title: 'Sua posição',
+    title: scene.userLocation.markerTitle,
     zIndexOffset: 1000,
   })
-    .bindPopup('<strong>Sua posição</strong><br><small>Localização ativa no mapa.</small>')
+    .bindPopup(renderPopup(scene.userLocation.popup))
     .addTo(userLocationLayer);
 
   userLocationLayer.addTo(map);
 }
 
-function renderRoute() {
+function renderRoute(scene: MapScene) {
   const currentMap = map;
 
   if (!currentMap) {
@@ -297,14 +299,17 @@ function renderRoute() {
   clearLayer(routeLayer);
   routeLayer = null;
 
-  if (props.route.length === 0) {
+  if (!scene.route) {
     return;
   }
 
-  const routeCoordinates = props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple);
-  const routeBaseLayer = L.polyline(routeCoordinates, routeBasePathOptions);
-  const routeFlowLayer = L.polyline(routeCoordinates, routeFlowPathOptions);
-  routeLayer = L.layerGroup([routeBaseLayer, routeFlowLayer]);
+  const routeCoordinates = scene.route.coordinates.map(
+    point => [point.latitude, point.longitude] as L.LatLngTuple,
+  );
+  const routePaths = scene.route.layers.map(layer =>
+    L.polyline(routeCoordinates, createLeafletPathOptions(layer)),
+  );
+  routeLayer = L.layerGroup(routePaths);
 
   try {
     routeLayer.addTo(currentMap);
@@ -313,7 +318,7 @@ function renderRoute() {
   }
 }
 
-function renderVehicles() {
+function renderVehicles(scene: MapScene) {
   const currentMap = map;
 
   if (!currentMap) {
@@ -323,18 +328,18 @@ function renderVehicles() {
   clearLayer(vehicleLayer);
   vehicleLayer = L.layerGroup();
 
-  for (const vehicle of getVisibleVehicles()) {
-    const marker = L.marker([vehicle.latitude, vehicle.longitude], {
+  for (const vehicle of scene.vehicles) {
+    const marker = L.marker([vehicle.coordinate.latitude, vehicle.coordinate.longitude], {
       icon: createMarkerIcon(
-        vehicle.vehicleId === props.selectedVehicleId ? 'is-vehicle is-selected-vehicle' : 'is-vehicle',
+        vehicle.isHighlighted ? 'is-vehicle is-selected-vehicle' : 'is-vehicle',
         vehicleIconSvg,
       ),
-      title: `${vehicle.lineCode} - ${vehicle.vehicleId}`,
-      zIndexOffset: vehicle.vehicleId === props.selectedVehicleId ? 1200 : 0,
+      title: vehicle.markerTitle,
+      zIndexOffset: vehicle.isHighlighted ? 1200 : 0,
     });
 
-    if (vehicle.vehicleId === props.selectedVehicleId) {
-      marker.bindTooltip(describeSelectedVehicleTooltip(vehicle), {
+    if (vehicle.label) {
+      marker.bindTooltip(vehicle.label.text, {
         className: 'map-vehicle-tooltip',
         direction: 'top',
         offset: [0, -18],
@@ -372,20 +377,18 @@ function fitMap() {
     return;
   }
 
-  const visibleVehicles = getVisibleVehicles();
-  const points: L.LatLngTuple[] = [
-    ...(props.monitoredStop ? [[props.monitoredStop.latitude, props.monitoredStop.longitude] as L.LatLngTuple] : []),
-    ...props.nearbyStops.map(stop => [stop.latitude, stop.longitude] as L.LatLngTuple),
-    ...(props.userLocation ? [[props.userLocation.latitude, props.userLocation.longitude] as L.LatLngTuple] : []),
-    ...props.route.map(point => [point.latitude, point.longitude] as L.LatLngTuple),
-    ...visibleVehicles.map(vehicle => [vehicle.latitude, vehicle.longitude] as L.LatLngTuple),
-  ];
+  const scene = buildMapScene();
 
-  if (points.length === 0) {
+  if (!scene.bounds) {
     markProgrammaticViewportChange();
     map.setView(defaultCenter, 14);
     return;
   }
+
+  const points: L.LatLngTuple[] = [
+    [scene.bounds.southWest.latitude, scene.bounds.southWest.longitude],
+    [scene.bounds.northEast.latitude, scene.bounds.northEast.longitude],
+  ];
 
   markProgrammaticViewportChange();
   map.fitBounds(createComfortableBounds(points), { padding: [72, 72], maxZoom: autoFitMaxZoom });
@@ -430,10 +433,11 @@ function autoFrameMap(force = false) {
 }
 
 function renderMapData() {
-  renderStops();
-  renderUserLocation();
-  renderRoute();
-  renderVehicles();
+  const scene = buildMapScene();
+  renderStops(scene);
+  renderUserLocation(scene);
+  renderRoute(scene);
+  renderVehicles(scene);
   invalidateMapSize();
 }
 
@@ -489,6 +493,8 @@ watch(
     props.userLocation,
     props.route,
     props.vehicles,
+    props.selectedVehicleId,
+    props.selectedVehicleStatus,
   ],
   () => renderMapData(),
   { deep: true },
