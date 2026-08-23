@@ -3,6 +3,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { resolveLocalApiRequest } from './localApiRouter';
 
 describe('resolveLocalApiRequest', () => {
+  it('returns health and lines through the local adapter', async () => {
+    const checkSiuHealth = vi.fn(async () => ({ ok: true as const }));
+    const getLines = vi.fn(async () => ({ lines: ['8350'] }));
+    const handlers = {
+      checkSiuHealth,
+      getLines,
+      getStopPredictions: vi.fn(),
+      getNearbyStops: vi.fn(),
+      getRoutePoints: vi.fn(),
+      getVehicles: vi.fn(),
+    };
+
+    await expect(
+      resolveLocalApiRequest({ method: 'GET', url: '/api/health', handlers }),
+    ).resolves.toEqual({ status: 200, body: { ok: true } });
+    await expect(
+      resolveLocalApiRequest({ method: 'GET', url: '/api/linhas', handlers }),
+    ).resolves.toEqual({ status: 200, body: { lines: ['8350'] } });
+    expect(checkSiuHealth).toHaveBeenCalledOnce();
+    expect(getLines).toHaveBeenCalledOnce();
+  });
+
   it('returns normalized stop predictions for the Vite dev API route', async () => {
     const getStopPredictions = vi.fn(async () => [
       {
@@ -24,6 +46,8 @@ describe('resolveLocalApiRequest', () => {
       method: 'GET',
       url: '/api/paradas/13566/previsoes',
       handlers: {
+        checkSiuHealth: vi.fn(),
+        getLines: vi.fn(),
         getStopPredictions,
         getNearbyStops: vi.fn(),
         getRoutePoints: vi.fn(),
@@ -70,6 +94,8 @@ describe('resolveLocalApiRequest', () => {
       method: 'GET',
       url: '/api/paradas/proximas?lat=-19%2E916342&lng=-43%2E993759',
       handlers: {
+        checkSiuHealth: vi.fn(),
+        getLines: vi.fn(),
         getStopPredictions: vi.fn(),
         getNearbyStops,
         getRoutePoints: vi.fn(),
@@ -90,6 +116,8 @@ describe('resolveLocalApiRequest', () => {
         method: 'GET',
         url: '/src/App.vue',
         handlers: {
+          checkSiuHealth: vi.fn(),
+          getLines: vi.fn(),
           getStopPredictions: vi.fn(),
           getNearbyStops: vi.fn(),
           getRoutePoints: vi.fn(),
@@ -97,5 +125,30 @@ describe('resolveLocalApiRequest', () => {
         },
       }),
     ).resolves.toBeNull();
+  });
+
+  it('returns a canonical not found response for unknown api routes', async () => {
+    await expect(
+      resolveLocalApiRequest({
+        method: 'GET',
+        url: '/api/unknown',
+        handlers: {
+          checkSiuHealth: vi.fn(),
+          getLines: vi.fn(),
+          getStopPredictions: vi.fn(),
+          getNearbyStops: vi.fn(),
+          getRoutePoints: vi.fn(),
+          getVehicles: vi.fn(),
+        },
+      }),
+    ).resolves.toEqual({
+      status: 404,
+      body: {
+        error: {
+          code: 'not_found',
+          message: 'Rota da API não encontrada',
+        },
+      },
+    });
   });
 });

@@ -75,7 +75,7 @@ export async function getLines() {
   return fetchJsonp('/buscarLinhas/jsonpCallback');
 }
 
-export async function checkSiuHealth() {
+export async function checkSiuHealth(): Promise<{ ok: true }> {
   await fetchJsonp('/buscarLinhas/jsonpCallback', 5000);
 
   return { ok: true };
