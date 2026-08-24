@@ -1082,6 +1082,50 @@ describe('App', () => {
     wrapper.unmount();
   });
 
+  it('salva o ponto Ótimo selecionado como favorito e o reabre pela seção de favoritos', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          return response({ stops: [mobilibusStop] });
+        }
+
+        if (url.includes('/partidas')) {
+          return response({ departures: mobilibusDepartures });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    await wrapper.find(`[title="${mobilibusStop.name}"]`).trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find('button[aria-label="Salvar ponto Ótimo"]').trigger('click');
+    expect(wrapper.find('button[aria-label="Remover ponto Ótimo dos favoritos"]').exists()).toBe(true);
+    expect(JSON.parse(localStorage.getItem('onibus-bh-mobilibus-favorite-stops') ?? 'null')).toEqual([
+      mobilibusStop,
+    ]);
+
+    await findClickableByText(wrapper, 'Favoritos').trigger('click');
+    expect(wrapper.text()).toContain('Ponto Ótimo favorito');
+    expect(wrapper.text()).toContain('Abrir no Ótimo');
+
+    await findClickableByText(wrapper, 'Abrir no Ótimo').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.mobilibus-map-panel').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="Remover ponto Ótimo dos favoritos"]').exists()).toBe(true);
+
+    wrapper.unmount();
+  });
+
   it('mantém o mapa Mobilibus local quando os pontos falham e permite repetir', async () => {
     let stopAttempts = 0;
     vi.stubGlobal(

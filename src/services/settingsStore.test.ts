@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   defaultSettings,
   loadFavoriteStops,
+  loadMobilibusFavoriteStops,
   loadSettings,
   loadThemeMode,
   saveFavoriteStops,
+  saveMobilibusFavoriteStops,
   saveSettings,
   saveThemeMode,
 } from './settingsStore';
@@ -160,6 +162,73 @@ describe('settingsStore', () => {
           latitude: -19.916136,
           longitude: -43.99563,
           color: 4,
+        },
+      ]),
+    ).not.toThrow();
+  });
+
+  it('returns Mobilibus favorite stops from storage and filters invalid entries', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) =>
+        key === 'onibus-bh-mobilibus-favorite-stops'
+          ? storageValue([
+              {
+                projectId: 501,
+                stopId: 15192689,
+                latitude: -19.93193292,
+                longitude: -43.93043518,
+                name: ' Av. Afonso Pena, 2323 ',
+                code: null,
+                address: 'Avenida Afonso Pena 2328',
+                bearing: 340,
+              },
+              {
+                projectId: 501,
+                stopId: 15192689,
+                latitude: -19.93193292,
+                longitude: -43.93043518,
+                name: 'Duplicado',
+              },
+              { projectId: 501, stopId: '15192689', name: 'Inválido' },
+            ])
+          : null,
+      ),
+      setItem: vi.fn(),
+    });
+
+    expect(loadMobilibusFavoriteStops()).toEqual([
+      {
+        projectId: 501,
+        stopId: 15192689,
+        latitude: -19.93193292,
+        longitude: -43.93043518,
+        name: 'Av. Afonso Pena, 2323',
+        code: null,
+        address: 'Avenida Afonso Pena 2328',
+        bearing: 340,
+      },
+    ]);
+  });
+
+  it('does not throw when saving Mobilibus favorite stops fails', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(),
+      setItem: vi.fn(() => {
+        throw new Error('quota exceeded');
+      }),
+    });
+
+    expect(() =>
+      saveMobilibusFavoriteStops([
+        {
+          projectId: 501,
+          stopId: 15192689,
+          latitude: -19.93193292,
+          longitude: -43.93043518,
+          name: 'Av. Afonso Pena, 2323',
+          code: null,
+          address: null,
+          bearing: null,
         },
       ]),
     ).not.toThrow();

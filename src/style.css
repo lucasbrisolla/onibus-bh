@@ -1566,6 +1566,16 @@ label {
   gap: 4px;
 }
 
+.mobilibus-stop-departures .mobilibus-detail-heading {
+  position: relative;
+  padding-right: 44px;
+}
+
+.mobilibus-stop-departures .mobilibus-detail-heading .favorite-stop-button {
+  top: -5px;
+  right: 0;
+}
+
 .mobilibus-lines-control-panel .mobilibus-detail-heading .section-kicker {
   font-size: 0.64rem;
 }

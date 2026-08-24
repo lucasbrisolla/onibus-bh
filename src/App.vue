@@ -39,9 +39,11 @@ import { createNotificationService } from './services/notificationService';
 import { createPredictionMonitor } from './services/predictionMonitor';
 import {
   loadFavoriteStops,
+  loadMobilibusFavoriteStops,
   loadSettings,
   loadThemeMode,
   saveFavoriteStops,
+  saveMobilibusFavoriteStops,
   saveSettings,
   saveThemeMode,
 } from './services/settingsStore';
@@ -106,6 +108,7 @@ const mobilibusStops = ref<MobilibusStop[]>([]);
 const mobilibusStopsStatus = ref<MobilibusStopsStatus>('initial');
 const mobilibusStopsError = ref<string | null>(null);
 const selectedMobilibusStop = ref<MobilibusStop | null>(null);
+const mobilibusFavoriteStops = ref<MobilibusStop[]>(loadMobilibusFavoriteStops());
 const mobilibusDeparturesStatus = ref<MobilibusDeparturesStatus>('initial');
 const mobilibusDepartures = ref<MobilibusStopDepartures | null>(null);
 const mobilibusDeparturesError = ref<string | null>(null);
@@ -159,6 +162,16 @@ const mobilibusStopRequests = new Map<string, Promise<MobilibusStop[]>>();
 const isSelectedStopFavorite = computed(
   () => !!selectedStop.value && favoriteStops.value.some(stop => stop.code === selectedStop.value?.code),
 );
+const isSelectedMobilibusStopFavorite = computed(() => {
+  const selectedStop = selectedMobilibusStop.value;
+  return (
+    selectedStop !== null &&
+    mobilibusFavoriteStops.value.some(
+      favorite =>
+        favorite.projectId === selectedStop.projectId && favorite.stopId === selectedStop.stopId,
+    )
+  );
+});
 const selectedPrediction = computed(
   () => predictions.value.find(item => item.id === selectedPredictionId.value) ?? null,
 );
@@ -346,6 +359,40 @@ function retryMobilibusDepartures() {
   const requestVersion = ++mobilibusDeparturesRequestVersion;
   mobilibusDeparturesStatus.value = 'loading';
   void runMobilibusDepartures(stop, requestVersion);
+}
+
+function mobilibusFavoriteKey(stop: MobilibusStop): string {
+  return `${stop.projectId}:${stop.stopId}`;
+}
+
+function toggleSelectedMobilibusStopFavorite() {
+  const selectedStop = selectedMobilibusStop.value;
+  if (!selectedStop) {
+    return;
+  }
+
+  const selectedKey = mobilibusFavoriteKey(selectedStop);
+  const isFavorite = mobilibusFavoriteStops.value.some(
+    favorite => mobilibusFavoriteKey(favorite) === selectedKey,
+  );
+
+  mobilibusFavoriteStops.value = isFavorite
+    ? mobilibusFavoriteStops.value.filter(favorite => mobilibusFavoriteKey(favorite) !== selectedKey)
+    : [selectedStop, ...mobilibusFavoriteStops.value];
+  saveMobilibusFavoriteStops(mobilibusFavoriteStops.value);
+}
+
+function removeMobilibusFavoriteStop(stop: MobilibusStop) {
+  const selectedKey = mobilibusFavoriteKey(stop);
+  mobilibusFavoriteStops.value = mobilibusFavoriteStops.value.filter(
+    favorite => mobilibusFavoriteKey(favorite) !== selectedKey,
+  );
+  saveMobilibusFavoriteStops(mobilibusFavoriteStops.value);
+}
+
+function openMobilibusFavoriteStop(stop: MobilibusStop) {
+  activeSection.value = 'linhas';
+  selectMobilibusStop(stop);
 }
 
 function updateSearch(query: string) {
@@ -623,11 +670,13 @@ onBeforeUnmount(() => {
       :departures-status="mobilibusDeparturesStatus"
       :departures="mobilibusDepartures"
       :departures-error="mobilibusDeparturesError"
+      :is-selected-stop-favorite="isSelectedMobilibusStopFavorite"
       :theme-mode="themeMode"
       @request-map-tiles="loadMobilibusStops"
       @retry-map="retryMobilibusStops"
       @select-stop="selectMobilibusStop"
       @retry-departures="retryMobilibusDepartures"
+      @toggle-selected-stop-favorite="toggleSelectedMobilibusStopFavorite"
       @toggle-theme="toggleTheme"
     />
 
@@ -637,7 +686,10 @@ onBeforeUnmount(() => {
         <h1>Favoritos salvos</h1>
         <p>Suas paradas mais usadas ficam aqui, com o endereço em destaque.</p>
       </div>
-      <div v-if="favoriteStops.length > 0" class="placeholder-grid favorites-grid">
+      <div
+        v-if="favoriteStops.length > 0 || mobilibusFavoriteStops.length > 0"
+        class="placeholder-grid favorites-grid"
+      >
         <article v-for="favorite in favoriteStops" :key="favorite.code" class="control-card favorite-stop-card">
           <span class="section-kicker">Parada favorita</span>
           <h3>{{ favorite.description }}</h3>
@@ -645,6 +697,21 @@ onBeforeUnmount(() => {
           <div class="favorite-stop-actions">
             <button type="button" class="primary" @click="selectStop(favorite)">Abrir parada</button>
             <button type="button" @click="removeFavoriteStop(favorite.code)">Remover</button>
+          </div>
+        </article>
+        <article
+          v-for="favorite in mobilibusFavoriteStops"
+          :key="`mobilibus-${favorite.projectId}-${favorite.stopId}`"
+          class="control-card favorite-stop-card"
+        >
+          <span class="section-kicker">Ponto Ótimo favorito</span>
+          <h3>{{ favorite.name }}</h3>
+          <p>Ponto {{ favorite.code || favorite.stopId }}</p>
+          <div class="favorite-stop-actions">
+            <button type="button" class="primary" @click="openMobilibusFavoriteStop(favorite)">
+              Abrir no Ótimo
+            </button>
+            <button type="button" @click="removeMobilibusFavoriteStop(favorite)">Remover</button>
           </div>
         </article>
       </div>

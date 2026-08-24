@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Star } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import type {
   MobilibusDeparture,
@@ -18,6 +19,7 @@ const props = defineProps<{
   departuresStatus: MobilibusDeparturesStatus;
   departures: MobilibusStopDepartures | null;
   departuresError: string | null;
+  isSelectedStopFavorite: boolean;
   themeMode: 'light' | 'dark';
 }>();
 
@@ -28,6 +30,7 @@ const emit = defineEmits<{
   retryMap: [];
   selectStop: [stop: MobilibusStop];
   retryDepartures: [];
+  toggleSelectedStopFavorite: [];
   toggleTheme: [];
 }>();
 
@@ -104,6 +107,16 @@ watch(
           aria-labelledby="selected-mobilibus-stop"
         >
           <div class="mobilibus-detail-heading">
+            <button
+              type="button"
+              class="favorite-stop-button"
+              :aria-label="isSelectedStopFavorite ? 'Remover ponto Ótimo dos favoritos' : 'Salvar ponto Ótimo'"
+              :title="isSelectedStopFavorite ? 'Remover ponto Ótimo dos favoritos' : 'Salvar ponto Ótimo'"
+              :data-active="isSelectedStopFavorite"
+              @click="emit('toggleSelectedStopFavorite')"
+            >
+              <Star aria-hidden="true" />
+            </button>
             <p class="section-kicker">Ponto selecionado</p>
             <h2 id="selected-mobilibus-stop">{{ selectedStop.name }}</h2>
             <p v-if="selectedStop.address" class="mobilibus-fare">{{ selectedStop.address }}</p>

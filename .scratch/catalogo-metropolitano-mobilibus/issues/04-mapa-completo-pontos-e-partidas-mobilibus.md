@@ -13,6 +13,7 @@
 - [x] O cabeçalho explicativo, o campo `Buscar linha` e o estado inicial de pesquisa foram removidos da aba, deixando o painel lateral dedicado ao ponto e às partidas.
 - [x] Cada marcador de ponto é clicável, acessível e preserva `projectId` e `stopId` próprios da Mobilibus.
 - [x] O ponto selecionado recebe destaque visual e seus dados públicos aparecem no painel lateral.
+- [x] O painel do ponto permite salvar e remover favoritos Ótimo com identidade separada dos favoritos SIU, persistindo a escolha no dispositivo.
 - [x] O browser consulta somente `/api/*`; a integração externa usa `GET /departures?stop_id={stopId}&project_id={projectId}` no servidor.
 - [x] O contrato próprio expõe `GET /api/mobilibus/projetos/{projectId}/pontos/{stopId}/partidas`, valida projeto e ponto e retorna o envelope normalizado de partidas.
 - [x] Partidas com veículo/posição informados são marcadas como `Em tempo real`; demais partidas são marcadas como `Programado`.

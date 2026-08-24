@@ -1,8 +1,10 @@
 import type { AlertSettings, BusVariantFilter, FavoriteStop } from '../domain/types';
+import type { MobilibusStop } from '../domain/mobilibusTypes';
 
 const STORAGE_KEY = 'onibus-bh-alert-settings';
 const THEME_STORAGE_KEY = 'onibus-bh-theme';
 const FAVORITES_STORAGE_KEY = 'onibus-bh-favorite-stops';
+const MOBILIBUS_FAVORITES_STORAGE_KEY = 'onibus-bh-mobilibus-favorite-stops';
 const VALID_VARIANT_FILTERS: BusVariantFilter[] = ['qualquer', 'direto', 'nao-direto'];
 export type ThemeMode = 'light' | 'dark';
 
@@ -150,6 +152,97 @@ export function loadFavoriteStops(): FavoriteStop[] {
 export function saveFavoriteStops(favorites: FavoriteStop[]): void {
   try {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(normalizeFavoriteStops(favorites)));
+  } catch {
+    // Storage can be unavailable or full; favorites will remain in memory only.
+  }
+}
+
+function normalizeMobilibusFavoriteStop(value: unknown): MobilibusStop | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const projectId = value.projectId;
+  const stopId = value.stopId;
+  const latitude = value.latitude;
+  const longitude = value.longitude;
+
+  if (
+    typeof projectId !== 'number' ||
+    !Number.isSafeInteger(projectId) ||
+    projectId <= 0 ||
+    typeof stopId !== 'number' ||
+    !Number.isSafeInteger(stopId) ||
+    stopId <= 0 ||
+    typeof latitude !== 'number' ||
+    !Number.isFinite(latitude) ||
+    typeof longitude !== 'number' ||
+    !Number.isFinite(longitude) ||
+    typeof value.name !== 'string' ||
+    !value.name.trim()
+  ) {
+    return null;
+  }
+
+  return {
+    projectId,
+    stopId,
+    latitude,
+    longitude,
+    name: value.name.trim(),
+    code: typeof value.code === 'string' && value.code.trim() ? value.code.trim() : null,
+    address:
+      typeof value.address === 'string' && value.address.trim() ? value.address.trim() : null,
+    bearing:
+      typeof value.bearing === 'number' && Number.isFinite(value.bearing) ? value.bearing : null,
+  };
+}
+
+function normalizeMobilibusFavoriteStops(value: unknown): MobilibusStop[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const favorites: MobilibusStop[] = [];
+  const seenStops = new Set<string>();
+
+  for (const item of value) {
+    const favorite = normalizeMobilibusFavoriteStop(item);
+    if (!favorite) {
+      continue;
+    }
+
+    const key = `${favorite.projectId}:${favorite.stopId}`;
+    if (seenStops.has(key)) {
+      continue;
+    }
+
+    seenStops.add(key);
+    favorites.push(favorite);
+  }
+
+  return favorites;
+}
+
+export function loadMobilibusFavoriteStops(): MobilibusStop[] {
+  try {
+    const raw = localStorage.getItem(MOBILIBUS_FAVORITES_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    return normalizeMobilibusFavoriteStops(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+export function saveMobilibusFavoriteStops(favorites: MobilibusStop[]): void {
+  try {
+    localStorage.setItem(
+      MOBILIBUS_FAVORITES_STORAGE_KEY,
+      JSON.stringify(normalizeMobilibusFavoriteStops(favorites)),
+    );
   } catch {
     // Storage can be unavailable or full; favorites will remain in memory only.
   }
