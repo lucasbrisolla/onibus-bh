@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Star } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { ChevronDown, ChevronUp, Star } from '@lucide/vue';
+import { computed, reactive, ref, watch } from 'vue';
 import type {
   MobilibusDeparture,
   MobilibusDeparturesStatus,
@@ -24,6 +24,9 @@ const props = defineProps<{
 }>();
 
 const departureFilter = ref('');
+const openSections = reactive({
+  departures: true,
+});
 
 const emit = defineEmits<{
   requestMapTiles: [tiles: MobilibusMapTile[]];
@@ -79,6 +82,7 @@ watch(
   () => props.selectedStop?.stopId,
   () => {
     departureFilter.value = '';
+    openSections.departures = true;
   },
 );
 </script>
@@ -103,10 +107,10 @@ watch(
       <aside class="mobilibus-lines-control-panel" aria-label="Detalhes do ponto Mobilibus">
         <section
           v-if="selectedStop"
-          class="mobilibus-stop-departures control-card"
+          class="control-card"
           aria-labelledby="selected-mobilibus-stop"
         >
-          <div class="mobilibus-detail-heading">
+          <article class="selected-stop-card mobilibus-selected-stop-card">
             <button
               type="button"
               class="favorite-stop-button"
@@ -118,62 +122,81 @@ watch(
               <Star aria-hidden="true" />
             </button>
             <p class="section-kicker">Ponto selecionado</p>
-            <h2 id="selected-mobilibus-stop">{{ selectedStop.name }}</h2>
-            <p v-if="selectedStop.address" class="mobilibus-fare">{{ selectedStop.address }}</p>
-            <span v-if="selectedStop.code" class="mobilibus-stop-code">Código {{ selectedStop.code }}</span>
-          </div>
+            <h3 id="selected-mobilibus-stop">{{ selectedStop.name }}</h3>
+            <p v-if="selectedStop.address" class="mobilibus-selected-stop-address">{{ selectedStop.address }}</p>
+            <p v-if="selectedStop.code" class="mobilibus-selected-stop-code">Código {{ selectedStop.code }}</p>
+          </article>
+        </section>
 
-          <div class="mobilibus-stop-filter-row">
-            <label class="mobilibus-stop-filter" for="mobilibus-stop-filter-input">
-              <span>Filtrar linha ou ônibus</span>
-              <input
-                id="mobilibus-stop-filter-input"
-                v-model="departureFilter"
-                type="search"
-                inputmode="numeric"
-                autocomplete="off"
-                placeholder="Digite o número"
-              />
-            </label>
-          </div>
-
-          <div v-if="departuresStatus === 'loading'" class="mobilibus-state" role="status" aria-live="polite">
-            Consultando ônibus neste ponto...
-          </div>
-          <div v-else-if="departuresStatus === 'empty'" class="mobilibus-state" role="status">
-            Nenhuma partida foi informada para este ponto agora.
-          </div>
-          <div v-else-if="departuresStatus === 'error'" class="mobilibus-state mobilibus-state--error" role="alert">
-            <span>{{ departuresError ?? 'Não foi possível consultar este ponto.' }}</span>
-            <button type="button" class="primary" @click="emit('retryDepartures')">Tentar novamente</button>
-          </div>
-          <div v-else-if="departures && filteredDepartures.length === 0" class="mobilibus-state" role="status">
-            Nenhum ônibus corresponde ao número informado.
-          </div>
-          <div v-else-if="departures" class="mobilibus-departure-list" aria-live="polite">
-            <article
-              v-for="(departure, departureIndex) in filteredDepartures"
-              :key="`${departure.routeId}-${departure.scheduledTime}-${departureIndex}`"
-              class="mobilibus-departure-card"
-            >
-              <div class="mobilibus-departure-main">
-                <strong>{{ departure.shortName }}</strong>
-                <span>{{ departure.headsign }}</span>
-                <small>{{ departure.lineName }}</small>
+        <section
+          v-if="selectedStop"
+          class="collapse-section mobilibus-stop-departures-section"
+          aria-labelledby="mobilibus-departures-heading"
+        >
+          <button
+            type="button"
+            class="collapse-toggle"
+            :aria-expanded="openSections.departures"
+            @click="openSections.departures = !openSections.departures"
+          >
+            <span id="mobilibus-departures-heading">Ônibus neste ponto</span>
+            <component :is="openSections.departures ? ChevronUp : ChevronDown" aria-hidden="true" />
+          </button>
+          <div v-show="openSections.departures" class="collapse-body">
+            <section class="mobilibus-stop-departures control-card">
+              <div class="mobilibus-stop-filter-row">
+                <label class="mobilibus-stop-filter" for="mobilibus-stop-filter-input">
+                  <span>Filtrar linha ou ônibus</span>
+                  <input
+                    id="mobilibus-stop-filter-input"
+                    v-model="departureFilter"
+                    type="search"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    placeholder="Digite o número"
+                  />
+                </label>
               </div>
-              <div class="mobilibus-departure-meta">
-                <time>{{ formatDepartureTime(departure) }}</time>
-                <span
-                  class="mobilibus-realtime-badge"
-                  :class="{ 'is-planned': !departure.realtime }"
+
+              <div v-if="departuresStatus === 'loading'" class="mobilibus-state" role="status" aria-live="polite">
+                Consultando ônibus neste ponto...
+              </div>
+              <div v-else-if="departuresStatus === 'empty'" class="mobilibus-state" role="status">
+                Nenhuma partida foi informada para este ponto agora.
+              </div>
+              <div v-else-if="departuresStatus === 'error'" class="mobilibus-state mobilibus-state--error" role="alert">
+                <span>{{ departuresError ?? 'Não foi possível consultar este ponto.' }}</span>
+                <button type="button" class="primary" @click="emit('retryDepartures')">Tentar novamente</button>
+              </div>
+              <div v-else-if="departures && filteredDepartures.length === 0" class="mobilibus-state" role="status">
+                Nenhum ônibus corresponde ao número informado.
+              </div>
+              <div v-else-if="departures" class="mobilibus-departure-list" aria-live="polite">
+                <article
+                  v-for="(departure, departureIndex) in filteredDepartures"
+                  :key="`${departure.routeId}-${departure.scheduledTime}-${departureIndex}`"
+                  class="mobilibus-departure-card"
                 >
-                  {{ departure.realtime ? 'Em tempo real' : 'Programado' }}
-                </span>
-                <small v-if="departure.vehicleId">Ônibus {{ departure.vehicleId }}</small>
-                <small v-if="formatPositionAge(departure.positionAge)">{{ formatPositionAge(departure.positionAge) }}</small>
-                <small v-if="formatDelay(departure.delay)">{{ formatDelay(departure.delay) }}</small>
+                  <div class="mobilibus-departure-main">
+                    <strong>{{ departure.shortName }}</strong>
+                    <span>{{ departure.headsign }}</span>
+                    <small>{{ departure.lineName }}</small>
+                  </div>
+                  <div class="mobilibus-departure-meta">
+                    <time>{{ formatDepartureTime(departure) }}</time>
+                    <span
+                      class="mobilibus-realtime-badge"
+                      :class="{ 'is-planned': !departure.realtime }"
+                    >
+                      {{ departure.realtime ? 'Em tempo real' : 'Programado' }}
+                    </span>
+                    <small v-if="departure.vehicleId">Ônibus {{ departure.vehicleId }}</small>
+                    <small v-if="formatPositionAge(departure.positionAge)">{{ formatPositionAge(departure.positionAge) }}</small>
+                    <small v-if="formatDelay(departure.delay)">{{ formatDelay(departure.delay) }}</small>
+                  </div>
+                </article>
               </div>
-            </article>
+            </section>
           </div>
         </section>
 

@@ -445,6 +445,14 @@ label {
   font-weight: 700;
 }
 
+.mobilibus-selected-stop-card .mobilibus-selected-stop-address,
+.mobilibus-selected-stop-card .mobilibus-selected-stop-code {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .control-card label span,
 .section-kicker {
   color: #0d9488;
@@ -1061,8 +1069,12 @@ label {
   color: #5eead4;
 }
 
+.app-theme[data-theme='dark'] .mobilibus-selected-stop-card .mobilibus-selected-stop-address,
+.app-theme[data-theme='dark'] .mobilibus-selected-stop-card .mobilibus-selected-stop-code {
+  color: #9eb7b4;
+}
+
 .app-theme[data-theme='dark'] .mobilibus-line-result-main > span,
-.app-theme[data-theme='dark'] .mobilibus-detail-heading h2,
 .app-theme[data-theme='dark'] .mobilibus-service h5,
 .app-theme[data-theme='dark'] .mobilibus-service ol {
   color: #e5e7eb;
@@ -1419,7 +1431,6 @@ label {
 
 .mobilibus-line-result-main,
 .mobilibus-line-result-meta,
-.mobilibus-detail-heading,
 .mobilibus-timetable-heading,
 .mobilibus-direction,
 .mobilibus-service {
@@ -1549,40 +1560,10 @@ label {
   color: #0f766e;
 }
 
-.mobilibus-detail-heading h2,
 .mobilibus-timetable-heading h3,
 .mobilibus-direction h4,
 .mobilibus-service h5 {
   margin: 0;
-}
-
-.mobilibus-detail-heading h2 {
-  color: #101828;
-  font-size: clamp(1.2rem, 2.5vw, 1.65rem);
-  line-height: 1.25;
-}
-
-.mobilibus-lines-control-panel .mobilibus-detail-heading {
-  gap: 4px;
-}
-
-.mobilibus-stop-departures .mobilibus-detail-heading {
-  position: relative;
-  padding-right: 44px;
-}
-
-.mobilibus-stop-departures .mobilibus-detail-heading .favorite-stop-button {
-  top: -5px;
-  right: 0;
-}
-
-.mobilibus-lines-control-panel .mobilibus-detail-heading .section-kicker {
-  font-size: 0.64rem;
-}
-
-.mobilibus-lines-control-panel .mobilibus-detail-heading h2 {
-  font-size: 1.08rem;
-  line-height: 1.3;
 }
 
 .mobilibus-fare,
@@ -2134,6 +2115,41 @@ label {
     background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 18px 50px rgba(16, 24, 40, 0.2);
     backdrop-filter: blur(16px);
+  }
+
+  .mobilibus-lines-control-panel > .control-card,
+  .mobilibus-lines-control-panel .collapse-body > .control-card {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .mobilibus-lines-control-panel .mobilibus-selected-stop-card {
+    gap: 4px;
+    padding: 8px 44px 8px 8px;
+  }
+
+  .mobilibus-lines-control-panel .mobilibus-selected-stop-card h3 {
+    font-size: 0.92rem;
+    line-height: 1.28;
+  }
+
+  .mobilibus-lines-control-panel .mobilibus-selected-stop-card .mobilibus-selected-stop-address,
+  .mobilibus-lines-control-panel .mobilibus-selected-stop-card .mobilibus-selected-stop-code {
+    font-size: 0.76rem;
+  }
+
+  .mobilibus-lines-control-panel .favorite-stop-button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobilibus-lines-control-panel .collapse-toggle {
+    min-height: 34px;
+    padding: 8px 10px;
+  }
+
+  .mobilibus-lines-control-panel .collapse-body {
+    gap: 8px;
   }
 
   .app-theme[data-theme='dark'] .mobilibus-lines-control-panel {

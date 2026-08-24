@@ -1071,6 +1071,13 @@ describe('App', () => {
     expect(wrapper.text()).toContain('25H74');
     expect(wrapper.text()).toContain('Em tempo real');
 
+    const departuresToggle = wrapper.find('.mobilibus-stop-departures-section .collapse-toggle');
+    expect(departuresToggle.attributes('aria-expanded')).toBe('true');
+    await departuresToggle.trigger('click');
+    expect(departuresToggle.attributes('aria-expanded')).toBe('false');
+    await departuresToggle.trigger('click');
+    expect(departuresToggle.attributes('aria-expanded')).toBe('true');
+
     const departureFilter = wrapper.find('#mobilibus-stop-filter-input');
     await departureFilter.setValue('3838');
     expect(wrapper.findAll('.mobilibus-departure-card')).toHaveLength(1);
