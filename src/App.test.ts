@@ -1089,6 +1089,42 @@ describe('App', () => {
     wrapper.unmount();
   });
 
+  it('permite mover o painel Ótimo com gesto vertical no mobile', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          return response({ stops: [mobilibusStop] });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    const sheet = wrapper.find('.mobilibus-mobile-bottom-sheet');
+    expect(sheet.exists()).toBe(true);
+    expect(sheet.classes()).toContain('is-half');
+
+    await sheet.trigger('touchstart', { touches: [{ clientY: 70 }] });
+    await sheet.trigger('touchend', { changedTouches: [{ clientY: 0 }] });
+    expect(sheet.classes()).toContain('is-full');
+
+    await sheet.trigger('touchstart', { touches: [{ clientY: 50 }] });
+    await sheet.trigger('touchend', { changedTouches: [{ clientY: 120 }] });
+    expect(sheet.classes()).toContain('is-half');
+
+    await wrapper.find('.mobilibus-sheet-toggle').trigger('click');
+    expect(sheet.classes()).toContain('is-peek');
+
+    wrapper.unmount();
+  });
+
   it('salva o ponto Ótimo selecionado como favorito e o reabre pela seção de favoritos', async () => {
     vi.stubGlobal(
       'fetch',

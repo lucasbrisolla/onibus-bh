@@ -23,10 +23,18 @@ const props = defineProps<{
   themeMode: 'light' | 'dark';
 }>();
 
+const SHEET_GESTURE_ZONE_HEIGHT = 108;
+const SWIPE_THRESHOLD_PX = 56;
+type SheetState = 'peek' | 'half' | 'full';
+
 const departureFilter = ref('');
 const openSections = reactive({
   departures: true,
 });
+const sheetState = ref<SheetState>('half');
+const sheetElement = ref<HTMLElement | null>(null);
+let touchStartY: number | null = null;
+let isTrackingGesture = false;
 
 const emit = defineEmits<{
   requestMapTiles: [tiles: MobilibusMapTile[]];
@@ -78,6 +86,59 @@ const filteredDepartures = computed(() => {
   );
 });
 
+function toggleSheet() {
+  sheetState.value = sheetState.value === 'peek' ? 'half' : 'peek';
+}
+
+function moveSheet(direction: 'up' | 'down') {
+  const states: SheetState[] = ['peek', 'half', 'full'];
+  const currentIndex = states.indexOf(sheetState.value);
+  const nextIndex = direction === 'up'
+    ? Math.min(states.length - 1, currentIndex + 1)
+    : Math.max(0, currentIndex - 1);
+  sheetState.value = states[nextIndex];
+}
+
+function onTouchStart(event: TouchEvent) {
+  const firstTouch = event.touches[0];
+  if (!firstTouch) {
+    return;
+  }
+
+  const sheetTop = sheetElement.value?.getBoundingClientRect().top ?? 0;
+  const canStartGesture =
+    sheetState.value === 'peek' || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
+
+  if (!canStartGesture) {
+    touchStartY = null;
+    isTrackingGesture = false;
+    return;
+  }
+
+  isTrackingGesture = true;
+  touchStartY = firstTouch.clientY;
+}
+
+function onTouchEnd(event: TouchEvent) {
+  if (!isTrackingGesture || touchStartY === null) {
+    return;
+  }
+
+  const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
+  const deltaY = touchEndY - touchStartY;
+  touchStartY = null;
+  isTrackingGesture = false;
+
+  if (deltaY > SWIPE_THRESHOLD_PX) {
+    moveSheet('down');
+    return;
+  }
+
+  if (deltaY < -SWIPE_THRESHOLD_PX) {
+    moveSheet('up');
+  }
+}
+
 watch(
   () => props.selectedStop?.stopId,
   () => {
@@ -104,7 +165,24 @@ watch(
         />
       </div>
 
-      <aside class="mobilibus-lines-control-panel" aria-label="Detalhes do ponto Mobilibus">
+      <div
+        ref="sheetElement"
+        class="mobilibus-mobile-bottom-sheet"
+        :class="`is-${sheetState}`"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="onTouchEnd"
+      >
+        <button
+          type="button"
+          class="sheet-toggle mobilibus-sheet-toggle"
+          :aria-expanded="sheetState !== 'peek'"
+          :aria-label="sheetState === 'peek' ? 'Expandir painel do Ótimo' : 'Recolher painel do Ótimo'"
+          @click="toggleSheet"
+        >
+          <div class="sheet-handle"></div>
+        </button>
+
+        <aside class="mobilibus-lines-control-panel" aria-label="Detalhes do ponto Mobilibus">
         <section
           v-if="selectedStop"
           class="control-card"
@@ -205,7 +283,8 @@ watch(
           <span>Os detalhes das partidas aparecerão aqui.</span>
         </div>
 
-      </aside>
+        </aside>
+      </div>
     </div>
   </section>
 </template>

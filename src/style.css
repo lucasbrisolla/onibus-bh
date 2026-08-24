@@ -1296,6 +1296,14 @@ label {
   overflow: hidden;
 }
 
+.mobilibus-mobile-bottom-sheet {
+  display: contents;
+}
+
+.mobilibus-sheet-toggle {
+  display: none;
+}
+
 .mobilibus-lines-map-layout {
   position: relative;
   display: grid;
@@ -2099,22 +2107,60 @@ label {
     min-height: calc(100vh - 62px);
   }
 
-  .mobilibus-lines-control-panel {
+  .mobilibus-mobile-bottom-sheet {
     position: absolute;
     right: 10px;
     bottom: 74px;
     left: 10px;
     z-index: 800;
-    grid-column: 1;
-    grid-row: 1;
-    min-height: 0;
-    max-height: min(52vh, 480px);
+    display: block;
+    height: min(42vh, 340px);
+    overflow: hidden;
     border-radius: 14px;
     border: 1px solid rgba(208, 213, 221, 0.9);
-    padding: 12px;
     background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 18px 50px rgba(16, 24, 40, 0.2);
+    box-shadow: 0 24px 60px rgba(16, 24, 40, 0.3);
+    transition: height 180ms ease, transform 180ms ease, box-shadow 180ms ease;
     backdrop-filter: blur(16px);
+  }
+
+  .mobilibus-mobile-bottom-sheet.is-peek {
+    height: 44px;
+    transform: translateY(calc(100% - 34px));
+    box-shadow: 0 14px 32px rgba(16, 24, 40, 0.22);
+  }
+
+  .mobilibus-mobile-bottom-sheet.is-half {
+    height: min(42vh, 340px);
+  }
+
+  .mobilibus-mobile-bottom-sheet.is-full {
+    height: calc(100vh - 104px);
+  }
+
+  .mobilibus-sheet-toggle {
+    display: grid;
+  }
+
+  .mobilibus-mobile-bottom-sheet .mobilibus-lines-control-panel {
+    position: relative;
+    z-index: auto;
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 0;
+    height: calc(100% - 34px);
+    max-height: calc(100% - 34px);
+    overflow-y: auto;
+    border: 0;
+    border-radius: 0;
+    padding: 6px 8px 10px;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .mobilibus-mobile-bottom-sheet.is-peek .mobilibus-lines-control-panel {
+    pointer-events: none;
   }
 
   .mobilibus-lines-control-panel > .control-card,
@@ -2152,9 +2198,13 @@ label {
     gap: 8px;
   }
 
-  .app-theme[data-theme='dark'] .mobilibus-lines-control-panel {
+  .app-theme[data-theme='dark'] .mobilibus-mobile-bottom-sheet {
     border-color: #28514d;
     background: rgba(15, 36, 35, 0.96);
+  }
+
+  .app-theme[data-theme='dark'] .mobilibus-mobile-bottom-sheet .mobilibus-lines-control-panel {
+    background: transparent;
   }
 
   .mobilibus-map-panel,
