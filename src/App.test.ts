@@ -1067,6 +1067,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Filtrar linha ou ônibus');
     expect(wrapper.text()).not.toContain('Filtra as opções já carregadas neste ponto.');
     expect(wrapper.text()).not.toContain('Atualizar');
+    expect(wrapper.find('.mobilibus-selected-stop-card').text()).not.toContain('Ponto selecionado');
     expect(wrapper.text()).toContain('3838');
     expect(wrapper.text()).toContain('25H74');
     expect(wrapper.text()).toContain('Em tempo real');

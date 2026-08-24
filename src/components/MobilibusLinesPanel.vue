@@ -199,7 +199,6 @@ watch(
             >
               <Star aria-hidden="true" />
             </button>
-            <p class="section-kicker">Ponto selecionado</p>
             <h3 id="selected-mobilibus-stop">{{ selectedStop.name }}</h3>
             <p v-if="selectedStop.address" class="mobilibus-selected-stop-address">{{ selectedStop.address }}</p>
             <p v-if="selectedStop.code" class="mobilibus-selected-stop-code">Código {{ selectedStop.code }}</p>
