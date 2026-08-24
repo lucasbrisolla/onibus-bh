@@ -990,10 +990,10 @@ describe('App', () => {
     expect(wrapper.text()).not.toContain('Localização ativa');
   });
 
-  it('navega para Linhas com mapa e sem o painel de busca metropolitana', async () => {
+  it('navega para Ótimo com mapa e sem o painel de busca metropolitana', async () => {
     const wrapper = mount(App);
 
-    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
 
     expect(wrapper.find('.mobilibus-map-panel').exists()).toBe(true);
     expect(wrapper.find('input[placeholder="Buscar parada ou endereço"]').exists()).toBe(true);
@@ -1019,7 +1019,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
     await flushPromises();
     await wrapper.vm.$nextTick();
 
@@ -1052,7 +1052,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
     await flushPromises();
     await wrapper.vm.$nextTick();
 
@@ -1100,7 +1100,7 @@ describe('App', () => {
     );
 
     const wrapper = mount(App);
-    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
     await flushPromises();
     await wrapper.vm.$nextTick();
 
@@ -1153,7 +1153,7 @@ describe('App', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
 
-    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await findClickableByText(wrapper, 'Ótimo').trigger('click');
     await flushPromises();
     expect(wrapper.text()).toContain('Mobilibus indisponível');
 
