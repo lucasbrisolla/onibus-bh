@@ -44,6 +44,11 @@ button {
   cursor: pointer;
 }
 
+:focus-visible {
+  outline: 3px solid #0d9488;
+  outline-offset: 3px;
+}
+
 button.primary {
   border-color: #0d9488;
   background: #0d9488;
@@ -1056,6 +1061,136 @@ label {
   color: #5eead4;
 }
 
+.app-theme[data-theme='dark'] .mobilibus-line-result-main > span,
+.app-theme[data-theme='dark'] .mobilibus-detail-heading h2,
+.app-theme[data-theme='dark'] .mobilibus-service h5,
+.app-theme[data-theme='dark'] .mobilibus-service ol {
+  color: #e5e7eb;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-line-result-meta,
+.app-theme[data-theme='dark'] .mobilibus-fare,
+.app-theme[data-theme='dark'] .mobilibus-timetable-heading p {
+  color: #9eb7b4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-line-result:hover,
+.app-theme[data-theme='dark'] .mobilibus-line-result.is-selected {
+  border-color: #2dd4bf;
+  background: #0f2423;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-network-badge {
+  background: rgba(45, 212, 191, 0.16);
+  color: #99f6e4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-timetable-heading,
+.app-theme[data-theme='dark'] .mobilibus-service {
+  border-color: #1f4a47;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-map-heading h3 {
+  color: #e5e7eb;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-map-heading p {
+  color: #9eb7b4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-map-panel {
+  border-color: #28514d;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-lines-control-panel {
+  border-right-color: #1f4a47;
+  background: #132f2d;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-lines-control-header h1,
+.app-theme[data-theme='dark'] .mobilibus-departure-meta time,
+.app-theme[data-theme='dark'] .mobilibus-stop-empty {
+  color: #e5e7eb;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-lines-control-header p:not(.section-kicker),
+.app-theme[data-theme='dark'] .mobilibus-departure-main small,
+.app-theme[data-theme='dark'] .mobilibus-departure-meta small,
+.app-theme[data-theme='dark'] .mobilibus-stop-empty span,
+.app-theme[data-theme='dark'] .mobilibus-stop-code {
+  color: #9eb7b4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-stop-filter-row {
+  border-top-color: #1f4a47;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-stop-filter > span {
+  color: #c7d7d4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-stop-filter input {
+  border-color: #28514d;
+  background: #0f2423;
+  color: #e5e7eb;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-departure-card {
+  border-color: #28514d;
+  background: rgba(15, 36, 35, 0.72);
+}
+
+.app-theme[data-theme='dark'] .mobilibus-departure-main span {
+  color: #c7d7d4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-refresh-button {
+  border-color: #28514d;
+  background: rgba(45, 212, 191, 0.12);
+  color: #99f6e4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-map-message,
+.app-theme[data-theme='dark'] .mobilibus-map-count {
+  border-color: #28514d;
+  background: rgba(15, 36, 35, 0.95);
+  color: #c7d7d4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-map-message--error {
+  border-color: #7f1d1d;
+  background: rgba(59, 23, 23, 0.96);
+  color: #fecaca;
+}
+
+.app-theme[data-theme='dark'] .map-marker.is-mobilibus-stop {
+  border-color: #5eead4;
+  background: #0f2423;
+  color: #99f6e4;
+}
+
+.app-theme[data-theme='dark'] .map-marker.is-selected-mobilibus-stop {
+  border-color: #fbbf24;
+  background: #3b2410;
+  color: #fbbf24;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-direction {
+  border-color: #28514d;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-state {
+  border-color: #28514d;
+  background: #0f2423;
+  color: #c7d7d4;
+}
+
+.app-theme[data-theme='dark'] .mobilibus-state--error {
+  border-color: #7f1d1d;
+  background: #3b1717;
+  color: #fecaca;
+}
+
 .app-theme[data-theme='dark'] .variant-pill--direto {
   background: rgba(59, 130, 246, 0.2);
   color: #93c5fd;
@@ -1138,6 +1273,494 @@ label {
   gap: 16px;
 }
 
+.mobilibus-page {
+  max-width: 1080px;
+}
+
+.mobilibus-lines-page {
+  max-width: none;
+  min-height: calc(100vh - 79px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.mobilibus-lines-map-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  min-height: calc(100vh - 79px);
+}
+
+.mobilibus-lines-map-stage {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.mobilibus-lines-map-stage .mobilibus-map-panel,
+.mobilibus-lines-map-stage .mobilibus-map-panel .map-surface {
+  height: 100%;
+  min-height: calc(100vh - 79px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.mobilibus-lines-control-panel {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  min-height: calc(100vh - 79px);
+  width: auto;
+  max-height: calc(100vh - 79px);
+  overflow-y: auto;
+  border-right: 1px solid #e4e7ec;
+  border-radius: 0;
+  background: #fff;
+  padding: 18px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mobilibus-lines-control-header {
+  display: grid;
+  gap: 7px;
+}
+
+.mobilibus-lines-control-header h1,
+.mobilibus-lines-control-header p {
+  margin: 0;
+}
+
+.mobilibus-lines-control-header h1 {
+  color: #101828;
+  font-size: clamp(1.25rem, 3vw, 1.7rem);
+  line-height: 1.2;
+}
+
+.mobilibus-lines-control-header p:not(.section-kicker) {
+  color: #667085;
+  font-size: 0.87rem;
+  line-height: 1.45;
+}
+
+.mobilibus-lines-control-panel .mobilibus-search-card,
+.mobilibus-lines-control-panel .mobilibus-state,
+.mobilibus-lines-control-panel .mobilibus-line-results,
+.mobilibus-lines-control-panel .mobilibus-detail {
+  max-width: none;
+}
+
+.mobilibus-lines-control-panel .mobilibus-search-card,
+.mobilibus-lines-control-panel .mobilibus-detail,
+.mobilibus-stop-departures,
+.mobilibus-stop-empty {
+  box-shadow: none;
+}
+
+.mobilibus-search-card {
+  max-width: 720px;
+}
+
+.mobilibus-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 720px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 12px;
+  background: #fff;
+  color: #344054;
+  padding: 16px;
+  line-height: 1.45;
+}
+
+.mobilibus-state--error {
+  border-style: solid;
+  border-color: #fda29b;
+  background: #fff5f5;
+  color: #b42318;
+}
+
+.mobilibus-line-results {
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobilibus-line-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  width: 100%;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.mobilibus-line-result:hover,
+.mobilibus-line-result.is-selected {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.mobilibus-line-result-main,
+.mobilibus-line-result-meta,
+.mobilibus-detail-heading,
+.mobilibus-timetable-heading,
+.mobilibus-direction,
+.mobilibus-service {
+  display: grid;
+  gap: 6px;
+}
+
+.mobilibus-line-result-main {
+  min-width: 0;
+}
+
+.mobilibus-line-result-main strong {
+  color: #0f766e;
+  font-size: 1.15rem;
+}
+
+.mobilibus-line-result-main > span {
+  color: #344054;
+  line-height: 1.4;
+}
+
+.mobilibus-line-result-meta {
+  justify-items: end;
+  align-content: center;
+  color: #667085;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.mobilibus-network-badge {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #115e59;
+  padding: 4px 9px;
+  font-size: 0.73rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.mobilibus-detail {
+  max-width: 900px;
+}
+
+.mobilibus-map-section {
+  display: grid;
+  gap: 12px;
+}
+
+.mobilibus-map-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.mobilibus-map-heading h3,
+.mobilibus-map-heading p {
+  margin: 0;
+}
+
+.mobilibus-map-heading h3 {
+  color: #101828;
+  font-size: 1.08rem;
+}
+
+.mobilibus-map-heading p {
+  color: #667085;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.mobilibus-map-panel {
+  min-height: 420px;
+  height: min(560px, calc(100vh - 240px));
+  overflow: hidden;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.12);
+}
+
+.mobilibus-map-panel .map-surface {
+  min-height: 420px;
+  height: 100%;
+}
+
+.mobilibus-map-message,
+.mobilibus-map-count {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 700;
+  max-width: min(420px, calc(100% - 36px));
+  margin: 0;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #344054;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  box-shadow: 0 10px 24px rgba(23, 32, 26, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.mobilibus-map-message--error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-color: #fda29b;
+  background: rgba(255, 245, 245, 0.96);
+  color: #b42318;
+}
+
+.mobilibus-map-message--error .primary {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  font-size: 0.76rem;
+}
+
+.mobilibus-map-count {
+  bottom: auto;
+  top: 18px;
+  left: auto;
+  right: 18px;
+  color: #0f766e;
+}
+
+.mobilibus-detail-heading h2,
+.mobilibus-timetable-heading h3,
+.mobilibus-direction h4,
+.mobilibus-service h5 {
+  margin: 0;
+}
+
+.mobilibus-detail-heading h2 {
+  color: #101828;
+  font-size: clamp(1.2rem, 2.5vw, 1.65rem);
+  line-height: 1.25;
+}
+
+.mobilibus-lines-control-panel .mobilibus-detail-heading {
+  gap: 4px;
+}
+
+.mobilibus-lines-control-panel .mobilibus-detail-heading .section-kicker {
+  font-size: 0.64rem;
+}
+
+.mobilibus-lines-control-panel .mobilibus-detail-heading h2 {
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.mobilibus-fare,
+.mobilibus-timetable-heading p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.45;
+}
+
+.mobilibus-timetable-heading {
+  border-top: 1px solid #e4e7ec;
+  padding-top: 16px;
+}
+
+.mobilibus-stop-departures {
+  gap: 14px;
+}
+
+.mobilibus-stop-filter-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e4e7ec;
+  padding-top: 14px;
+}
+
+.mobilibus-stop-filter {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 5px;
+}
+
+.mobilibus-stop-filter > span {
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.mobilibus-stop-filter input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  padding: 9px 10px;
+}
+
+.mobilibus-refresh-button {
+  flex: 0 0 auto;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f766e;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.mobilibus-stop-code {
+  width: fit-content;
+  color: #667085;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.mobilibus-stop-empty {
+  display: grid;
+  gap: 5px;
+  color: #344054;
+}
+
+.mobilibus-stop-empty span {
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.mobilibus-departure-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mobilibus-departure-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.82);
+  padding: 10px;
+}
+
+.mobilibus-departure-main,
+.mobilibus-departure-meta {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+}
+
+.mobilibus-departure-main {
+  min-width: 0;
+}
+
+.mobilibus-departure-main strong {
+  color: #0f766e;
+  font-size: 1.08rem;
+}
+
+.mobilibus-departure-main span {
+  overflow: hidden;
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobilibus-departure-main small,
+.mobilibus-departure-meta small {
+  color: #667085;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.mobilibus-departure-meta {
+  justify-items: end;
+  text-align: right;
+}
+
+.mobilibus-departure-meta time {
+  color: #101828;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+.mobilibus-realtime-badge {
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 3px 6px;
+  font-size: 0.64rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.mobilibus-realtime-badge.is-planned {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mobilibus-timetable {
+  display: grid;
+  gap: 12px;
+}
+
+.mobilibus-direction {
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.mobilibus-direction h4 {
+  color: #0f766e;
+  font-size: 1.05rem;
+}
+
+.mobilibus-service {
+  border-top: 1px solid #e4e7ec;
+  padding-top: 12px;
+}
+
+.mobilibus-service h5 {
+  color: #344054;
+  font-size: 0.94rem;
+}
+
+.mobilibus-service ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 16px;
+  margin: 0;
+  padding-left: 28px;
+  color: #101828;
+  font-variant-numeric: tabular-nums;
+}
+
 .favorites-grid {
   grid-template-columns: 1fr;
 }
@@ -1173,6 +1796,22 @@ label {
   border: 3px solid #111827;
   background: #ffffff;
   color: #111827;
+}
+
+.map-marker.is-mobilibus-stop {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #115e59;
+  cursor: pointer;
+}
+
+.map-marker.is-selected-mobilibus-stop {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #9a3412;
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.25),
+    0 12px 24px rgba(154, 52, 18, 0.24);
 }
 
 .map-marker.is-stop svg,
@@ -1443,6 +2082,99 @@ label {
     font-size: 0.92rem;
   }
 
+  .mobilibus-page {
+    min-height: calc(100vh - 62px);
+    padding: 20px 14px 84px;
+  }
+
+  .mobilibus-lines-page {
+    min-height: calc(100vh - 62px);
+    padding: 0;
+  }
+
+  .mobilibus-lines-map-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 62px);
+  }
+
+  .mobilibus-lines-map-stage {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .mobilibus-lines-map-stage .mobilibus-map-panel,
+  .mobilibus-lines-map-stage .mobilibus-map-panel .map-surface {
+    min-height: calc(100vh - 62px);
+  }
+
+  .mobilibus-lines-control-panel {
+    position: absolute;
+    right: 10px;
+    bottom: 74px;
+    left: 10px;
+    z-index: 800;
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    max-height: min(52vh, 480px);
+    border-radius: 14px;
+    border: 1px solid rgba(208, 213, 221, 0.9);
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 18px 50px rgba(16, 24, 40, 0.2);
+    backdrop-filter: blur(16px);
+  }
+
+  .app-theme[data-theme='dark'] .mobilibus-lines-control-panel {
+    border-color: #28514d;
+    background: rgba(15, 36, 35, 0.96);
+  }
+
+  .mobilibus-map-panel,
+  .mobilibus-map-panel .map-surface {
+    min-height: 390px;
+    height: 58vh;
+  }
+
+  .mobilibus-line-result {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .mobilibus-line-result-meta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .mobilibus-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mobilibus-map-message--error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mobilibus-stop-filter-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mobilibus-refresh-button {
+    width: fit-content;
+  }
+
+  .mobilibus-departure-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mobilibus-departure-meta {
+    justify-items: start;
+    text-align: left;
+  }
+
   .mobile-nav {
     position: fixed;
     left: 0;
@@ -1450,7 +2182,7 @@ label {
     bottom: 0;
     z-index: 1100;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid #e4e7ec;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(16px);

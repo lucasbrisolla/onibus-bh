@@ -2,11 +2,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiClientError,
   fetchNearbyStops,
+  fetchMobilibusDepartures,
+  fetchMobilibusLines,
+  fetchMobilibusStops,
+  fetchMobilibusTimetable,
   fetchRoutePoints,
   fetchStopPredictions,
   fetchVehicles,
 } from './apiClient';
 import type { Prediction } from '../domain/types';
+import type {
+  MobilibusLine,
+  MobilibusStop,
+  MobilibusStopDepartures,
+  MobilibusTimetable,
+} from '../domain/mobilibusTypes';
 
 const prediction: Prediction = {
   id: '8350-1',
@@ -180,5 +190,112 @@ describe('map API clients', () => {
       '/api/itinerarios/53564/veiculos',
       expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
     );
+  });
+});
+
+describe('clientes da API Mobilibus', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const line: MobilibusLine = {
+    projectId: 501,
+    routeId: 572385,
+    shortName: '2890',
+    name: 'Morada Nova / Pindorama / Cidade Industrial',
+    network: 'Ótimo/RMBH',
+    fare: 8.45,
+  };
+
+  const timetable: MobilibusTimetable = {
+    projectId: 501,
+    routeId: 572385,
+    directions: [{ name: 'Ida', services: [{ name: 'Dias Úteis', departures: ['06:30'] }] }],
+  };
+
+  const stop: MobilibusStop = {
+    projectId: 501,
+    stopId: 15192689,
+    latitude: -19.93193292,
+    longitude: -43.93043518,
+    name: 'Av. Afonso Pena, 2323 - Parada DEOESP',
+    code: null,
+    address: 'Avenida Afonso Pena 2328',
+    bearing: 340,
+  };
+
+  const departures: MobilibusStopDepartures = {
+    projectId: 501,
+    stopId: 15192689,
+    stopName: stop.name,
+    referenceTime: 1787529945917,
+    departures: [],
+  };
+
+  it('pesquisa linhas pelo endpoint próprio com a consulta codificada', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ lines: [line] }), { status: 200 })),
+    );
+
+    await expect(fetchMobilibusLines('São João')).resolves.toEqual([line]);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/mobilibus/linhas?q=S%C3%A3o%20Jo%C3%A3o',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('consulta horários usando projectId e routeId da linha', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ timetable }), { status: 200 })),
+    );
+
+    await expect(fetchMobilibusTimetable(line)).resolves.toEqual(timetable);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/mobilibus/projetos/501/linhas/572385/horarios',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('consulta pontos usando projectId e tile codificado', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ stops: [stop] }), { status: 200 })),
+    );
+
+    await expect(fetchMobilibusStops(501, { x: 6192, y: 9117, zoom: 16 })).resolves.toEqual([stop]);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/mobilibus/projetos/501/pontos?tile=6192%2C9117%2C16',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('consulta partidas usando a identidade do ponto', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response(JSON.stringify({ departures }), { status: 200 })),
+    );
+
+    await expect(fetchMobilibusDepartures(stop)).resolves.toEqual(departures);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/mobilibus/projetos/501/pontos/15192689/partidas',
+      expect.objectContaining({ cache: 'no-store', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('preserva a mensagem do envelope de erro Mobilibus', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response(JSON.stringify({ error: { message: 'Mobilibus indisponível' } }), { status: 502 }),
+      ),
+    );
+
+    await expect(fetchMobilibusLines('28')).rejects.toMatchObject({
+      name: 'ApiClientError',
+      message: 'Mobilibus indisponível',
+      status: 502,
+    });
   });
 });

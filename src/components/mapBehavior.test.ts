@@ -108,8 +108,11 @@ describe('createMapBehavior', () => {
     });
     const center = { latitude: -19.93, longitude: -44.01 };
 
+    const started = behavior.dispatch({ type: 'programmatic-move-started' });
     const result = behavior.dispatch({ type: 'moveend', center });
 
+    expect(started.scene).toBe(initial.scene);
+    expect(started.viewport).toEqual({ type: 'keep' });
     expect(result.scene).toBe(initial.scene);
     expect(result.viewport).toEqual({ type: 'keep' });
 

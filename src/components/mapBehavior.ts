@@ -16,6 +16,9 @@ export type MapBehaviorEvent =
       input: MapSceneInput;
     }
   | {
+      type: 'programmatic-move-started';
+    }
+  | {
       type: 'moveend';
       center: MapCoordinate;
     };

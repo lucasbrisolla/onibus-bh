@@ -3,7 +3,13 @@ import { BusFront, ChevronLeft, History, LayoutDashboard, MapPinned, Menu, MoonS
 import { ref } from 'vue';
 import type { NearbyStop } from '../domain/types';
 
-export type DashboardSection = 'monitoramento' | 'mapa' | 'favoritos' | 'historico' | 'configuracoes';
+export type DashboardSection =
+  | 'monitoramento'
+  | 'mapa'
+  | 'linhas'
+  | 'favoritos'
+  | 'historico'
+  | 'configuracoes';
 
 defineProps<{
   lastUpdated: string | null;
@@ -50,6 +56,7 @@ function toggleSidebar() {
 const navItems: { id: DashboardSection; label: string; icon: typeof BusFront }[] = [
   { id: 'monitoramento', label: 'Monitoramento', icon: LayoutDashboard },
   { id: 'mapa', label: 'Mapa', icon: MapPinned },
+  { id: 'linhas', label: 'Linhas', icon: BusFront },
   { id: 'favoritos', label: 'Favoritos', icon: Star },
   { id: 'historico', label: 'Histórico', icon: History },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },

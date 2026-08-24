@@ -1,4 +1,11 @@
 import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
+import type {
+  MobilibusLine,
+  MobilibusMapTile,
+  MobilibusStop,
+  MobilibusStopDepartures,
+  MobilibusTimetable,
+} from '../domain/mobilibusTypes.js';
 import { BadRequestError, NotFoundError, toHttpError } from './errors.js';
 
 export type ApiQueryValue = string | readonly string[] | undefined;
@@ -21,6 +28,10 @@ export interface ApiContractOperations {
   getStopPredictions: (stopCode: string) => Promise<Prediction[]>;
   getRoutePoints: (serviceId: string) => Promise<RoutePoint[]>;
   getVehicles: (serviceId: string) => Promise<Vehicle[]>;
+  searchMobilibusLines: (query: string) => Promise<MobilibusLine[]>;
+  getMobilibusTimetable: (projectId: number, routeId: number) => Promise<MobilibusTimetable>;
+  getMobilibusStops: (projectId: number, tile: MobilibusMapTile) => Promise<MobilibusStop[]>;
+  getMobilibusDepartures: (projectId: number, stopId: number) => Promise<MobilibusStopDepartures>;
 }
 
 function apiError(error: unknown): ApiContractResponse {
@@ -87,6 +98,38 @@ function readNumber(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function readPositiveInteger(value: string | null): number | null {
+  if (!value || !/^\d+$/.test(value)) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function readMapTile(value: string | null): MobilibusMapTile | null {
+  const match = value?.match(/^(\d+),(\d+),(\d+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const x = Number(match[1]);
+  const y = Number(match[2]);
+  const zoom = Number(match[3]);
+
+  if (
+    !Number.isSafeInteger(x) ||
+    !Number.isSafeInteger(y) ||
+    !Number.isSafeInteger(zoom) ||
+    zoom < 14 ||
+    zoom > 20
+  ) {
+    return null;
+  }
+
+  return { x, y, zoom };
+}
+
 function decodePathSegment(value: string): string | null {
   try {
     return decodeURIComponent(value);
@@ -136,6 +179,69 @@ export async function dispatchApiRequest(
 
   if (pathname === '/api/linhas') {
     return execute(operations.getLines, value => value);
+  }
+
+  if (pathname === '/api/mobilibus/linhas') {
+    const query = readQueryValue(request, parsedUrl, 'q')?.trim() ?? '';
+    if (Array.from(query).length < 2) {
+      return badRequest('A consulta deve ter pelo menos dois caracteres');
+    }
+
+    return execute(
+      () => operations.searchMobilibusLines(query),
+      lines => ({ lines }),
+    );
+  }
+
+  const stopsMatch = pathname.match(/^\/api\/mobilibus\/projetos\/([^/]+)\/pontos$/);
+  if (stopsMatch) {
+    const projectId = decodePathSegment(stopsMatch[1]);
+    const parsedProjectId = readPositiveInteger(projectId);
+    const tile = readMapTile(readQueryValue(request, parsedUrl, 'tile'));
+
+    if (parsedProjectId === null) {
+      return badRequest('Projeto Mobilibus inválido');
+    }
+
+    if (parsedProjectId !== 501) {
+      return badRequest('Projeto Mobilibus não suportado');
+    }
+
+    if (!tile) {
+      return badRequest('Tile Mobilibus inválido');
+    }
+
+    return execute(
+      () => operations.getMobilibusStops(parsedProjectId, tile),
+      stops => ({ stops }),
+    );
+  }
+
+  const departuresMatch = pathname.match(
+    /^\/api\/mobilibus\/projetos\/([^/]+)\/pontos\/([^/]+)\/partidas$/,
+  );
+  if (departuresMatch) {
+    const projectId = decodePathSegment(departuresMatch[1]);
+    const stopId = decodePathSegment(departuresMatch[2]);
+    const parsedProjectId = readPositiveInteger(projectId);
+    const parsedStopId = readPositiveInteger(stopId);
+
+    if (parsedProjectId === null) {
+      return badRequest('Projeto Mobilibus inválido');
+    }
+
+    if (parsedProjectId !== 501) {
+      return badRequest('Projeto Mobilibus não suportado');
+    }
+
+    if (parsedStopId === null) {
+      return badRequest('Ponto Mobilibus inválido');
+    }
+
+    return execute(
+      () => operations.getMobilibusDepartures(parsedProjectId, parsedStopId),
+      departures => ({ departures }),
+    );
   }
 
   if (pathname === '/api/paradas/proximas') {
@@ -188,6 +294,33 @@ export async function dispatchApiRequest(
     return execute(
       () => operations.getRoutePoints(serviceId),
       route => ({ route }),
+    );
+  }
+
+  const timetableMatch = pathname.match(
+    /^\/api\/mobilibus\/projetos\/([^/]+)\/linhas\/([^/]+)\/horarios$/,
+  );
+  if (timetableMatch) {
+    const projectId = decodePathSegment(timetableMatch[1]);
+    const routeId = decodePathSegment(timetableMatch[2]);
+    const parsedProjectId = readPositiveInteger(projectId);
+    const parsedRouteId = readPositiveInteger(routeId);
+
+    if (parsedProjectId === null) {
+      return badRequest('Projeto Mobilibus inválido');
+    }
+
+    if (parsedProjectId !== 501) {
+      return badRequest('Projeto Mobilibus não suportado');
+    }
+
+    if (parsedRouteId === null) {
+      return badRequest('Rota Mobilibus inválida');
+    }
+
+    return execute(
+      () => operations.getMobilibusTimetable(parsedProjectId, parsedRouteId),
+      timetable => ({ timetable }),
     );
   }
 

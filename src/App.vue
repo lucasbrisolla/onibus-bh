@@ -5,6 +5,7 @@ import type { DashboardSection } from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
 import type { UserLocation } from './components/MapView.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
+import MobilibusLinesPanel from './components/MobilibusLinesPanel.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
 import type {
   AlertSettings,
@@ -13,7 +14,22 @@ import type {
   RoutePoint,
   Vehicle,
 } from './domain/types';
-import { fetchNearbyStops, fetchRoutePoints, fetchStopPredictions, fetchVehicles } from './services/apiClient';
+import type {
+  MobilibusMapTile,
+  MobilibusDeparturesStatus,
+  MobilibusStop,
+  MobilibusStopsStatus,
+  MobilibusStopDepartures,
+} from './domain/mobilibusTypes';
+import { OTIMO_RMBH_PROJECT_ID } from './domain/mobilibusTypes';
+import {
+  fetchMobilibusDepartures,
+  fetchMobilibusStops,
+  fetchNearbyStops,
+  fetchRoutePoints,
+  fetchStopPredictions,
+  fetchVehicles,
+} from './services/apiClient';
 import {
   createMapDataLoader,
   describeSelectedVehicleApproach,
@@ -86,6 +102,13 @@ const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
 const userLocation = ref<UserLocation | null>(null);
 const activeSection = ref<DashboardSection>('monitoramento');
+const mobilibusStops = ref<MobilibusStop[]>([]);
+const mobilibusStopsStatus = ref<MobilibusStopsStatus>('initial');
+const mobilibusStopsError = ref<string | null>(null);
+const selectedMobilibusStop = ref<MobilibusStop | null>(null);
+const mobilibusDeparturesStatus = ref<MobilibusDeparturesStatus>('initial');
+const mobilibusDepartures = ref<MobilibusStopDepartures | null>(null);
+const mobilibusDeparturesError = ref<string | null>(null);
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
@@ -128,6 +151,11 @@ const searchResults = toRef(stopSelection.state, 'searchResults');
 const favoriteStops = toRef(stopSelection.state, 'favoriteStops');
 const monitoredStop = toRef(stopSelection.state, 'monitoredStop');
 const selectedStop = monitoredStop;
+let mobilibusStopsRequestVersion = 0;
+let mobilibusDeparturesRequestVersion = 0;
+let mobilibusVisibleTiles: MobilibusMapTile[] = [];
+const mobilibusStopsByTile = new Map<string, MobilibusStop[]>();
+const mobilibusStopRequests = new Map<string, Promise<MobilibusStop[]>>();
 const isSelectedStopFavorite = computed(
   () => !!selectedStop.value && favoriteStops.value.some(stop => stop.code === selectedStop.value?.code),
 );
@@ -166,6 +194,158 @@ function updateSettings(next: AlertSettings) {
 
 function navigate(section: DashboardSection) {
   activeSection.value = section;
+}
+
+function mobilibusErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function mobilibusTileKey(tile: MobilibusMapTile): string {
+  return `${tile.x},${tile.y},${tile.zoom}`;
+}
+
+function rebuildMobilibusStops(tiles: MobilibusMapTile[]) {
+  const byId = new Map<number, MobilibusStop>();
+  for (const tile of tiles) {
+    for (const stop of mobilibusStopsByTile.get(mobilibusTileKey(tile)) ?? []) {
+      byId.set(stop.stopId, stop);
+    }
+  }
+
+  mobilibusStops.value = [...byId.values()];
+}
+
+async function requestMobilibusTile(projectId: number, tile: MobilibusMapTile) {
+  const key = mobilibusTileKey(tile);
+  const pending = mobilibusStopRequests.get(key);
+  if (pending) {
+    return pending;
+  }
+
+  const request = fetchMobilibusStops(projectId, tile);
+  mobilibusStopRequests.set(key, request);
+  try {
+    return await request;
+  } finally {
+    if (mobilibusStopRequests.get(key) === request) {
+      mobilibusStopRequests.delete(key);
+    }
+  }
+}
+
+async function loadMobilibusStops(tiles: MobilibusMapTile[]) {
+  const uniqueTiles = [...new Map(tiles.map(tile => [mobilibusTileKey(tile), tile])).values()];
+  mobilibusVisibleTiles = uniqueTiles;
+  if (uniqueTiles.length === 0) {
+    mobilibusStopsRequestVersion += 1;
+    mobilibusStops.value = [];
+    mobilibusStopsStatus.value = 'initial';
+    return;
+  }
+
+  const requestVersion = ++mobilibusStopsRequestVersion;
+  const pendingTiles = uniqueTiles.filter(tile => !mobilibusStopsByTile.has(mobilibusTileKey(tile)));
+  rebuildMobilibusStops(uniqueTiles);
+  if (pendingTiles.length === 0) {
+    mobilibusStopsStatus.value = mobilibusStops.value.length > 0 ? 'content' : 'empty';
+    return;
+  }
+
+  mobilibusStopsError.value = null;
+  mobilibusStopsStatus.value = 'loading';
+  const results = await Promise.allSettled(
+    pendingTiles.map(tile => requestMobilibusTile(OTIMO_RMBH_PROJECT_ID, tile)),
+  );
+
+  if (requestVersion !== mobilibusStopsRequestVersion) {
+    return;
+  }
+
+  let firstError: unknown = null;
+  for (const [index, result] of results.entries()) {
+    if (result.status === 'fulfilled') {
+      mobilibusStopsByTile.set(mobilibusTileKey(pendingTiles[index]), result.value);
+    } else if (firstError === null) {
+      firstError = result.reason;
+    }
+  }
+
+  rebuildMobilibusStops(uniqueTiles);
+
+  if (firstError !== null) {
+    mobilibusStopsError.value = mobilibusErrorMessage(
+      firstError,
+      'Não foi possível carregar os pontos Mobilibus.',
+    );
+    mobilibusStopsStatus.value = 'error';
+    return;
+  }
+
+  mobilibusStopsStatus.value = mobilibusStops.value.length > 0 ? 'content' : 'empty';
+}
+
+function retryMobilibusStops() {
+  if (mobilibusVisibleTiles.length === 0) {
+    return;
+  }
+
+  for (const tile of mobilibusVisibleTiles) {
+    mobilibusStopsByTile.delete(mobilibusTileKey(tile));
+  }
+  mobilibusStopsError.value = null;
+  void loadMobilibusStops(mobilibusVisibleTiles);
+}
+
+async function runMobilibusDepartures(stop: MobilibusStop, requestVersion: number) {
+  try {
+    const departures = await fetchMobilibusDepartures(stop);
+    if (
+      requestVersion !== mobilibusDeparturesRequestVersion ||
+      selectedMobilibusStop.value?.projectId !== stop.projectId ||
+      selectedMobilibusStop.value?.stopId !== stop.stopId
+    ) {
+      return;
+    }
+
+    mobilibusDepartures.value = departures;
+    mobilibusDeparturesStatus.value = departures.departures.length > 0 ? 'content' : 'empty';
+  } catch (error) {
+    if (
+      requestVersion !== mobilibusDeparturesRequestVersion ||
+      selectedMobilibusStop.value?.projectId !== stop.projectId ||
+      selectedMobilibusStop.value?.stopId !== stop.stopId
+    ) {
+      return;
+    }
+
+    mobilibusDepartures.value = null;
+    mobilibusDeparturesError.value = mobilibusErrorMessage(
+      error,
+      'Não foi possível consultar os ônibus deste ponto.',
+    );
+    mobilibusDeparturesStatus.value = 'error';
+  }
+}
+
+function selectMobilibusStop(stop: MobilibusStop) {
+  selectedMobilibusStop.value = stop;
+  mobilibusDepartures.value = null;
+  mobilibusDeparturesError.value = null;
+  const requestVersion = ++mobilibusDeparturesRequestVersion;
+  mobilibusDeparturesStatus.value = 'loading';
+  void runMobilibusDepartures(stop, requestVersion);
+}
+
+function retryMobilibusDepartures() {
+  const stop = selectedMobilibusStop.value;
+  if (!stop) {
+    return;
+  }
+
+  mobilibusDeparturesError.value = null;
+  const requestVersion = ++mobilibusDeparturesRequestVersion;
+  mobilibusDeparturesStatus.value = 'loading';
+  void runMobilibusDepartures(stop, requestVersion);
 }
 
 function updateSearch(query: string) {
@@ -303,6 +483,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  mobilibusStopsRequestVersion += 1;
+  mobilibusDeparturesRequestVersion += 1;
   predictionMonitor.stop();
   window.removeEventListener('focus', handlePollingResume);
   window.removeEventListener('pageshow', handlePollingResume);
@@ -431,6 +613,23 @@ onBeforeUnmount(() => {
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
       />
     </section>
+
+    <MobilibusLinesPanel
+      v-else-if="activeSection === 'linhas'"
+      :stops="mobilibusStops"
+      :stops-status="mobilibusStopsStatus"
+      :stops-error="mobilibusStopsError"
+      :selected-stop="selectedMobilibusStop"
+      :departures-status="mobilibusDeparturesStatus"
+      :departures="mobilibusDepartures"
+      :departures-error="mobilibusDeparturesError"
+      :theme-mode="themeMode"
+      @request-map-tiles="loadMobilibusStops"
+      @retry-map="retryMobilibusStops"
+      @select-stop="selectMobilibusStop"
+      @retry-departures="retryMobilibusDepartures"
+      @toggle-theme="toggleTheme"
+    />
 
     <section v-else-if="activeSection === 'favoritos'" class="section-page">
       <div class="section-page-header">

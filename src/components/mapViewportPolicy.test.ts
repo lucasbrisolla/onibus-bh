@@ -54,6 +54,7 @@ describe('createMapViewportPolicy', () => {
       maxZoom: 15,
       minimumSpan: 0.01,
     });
+    expect(policy.decide({ type: 'programmatic-move-started' })).toEqual({ type: 'keep' });
 
     expect(
       policy.decide({
@@ -74,6 +75,7 @@ describe('createMapViewportPolicy', () => {
       center: { latitude: -19.916342, longitude: -43.993759 },
       zoom: 14,
     });
+    policy.decide({ type: 'programmatic-move-started' });
 
     expect(
       policy.decide({
@@ -151,7 +153,7 @@ describe('createMapViewportPolicy', () => {
     });
   });
 
-  it('não deixa conclusões programáticas consecutivas vazarem como exploração manual', () => {
+  it('consome somente a conclusão de um movimento programático que realmente começou', () => {
     const policy = createMapViewportPolicy();
     policy.decide({ type: 'scene-updated', snapshot: sceneSnapshot() });
     policy.decide({
@@ -161,10 +163,21 @@ describe('createMapViewportPolicy', () => {
         monitoredStopCode: secondStop.code,
       }),
     });
+    policy.decide({ type: 'programmatic-move-started' });
 
     const center = { latitude: -19.92, longitude: -44.0 };
     expect(policy.decide({ type: 'moveend', center })).toEqual({ type: 'keep' });
-    expect(policy.decide({ type: 'moveend', center })).toEqual({ type: 'keep' });
+    expect(policy.decide({ type: 'moveend', center })).toEqual({
+      type: 'emit-area-change',
+      center,
+    });
+  });
+
+  it('não descarta movimento manual quando um comando programático não iniciou movimento', () => {
+    const policy = createMapViewportPolicy();
+    policy.decide({ type: 'scene-updated', snapshot: sceneSnapshot() });
+
+    const center = { latitude: -19.94, longitude: -44.03 };
     expect(policy.decide({ type: 'moveend', center })).toEqual({
       type: 'emit-area-change',
       center,

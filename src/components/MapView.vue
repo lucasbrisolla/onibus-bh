@@ -89,6 +89,7 @@ let userLocationLayer: L.LayerGroup | null = null;
 let baseTileLayer: L.TileLayer | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let resizeFrameId: number | null = null;
+let isExecutingProgrammaticViewportCommand = false;
 const mapBehavior = createMapBehavior();
 
 const stopIconSvg = `
@@ -357,8 +358,18 @@ function createComfortableBounds(bounds: MapBounds, minimumSpan: number) {
   );
 }
 
+function executeProgrammaticViewportChange(change: () => void) {
+  isExecutingProgrammaticViewportCommand = true;
+  try {
+    change();
+  } finally {
+    isExecutingProgrammaticViewportCommand = false;
+  }
+}
+
 function executeViewportCommand(command: MapViewportCommand) {
-  if (!map) {
+  const currentMap = map;
+  if (!currentMap) {
     return;
   }
 
@@ -366,17 +377,29 @@ function executeViewportCommand(command: MapViewportCommand) {
     case 'keep':
       return;
     case 'set-default-view':
-      map.setView([command.center.latitude, command.center.longitude], command.zoom);
+      executeProgrammaticViewportChange(() => {
+        currentMap.setView([command.center.latitude, command.center.longitude], command.zoom);
+      });
       return;
     case 'fit-bounds':
-      map.fitBounds(createComfortableBounds(command.bounds, command.minimumSpan), {
-        padding: [...command.padding],
-        maxZoom: command.maxZoom,
+      executeProgrammaticViewportChange(() => {
+        currentMap.fitBounds(createComfortableBounds(command.bounds, command.minimumSpan), {
+          padding: [...command.padding],
+          maxZoom: command.maxZoom,
+        });
       });
       return;
     case 'emit-area-change':
       emit('moveMapArea', command.center);
   }
+}
+
+function handleMapMoveStart() {
+  if (!isExecutingProgrammaticViewportCommand) {
+    return;
+  }
+
+  mapBehavior.dispatch({ type: 'programmatic-move-started' });
 }
 
 function handleMapMoveEnd() {
@@ -426,6 +449,7 @@ onMounted(() => {
   updateBaseTileLayer();
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
+  map.on('movestart', handleMapMoveStart);
   map.on('moveend', handleMapMoveEnd);
 
   if (typeof ResizeObserver !== 'undefined' && mapElement.value) {
@@ -449,6 +473,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
   window.removeEventListener('resize', invalidateMapSize);
+  map?.off('movestart', handleMapMoveStart);
   map?.off('moveend', handleMapMoveEnd);
   map?.remove();
   map = null;

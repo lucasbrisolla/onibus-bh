@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
+import type {
+  MobilibusLine,
+  MobilibusStop,
+  MobilibusStopDepartures,
+  MobilibusTimetable,
+} from '../domain/mobilibusTypes';
 import { BadGatewayError } from './errors';
 import { resolveLocalApiRequest } from './localApiRouter';
 import type { ApiContractOperations } from './apiContractDispatcher';
@@ -44,6 +50,40 @@ const vehicle: Vehicle = {
   bearing: 135,
 };
 
+const mobilibusLine: MobilibusLine = {
+  projectId: 501,
+  routeId: 572385,
+  shortName: '2890',
+  name: 'Morada Nova / Pindorama / Cidade Industrial',
+  network: 'Ótimo/RMBH',
+  fare: null,
+};
+
+const mobilibusTimetable: MobilibusTimetable = {
+  projectId: 501,
+  routeId: 572385,
+  directions: [{ name: 'Ida', services: [{ name: 'Dias Úteis', departures: ['06:30'] }] }],
+};
+
+const mobilibusStop: MobilibusStop = {
+  projectId: 501,
+  stopId: 15192689,
+  latitude: -19.93193292,
+  longitude: -43.93043518,
+  name: 'Av. Afonso Pena, 2323 - Parada DEOESP',
+  code: null,
+  address: 'Avenida Afonso Pena 2328',
+  bearing: 340,
+};
+
+const mobilibusDepartures: MobilibusStopDepartures = {
+  projectId: 501,
+  stopId: 15192689,
+  stopName: mobilibusStop.name,
+  referenceTime: 1787529945917,
+  departures: [],
+};
+
 function createOperations(
   overrides: Partial<ApiContractOperations> = {},
 ): ApiContractOperations {
@@ -54,6 +94,10 @@ function createOperations(
     getStopPredictions: vi.fn(async () => [prediction]),
     getRoutePoints: vi.fn(async () => route),
     getVehicles: vi.fn(async () => [vehicle]),
+    searchMobilibusLines: vi.fn(async () => [mobilibusLine]),
+    getMobilibusTimetable: vi.fn(async () => mobilibusTimetable),
+    getMobilibusStops: vi.fn(async () => [mobilibusStop]),
+    getMobilibusDepartures: vi.fn(async () => mobilibusDepartures),
     ...overrides,
   };
 }
@@ -101,6 +145,82 @@ describe('adapters do contrato HTTP', () => {
     expect(vercelResponse).toEqual(localResponse);
   });
 
+  it('produzem a mesma resposta para pesquisa e horários Mobilibus', async () => {
+    const operations = createOperations();
+    const localLines = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/linhas?q=2890',
+      handlers: operations,
+    });
+    const vercelLines = await resolveVercelApiRequest(
+      vercelRequest({ url: '/api/mobilibus/linhas', query: { q: '2890' } }),
+      operations,
+    );
+    const localTimetable = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/projetos/501/linhas/572385/horarios',
+      handlers: operations,
+    });
+    const vercelTimetable = await resolveVercelApiRequest(
+      vercelRequest({
+        url: '/api/mobilibus/projetos/501/linhas/572385/horarios',
+        query: {},
+      }),
+      operations,
+    );
+
+    expect(vercelLines).toEqual(localLines);
+    expect(vercelTimetable).toEqual(localTimetable);
+  });
+
+  it('produzem a mesma resposta para pontos Mobilibus', async () => {
+    const operations = createOperations();
+    const localResponse = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/projetos/501/pontos?tile=6192,9117,16',
+      handlers: operations,
+    });
+    const vercelResponse = await resolveVercelApiRequest(
+      vercelRequest({
+        url: '/api/mobilibus/projetos/501/pontos',
+        query: { tile: '6192,9117,16' },
+      }),
+      operations,
+    );
+
+    expect(vercelResponse).toEqual(localResponse);
+  });
+
+  it('produzem a mesma resposta para partidas Mobilibus', async () => {
+    const operations = createOperations();
+    const localResponse = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/projetos/501/pontos/15192689/partidas',
+      handlers: operations,
+    });
+    const vercelResponse = await resolveVercelApiRequest(
+      vercelRequest({ url: '/api/mobilibus/projetos/501/pontos/15192689/partidas' }),
+      operations,
+    );
+
+    expect(vercelResponse).toEqual(localResponse);
+  });
+
+  it('produzem a mesma validação de rede não suportada', async () => {
+    const operations = createOperations();
+    const localResponse = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/projetos/603/linhas/572385/horarios',
+      handlers: operations,
+    });
+    const vercelResponse = await resolveVercelApiRequest(
+      vercelRequest({ url: '/api/mobilibus/projetos/603/linhas/572385/horarios' }),
+      operations,
+    );
+
+    expect(vercelResponse).toEqual(localResponse);
+  });
+
   it('produzem a mesma tradução de erro upstream', async () => {
     const operations = createOperations({
       getLines: vi.fn(async () => {
@@ -114,6 +234,25 @@ describe('adapters do contrato HTTP', () => {
     });
     const vercelResponse = await resolveVercelApiRequest(
       vercelRequest({ url: '/api/linhas' }),
+      operations,
+    );
+
+    expect(vercelResponse).toEqual(localResponse);
+  });
+
+  it('produzem a mesma tradução de falha upstream nos horários Mobilibus', async () => {
+    const operations = createOperations({
+      getMobilibusTimetable: vi.fn(async () => {
+        throw new BadGatewayError('Mobilibus indisponível');
+      }),
+    });
+    const localResponse = await resolveLocalApiRequest({
+      method: 'GET',
+      url: '/api/mobilibus/projetos/501/linhas/572385/horarios',
+      handlers: operations,
+    });
+    const vercelResponse = await resolveVercelApiRequest(
+      vercelRequest({ url: '/api/mobilibus/projetos/501/linhas/572385/horarios' }),
       operations,
     );
 

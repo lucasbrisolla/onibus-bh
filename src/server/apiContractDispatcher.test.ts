@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { NearbyStop, Prediction, RoutePoint, Vehicle } from '../domain/types';
-import { BadGatewayError } from './errors';
+import type {
+  MobilibusLine,
+  MobilibusStop,
+  MobilibusStopDepartures,
+  MobilibusTimetable,
+} from '../domain/mobilibusTypes';
+import { BadGatewayError, NotFoundError } from './errors';
 import {
   dispatchApiRequest,
   type ApiContractOperations,
@@ -41,6 +47,45 @@ const vehicle: Vehicle = {
   bearing: 135,
 };
 
+const mobilibusLine: MobilibusLine = {
+  projectId: 501,
+  routeId: 572385,
+  shortName: '2890',
+  name: 'Morada Nova / Pindorama / Cidade Industrial',
+  network: 'Ótimo/RMBH',
+  fare: 8.45,
+};
+
+const mobilibusTimetable: MobilibusTimetable = {
+  projectId: 501,
+  routeId: 572385,
+  directions: [
+    {
+      name: 'Ida',
+      services: [{ name: 'Dias Úteis', departures: ['06:30', '05:15'] }],
+    },
+  ],
+};
+
+const mobilibusStop: MobilibusStop = {
+  projectId: 501,
+  stopId: 15192689,
+  latitude: -19.93193292,
+  longitude: -43.93043518,
+  name: 'Av. Afonso Pena, 2323 - Parada DEOESP',
+  code: null,
+  address: 'Avenida Afonso Pena 2328',
+  bearing: 340,
+};
+
+const mobilibusDepartures: MobilibusStopDepartures = {
+  projectId: 501,
+  stopId: 15192689,
+  stopName: mobilibusStop.name,
+  referenceTime: 1787529945917,
+  departures: [],
+};
+
 function createOperations(
   overrides: Partial<ApiContractOperations> = {},
 ): ApiContractOperations {
@@ -51,6 +96,10 @@ function createOperations(
     getStopPredictions: vi.fn(async () => [prediction]),
     getRoutePoints: vi.fn(async () => route),
     getVehicles: vi.fn(async () => [vehicle]),
+    searchMobilibusLines: vi.fn(async () => [mobilibusLine]),
+    getMobilibusTimetable: vi.fn(async () => mobilibusTimetable),
+    getMobilibusStops: vi.fn(async () => [mobilibusStop]),
+    getMobilibusDepartures: vi.fn(async () => mobilibusDepartures),
     ...overrides,
   };
 }
@@ -103,11 +152,74 @@ describe('dispatchApiRequest', () => {
     expect(operations.getVehicles).toHaveBeenCalledWith('53564');
   });
 
-  it('responde método não permitido com o envelope canônico', async () => {
+  it('encaminha pesquisa e horários Mobilibus com seus envelopes próprios', async () => {
     const operations = createOperations();
 
     await expect(
-      dispatchApiRequest({ method: 'POST', url: '/api/health' }, operations),
+      dispatchApiRequest(
+        { method: 'GET', url: '/api/mobilibus/linhas?q=2890' },
+        operations,
+      ),
+    ).resolves.toEqual({ status: 200, body: { lines: [mobilibusLine] } });
+    await expect(
+      dispatchApiRequest(
+        { method: 'GET', url: '/api/mobilibus/projetos/501/linhas/572385/horarios' },
+        operations,
+      ),
+    ).resolves.toEqual({ status: 200, body: { timetable: mobilibusTimetable } });
+
+    expect(operations.searchMobilibusLines).toHaveBeenCalledWith('2890');
+    expect(operations.getMobilibusTimetable).toHaveBeenCalledWith(501, 572385);
+  });
+
+  it('encaminha pontos Mobilibus por projeto e tile', async () => {
+    const operations = createOperations();
+
+    await expect(
+      dispatchApiRequest(
+        {
+          method: 'GET',
+          url: '/api/mobilibus/projetos/501/pontos',
+          query: { tile: '6192,9117,16' },
+        },
+        operations,
+      ),
+    ).resolves.toEqual({ status: 200, body: { stops: [mobilibusStop] } });
+    expect(operations.getMobilibusStops).toHaveBeenCalledWith(501, {
+      x: 6192,
+      y: 9117,
+      zoom: 16,
+    });
+  });
+
+  it('encaminha partidas Mobilibus pelo projeto e ponto selecionado', async () => {
+    const operations = createOperations();
+
+    await expect(
+      dispatchApiRequest(
+        { method: 'GET', url: '/api/mobilibus/projetos/501/pontos/15192689/partidas' },
+        operations,
+      ),
+    ).resolves.toEqual({ status: 200, body: { departures: mobilibusDepartures } });
+    expect(operations.getMobilibusDepartures).toHaveBeenCalledWith(501, 15192689);
+  });
+
+  it.each([
+    '/api/health',
+    '/api/linhas',
+    '/api/paradas/proximas?lat=-19.9&lng=-43.9',
+    '/api/paradas/13566/previsoes',
+    '/api/itinerarios/53564',
+    '/api/itinerarios/53564/veiculos',
+    '/api/mobilibus/linhas?q=2890',
+    '/api/mobilibus/projetos/501/pontos?tile=6192,9117,16',
+    '/api/mobilibus/projetos/501/pontos/15192689/partidas',
+    '/api/mobilibus/projetos/501/linhas/572385/horarios',
+  ])('responde método não permitido com o envelope canônico em %s', async url => {
+    const operations = createOperations();
+
+    await expect(
+      dispatchApiRequest({ method: 'POST', url }, operations),
     ).resolves.toEqual({
       status: 405,
       body: {
@@ -117,7 +229,9 @@ describe('dispatchApiRequest', () => {
         },
       },
     });
-    expect(operations.checkSiuHealth).not.toHaveBeenCalled();
+    for (const operation of Object.values(operations)) {
+      expect(operation).not.toHaveBeenCalled();
+    }
   });
 
   it.each([
@@ -126,6 +240,15 @@ describe('dispatchApiRequest', () => {
     ['/api/paradas/abc/previsoes', 'Código da parada inválido'],
     ['/api/itinerarios/abc', 'Código do itinerário inválido'],
     ['/api/itinerarios/abc/veiculos', 'Código do itinerário inválido'],
+    ['/api/mobilibus/linhas', 'A consulta deve ter pelo menos dois caracteres'],
+    ['/api/mobilibus/linhas?q=a', 'A consulta deve ter pelo menos dois caracteres'],
+    ['/api/mobilibus/projetos/501/pontos', 'Tile Mobilibus inválido'],
+    ['/api/mobilibus/projetos/501/pontos?tile=6192,9117,13', 'Tile Mobilibus inválido'],
+    ['/api/mobilibus/projetos/603/pontos?tile=6192,9117,16', 'Projeto Mobilibus não suportado'],
+    ['/api/mobilibus/projetos/501/pontos/abc/partidas', 'Ponto Mobilibus inválido'],
+    ['/api/mobilibus/projetos/603/pontos/15192689/partidas', 'Projeto Mobilibus não suportado'],
+    ['/api/mobilibus/projetos/603/linhas/572385/horarios', 'Projeto Mobilibus não suportado'],
+    ['/api/mobilibus/projetos/501/linhas/invalida/horarios', 'Rota Mobilibus inválida'],
   ])('responde parâmetro inválido em %s', async (url, message) => {
     await expect(
       dispatchApiRequest({ method: 'GET', url }, createOperations()),
@@ -154,6 +277,20 @@ describe('dispatchApiRequest', () => {
     });
   });
 
+  it('responde rota Mobilibus desconhecida com erro not_found', async () => {
+    await expect(
+      dispatchApiRequest({ method: 'GET', url: '/api/mobilibus/desconhecida' }, createOperations()),
+    ).resolves.toEqual({
+      status: 404,
+      body: {
+        error: {
+          code: 'not_found',
+          message: 'Rota da API não encontrada',
+        },
+      },
+    });
+  });
+
   it('traduz AppError da operação sem perder status e código', async () => {
     const operations = createOperations({
       getLines: vi.fn(async () => {
@@ -169,6 +306,55 @@ describe('dispatchApiRequest', () => {
         error: {
           code: 'bad_gateway',
           message: 'SIU indisponível',
+        },
+      },
+    });
+  });
+
+  it.each([
+    ['/api/mobilibus/linhas?q=2890', 'searchMobilibusLines'],
+    ['/api/mobilibus/projetos/501/pontos?tile=6192,9117,16', 'getMobilibusStops'],
+    ['/api/mobilibus/projetos/501/pontos/15192689/partidas', 'getMobilibusDepartures'],
+    ['/api/mobilibus/projetos/501/linhas/572385/horarios', 'getMobilibusTimetable'],
+  ])('traduz erro upstream na rota Mobilibus %s', async (url, operationName) => {
+    const failingOperation = vi.fn(async () => {
+      throw new BadGatewayError('Mobilibus indisponível');
+    });
+    const operations = createOperations({
+      [operationName]: failingOperation,
+    } as Partial<ApiContractOperations>);
+
+    await expect(
+      dispatchApiRequest({ method: 'GET', url }, operations),
+    ).resolves.toEqual({
+      status: 502,
+      body: {
+        error: {
+          code: 'bad_gateway',
+          message: 'Mobilibus indisponível',
+        },
+      },
+    });
+  });
+
+  it('traduz rota Mobilibus desconhecida para not_found', async () => {
+    const operations = createOperations({
+      getMobilibusTimetable: vi.fn(async () => {
+        throw new NotFoundError('Linha Mobilibus não encontrada');
+      }),
+    });
+
+    await expect(
+      dispatchApiRequest(
+        { method: 'GET', url: '/api/mobilibus/projetos/501/linhas/999999/horarios' },
+        operations,
+      ),
+    ).resolves.toEqual({
+      status: 404,
+      body: {
+        error: {
+          code: 'not_found',
+          message: 'Linha Mobilibus não encontrada',
         },
       },
     });

@@ -13,6 +13,10 @@ describe('resolveLocalApiRequest', () => {
       getNearbyStops: vi.fn(),
       getRoutePoints: vi.fn(),
       getVehicles: vi.fn(),
+      searchMobilibusLines: vi.fn(),
+      getMobilibusTimetable: vi.fn(),
+      getMobilibusStops: vi.fn(),
+      getMobilibusDepartures: vi.fn(),
     };
 
     await expect(
@@ -52,6 +56,10 @@ describe('resolveLocalApiRequest', () => {
         getNearbyStops: vi.fn(),
         getRoutePoints: vi.fn(),
         getVehicles: vi.fn(),
+        searchMobilibusLines: vi.fn(),
+        getMobilibusTimetable: vi.fn(),
+        getMobilibusStops: vi.fn(),
+        getMobilibusDepartures: vi.fn(),
       },
     });
 
@@ -100,6 +108,10 @@ describe('resolveLocalApiRequest', () => {
         getNearbyStops,
         getRoutePoints: vi.fn(),
         getVehicles: vi.fn(),
+        searchMobilibusLines: vi.fn(),
+        getMobilibusTimetable: vi.fn(),
+        getMobilibusStops: vi.fn(),
+        getMobilibusDepartures: vi.fn(),
       },
     });
 
@@ -122,6 +134,10 @@ describe('resolveLocalApiRequest', () => {
           getNearbyStops: vi.fn(),
           getRoutePoints: vi.fn(),
           getVehicles: vi.fn(),
+        searchMobilibusLines: vi.fn(),
+        getMobilibusTimetable: vi.fn(),
+        getMobilibusStops: vi.fn(),
+        getMobilibusDepartures: vi.fn(),
         },
       }),
     ).resolves.toBeNull();
@@ -139,6 +155,10 @@ describe('resolveLocalApiRequest', () => {
           getNearbyStops: vi.fn(),
           getRoutePoints: vi.fn(),
           getVehicles: vi.fn(),
+          searchMobilibusLines: vi.fn(),
+          getMobilibusTimetable: vi.fn(),
+          getMobilibusStops: vi.fn(),
+          getMobilibusDepartures: vi.fn(),
         },
       }),
     ).resolves.toEqual({

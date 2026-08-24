@@ -37,6 +37,9 @@ export type MapViewportEvent =
       snapshot: MapViewportSceneSnapshot;
     }
   | {
+      type: 'programmatic-move-started';
+    }
+  | {
       type: 'moveend';
       center: MapCoordinate;
     };
@@ -81,11 +84,9 @@ function hasStructuralChange(
 export function createMapViewportPolicy(): MapViewportPolicy {
   let hasReceivedScene = false;
   let previousSnapshot: MapViewportSceneSnapshot | null = null;
-  let pendingProgrammaticMoves = 0;
+  let hasProgrammaticMoveInProgress = false;
 
   function frame(snapshot: MapViewportSceneSnapshot): MapViewportCommand {
-    pendingProgrammaticMoves += 1;
-
     if (!snapshot.bounds) {
       return {
         type: 'set-default-view',
@@ -104,9 +105,14 @@ export function createMapViewportPolicy(): MapViewportPolicy {
   }
 
   function decide(event: MapViewportEvent): MapViewportCommand {
+    if (event.type === 'programmatic-move-started') {
+      hasProgrammaticMoveInProgress = true;
+      return { type: 'keep' };
+    }
+
     if (event.type === 'moveend') {
-      if (pendingProgrammaticMoves > 0) {
-        pendingProgrammaticMoves -= 1;
+      if (hasProgrammaticMoveInProgress) {
+        hasProgrammaticMoveInProgress = false;
         return { type: 'keep' };
       }
 

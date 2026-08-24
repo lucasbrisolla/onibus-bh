@@ -292,6 +292,7 @@ describe('MapView', () => {
 
   it('consumes programmatic moveend and emits the center of a later manual move', async () => {
     const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds').mockImplementation(function (this: L.Map) {
+      this.fire('movestart');
       return this;
     });
     const mapFactory = vi.spyOn(L, 'map');
@@ -308,6 +309,31 @@ describe('MapView', () => {
 
     map.fire('moveend');
     expect(wrapper.emitted('moveMapArea')).toBeUndefined();
+
+    map.fire('moveend');
+    expect(wrapper.emitted('moveMapArea')).toEqual([
+      [{ latitude: center.lat, longitude: center.lng }],
+    ]);
+
+    fitBounds.mockRestore();
+    wrapper.unmount();
+  });
+
+  it('does not consume a manual move when the viewport command did not start a move', async () => {
+    const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds').mockImplementation(function (this: L.Map) {
+      return this;
+    });
+    const mapFactory = vi.spyOn(L, 'map');
+    const wrapper = mount(MapView, {
+      props: { nearbyStops: [stop] },
+      attachTo: document.body,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    const map = mapFactory.mock.results.at(-1)?.value as L.Map;
+    const center = L.latLng(-19.94, -44.03);
+    vi.spyOn(map, 'getCenter').mockReturnValue(center);
 
     map.fire('moveend');
     expect(wrapper.emitted('moveMapArea')).toEqual([

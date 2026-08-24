@@ -2,6 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from './App.vue';
+import type {
+  MobilibusStop,
+  MobilibusStopDepartures,
+} from './domain/mobilibusTypes';
 import type { Prediction } from './domain/types';
 
 const notifyArrival = vi.fn();
@@ -15,9 +19,9 @@ vi.mock('./services/notificationService', () => ({
   }),
 }));
 
-function response(body: unknown): Response {
+function response(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { 'content-type': 'application/json' },
   });
 }
@@ -34,6 +38,43 @@ const prediction: Prediction = {
   color: null,
   accessibilityCode: null,
   variant: 'direto',
+};
+
+const mobilibusStop: MobilibusStop = {
+  projectId: 501,
+  stopId: 15192689,
+  latitude: -19.93193292,
+  longitude: -43.93043518,
+  name: 'Av. Afonso Pena, 2323 - Parada DEOESP',
+  code: null,
+  address: 'Avenida Afonso Pena 2328',
+  bearing: 340,
+};
+
+const mobilibusDepartures: MobilibusStopDepartures = {
+  projectId: 501,
+  stopId: 15192689,
+  stopName: mobilibusStop.name,
+  referenceTime: 1787529945917,
+  departures: [
+    {
+      projectId: 501,
+      stopId: 15192689,
+      routeId: 572156,
+      shortName: '3838',
+      lineName: 'Rio Acima / Belo Horizonte',
+      headsign: 'Belo Horizonte',
+      color: '#ef7d01',
+      scheduledTime: '21:22:09',
+      nextDay: false,
+      vehicleId: '25H74',
+      positionAge: 91,
+      gpsTime: '21:04:14',
+      bearing: 320,
+      delay: 0,
+      realtime: true,
+    },
+  ],
 };
 
 function findClickableByText(wrapper: ReturnType<typeof mount>, text: string) {
@@ -947,5 +988,179 @@ describe('App', () => {
     expect(wrapper.find('[data-map-icon="user-location"]').exists()).toBe(true);
     expect(wrapper.text()).not.toContain('Sua posição');
     expect(wrapper.text()).not.toContain('Localização ativa');
+  });
+
+  it('navega para Linhas com mapa e sem o painel de busca metropolitana', async () => {
+    const wrapper = mount(App);
+
+    await findClickableByText(wrapper, 'Linhas').trigger('click');
+
+    expect(wrapper.find('.mobilibus-map-panel').exists()).toBe(true);
+    expect(wrapper.find('input[placeholder="Buscar parada ou endereço"]').exists()).toBe(true);
+    expect(wrapper.find('input[placeholder="Código ou nome da linha"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Mapa de pontos · Ótimo/RMBH · Mobilibus');
+    expect(wrapper.text()).not.toContain('Linhas metropolitanas');
+    expect(wrapper.text()).not.toContain('Digite pelo menos dois caracteres para pesquisar linhas');
+
+    wrapper.unmount();
+  });
+
+  it('mostra o mapa completo e os pontos Mobilibus da área visível', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          return response({ stops: [mobilibusStop] });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.mobilibus-map-panel').exists()).toBe(true);
+    expect(wrapper.find('[data-map-icon="mobilibus-stop"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain('1 ponto visível');
+    expect(wrapper.find(`[title="${mobilibusStop.name}"]`).exists()).toBe(true);
+    expect(
+      vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/pontos?tile=')),
+    ).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it('seleciona um ponto do mapa e mostra os ônibus informados naquele ponto', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          return response({ stops: [mobilibusStop] });
+        }
+
+        if (url.includes('/partidas')) {
+          return response({ departures: mobilibusDepartures });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find(`[title="${mobilibusStop.name}"]`).trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/mobilibus/projetos/501/pontos/15192689/partidas',
+      expect.objectContaining({ cache: 'no-store' }),
+    );
+    expect(wrapper.text()).toContain('Filtrar linha ou ônibus');
+    expect(wrapper.text()).not.toContain('Filtra as opções já carregadas neste ponto.');
+    expect(wrapper.text()).not.toContain('Atualizar');
+    expect(wrapper.text()).toContain('3838');
+    expect(wrapper.text()).toContain('25H74');
+    expect(wrapper.text()).toContain('Em tempo real');
+
+    const departureFilter = wrapper.find('#mobilibus-stop-filter-input');
+    await departureFilter.setValue('3838');
+    expect(wrapper.findAll('.mobilibus-departure-card')).toHaveLength(1);
+
+    await departureFilter.setValue('9999');
+    expect(wrapper.findAll('.mobilibus-departure-card')).toHaveLength(0);
+    expect(wrapper.text()).toContain('Nenhum ônibus corresponde ao número informado.');
+
+    wrapper.unmount();
+  });
+
+  it('mantém o mapa Mobilibus local quando os pontos falham e permite repetir', async () => {
+    let stopAttempts = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          stopAttempts += 1;
+          return stopAttempts === 1
+            ? response({ error: { message: 'Pontos indisponíveis' } }, 502)
+            : response({ stops: [mobilibusStop] });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Pontos indisponíveis');
+    await wrapper.find('.mobilibus-map-message--error button').trigger('click');
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('1 ponto visível');
+    wrapper.unmount();
+  });
+
+  it('mantém o monitoramento SIU funcionando quando o mapa Mobilibus falha', async () => {
+    localStorage.setItem(
+      'onibus-bh-alert-settings',
+      JSON.stringify({
+        stopCode: '1034',
+        lineCode: '8350',
+        variantFilter: 'direto',
+        minutesBefore: 7,
+        enabled: true,
+        lastNotifiedPredictionId: null,
+      }),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/pontos?tile=')) {
+          return response({ error: { message: 'Mobilibus indisponível' } }, 502);
+        }
+
+        if (url === '/api/paradas/1034/previsoes') {
+          return response({ predictions: [prediction] });
+        }
+
+        if (url === '/api/itinerarios/53564') {
+          return response({ route: [] });
+        }
+
+        if (url === '/api/itinerarios/53564/veiculos') {
+          return response({ vehicles: [] });
+        }
+
+        return response({});
+      }),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+
+    await findClickableByText(wrapper, 'Linhas').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Mobilibus indisponível');
+
+    await findClickableByText(wrapper, 'Monitoramento').trigger('click');
+    expect(wrapper.text()).toContain('Estacao Sao Gabriel');
+    expect(wrapper.text()).toContain('Próximos ônibus');
+
+    wrapper.unmount();
   });
 });
