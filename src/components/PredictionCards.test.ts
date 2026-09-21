@@ -36,6 +36,37 @@ const predictions: Prediction[] = [
 ];
 
 describe('PredictionCards', () => {
+  it('renders each prediction as an accessible toggle button', async () => {
+    const wrapper = mount(PredictionCards, {
+      props: {
+        predictions,
+        selectedPredictionId: null,
+      },
+    });
+
+    const firstCard = wrapper.find('.prediction-card');
+
+    expect(firstCard.element.tagName).toBe('BUTTON');
+    expect(firstCard.attributes('type')).toBe('button');
+    expect(firstCard.attributes('aria-pressed')).toBe('false');
+
+    await firstCard.trigger('click');
+
+    expect(wrapper.emitted('selectPrediction')?.[0]).toEqual([predictions[0]]);
+  });
+
+  it('communicates when the first prediction query is still loading', () => {
+    const wrapper = mount(PredictionCards, {
+      props: {
+        predictions: [],
+        selectedPredictionId: null,
+        isLoading: true,
+      },
+    });
+
+    expect(wrapper.get('[role="status"]').text()).toContain('Buscando próximos ônibus');
+  });
+
   it('highlights the first prediction as next only when no prediction is selected', () => {
     const wrapper = mount(PredictionCards, {
       props: {

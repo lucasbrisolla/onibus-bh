@@ -21,8 +21,6 @@ export const routeFlowPathOptions = {
   ...createRoutePathOptions(mapRouteLayerStyles.flow),
 };
 
-export const lightTileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-export const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 export type { UserLocation } from './mapScene';
 </script>
 
@@ -34,6 +32,7 @@ import 'leaflet/dist/leaflet.css';
 import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
 import { createMapBehavior } from './mapBehavior';
 import { createMapInteractionOptions } from './mapInteractionOptions';
+import { createMapLifecycle, type MapLifecycle } from './mapLifecycle';
 import {
   type MapBounds,
   type MapScene,
@@ -81,14 +80,11 @@ const emit = defineEmits<{
 }>();
 
 const mapElement = ref<HTMLElement | null>(null);
-let map: L.Map | null = null;
+let mapLifecycle: MapLifecycle | null = null;
 let stopLayer: L.LayerGroup | null = null;
 let routeLayer: L.LayerGroup | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
-let baseTileLayer: L.TileLayer | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let resizeFrameId: number | null = null;
 let isExecutingProgrammaticViewportCommand = false;
 const mapBehavior = createMapBehavior();
 
@@ -131,54 +127,20 @@ function createMarkerIcon(className: string, markup: string) {
   });
 }
 
-function updateBaseTileLayer() {
-  if (!map) {
-    return;
-  }
-
-  const isDarkMode = props.themeMode === 'dark';
-
-  if (baseTileLayer) {
-    map.removeLayer(baseTileLayer);
-    baseTileLayer = null;
-  }
-
-  baseTileLayer = L.tileLayer(isDarkMode ? darkTileUrl : lightTileUrl, {
-    className: isDarkMode ? 'map-base-tiles map-base-tiles-dark' : 'map-base-tiles',
-    maxZoom: 20,
-  });
-
-  baseTileLayer.addTo(map);
+function getMap(): L.Map | null {
+  return mapLifecycle?.getMap() ?? null;
 }
 
 function clearLayer(layer: L.Layer | null) {
-  if (map && layer) {
-    map.removeLayer(layer);
+  const currentMap = getMap();
+
+  if (currentMap && layer) {
+    currentMap.removeLayer(layer);
   }
 }
 
 function invalidateMapSize() {
-  if (!map || !mapElement.value) {
-    return;
-  }
-
-  if (resizeFrameId !== null) {
-    cancelAnimationFrame(resizeFrameId);
-  }
-
-  resizeFrameId = requestAnimationFrame(() => {
-    resizeFrameId = null;
-
-    if (!map || !mapElement.value) {
-      return;
-    }
-
-    if (mapElement.value.clientWidth === 0 || mapElement.value.clientHeight === 0) {
-      return;
-    }
-
-    map.invalidateSize(false);
-  });
+  mapLifecycle?.invalidateSize();
 }
 
 function buildMapSceneInput(): MapSceneInput {
@@ -216,7 +178,9 @@ function renderPopup(popup: MapScenePopup): string {
 }
 
 function renderStops(scene: MapScene) {
-  if (!map) {
+  const currentMap = getMap();
+
+  if (!currentMap) {
     return;
   }
 
@@ -245,11 +209,13 @@ function renderStops(scene: MapScene) {
     marker.addTo(stopLayer);
   }
 
-  stopLayer.addTo(map);
+  stopLayer.addTo(currentMap);
 }
 
 function renderUserLocation(scene: MapScene) {
-  if (!map) {
+  const currentMap = getMap();
+
+  if (!currentMap) {
     return;
   }
 
@@ -269,11 +235,11 @@ function renderUserLocation(scene: MapScene) {
     .bindPopup(renderPopup(scene.userLocation.popup))
     .addTo(userLocationLayer);
 
-  userLocationLayer.addTo(map);
+  userLocationLayer.addTo(currentMap);
 }
 
 function renderRoute(scene: MapScene) {
-  const currentMap = map;
+  const currentMap = getMap();
 
   if (!currentMap) {
     return;
@@ -302,7 +268,7 @@ function renderRoute(scene: MapScene) {
 }
 
 function renderVehicles(scene: MapScene) {
-  const currentMap = map;
+  const currentMap = getMap();
 
   if (!currentMap) {
     return;
@@ -368,7 +334,7 @@ function executeProgrammaticViewportChange(change: () => void) {
 }
 
 function executeViewportCommand(command: MapViewportCommand) {
-  const currentMap = map;
+  const currentMap = getMap();
   if (!currentMap) {
     return;
   }
@@ -403,11 +369,13 @@ function handleMapMoveStart() {
 }
 
 function handleMapMoveEnd() {
-  if (!map) {
+  const currentMap = getMap();
+
+  if (!currentMap) {
     return;
   }
 
-  const center = map.getCenter();
+  const center = currentMap.getCenter();
   const result = mapBehavior.dispatch({
     type: 'moveend',
     center: {
@@ -419,7 +387,7 @@ function handleMapMoveEnd() {
 }
 
 function renderMapData() {
-  if (!map) {
+  if (!getMap()) {
     return;
   }
 
@@ -440,43 +408,21 @@ onMounted(() => {
     return;
   }
 
-  map = L.map(mapElement.value, {
-    zoomControl: false,
-    attributionControl: false,
-    ...createMapInteractionOptions(),
+  mapLifecycle = createMapLifecycle({
+    element: mapElement.value,
+    themeMode: props.themeMode,
+    mapOptions: createMapInteractionOptions(),
   });
-
-  updateBaseTileLayer();
-
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-  map.on('movestart', handleMapMoveStart);
-  map.on('moveend', handleMapMoveEnd);
-
-  if (typeof ResizeObserver !== 'undefined' && mapElement.value) {
-    resizeObserver = new ResizeObserver(() => {
-      invalidateMapSize();
-    });
-    resizeObserver.observe(mapElement.value);
-  }
-
-  window.addEventListener('resize', invalidateMapSize);
+  mapLifecycle.mount();
+  mapLifecycle.listen('movestart', handleMapMoveStart);
+  mapLifecycle.listen('moveend', handleMapMoveEnd);
   renderMapData();
   invalidateMapSize();
 });
 
 onBeforeUnmount(() => {
-  if (resizeFrameId !== null) {
-    cancelAnimationFrame(resizeFrameId);
-    resizeFrameId = null;
-  }
-
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  window.removeEventListener('resize', invalidateMapSize);
-  map?.off('movestart', handleMapMoveStart);
-  map?.off('moveend', handleMapMoveEnd);
-  map?.remove();
-  map = null;
+  mapLifecycle?.destroy();
+  mapLifecycle = null;
 });
 
 watch(
@@ -496,7 +442,7 @@ watch(
 
 watch(
   () => props.themeMode,
-  () => updateBaseTileLayer(),
+  themeMode => mapLifecycle?.setTheme(themeMode),
 );
 </script>
 

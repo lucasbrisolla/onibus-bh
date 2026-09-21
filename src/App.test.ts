@@ -145,6 +145,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Estacao Sao Gabriel');
     expect(wrapper.text()).toContain('Direto');
     expect(wrapper.text()).toContain('5 min');
+    expect(wrapper.find('.prediction-count').text()).toBe('1');
     expect(wrapper.text()).not.toContain('Veículo 40743');
     expect(notifyArrival).toHaveBeenCalledWith({
       id: prediction.id,

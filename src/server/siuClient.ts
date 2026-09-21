@@ -1,82 +1,32 @@
-import { AppError, BadGatewayError, GatewayTimeoutError } from './errors.js';
-import { parseJsonp } from './jsonp.js';
 import {
-  normalizeNearbyStops,
-  normalizePredictions,
-  normalizeRoutePoints,
-  normalizeVehicles,
-} from './normalizers.js';
+  createJsonpTransport,
+  DEFAULT_JSONP_TIMEOUT_MS,
+} from './jsonpTransport.js';
+import { createSiuOperations } from './siuOperations.js';
 
-export const SIU_BASE_URL =
-  'http://bhz.siumobile.com.br:6060/siumobiletacomapp/siumobile-ws-v01/rest/ws';
+export {
+  createJsonpTransport,
+  DEFAULT_JSONP_TIMEOUT_MS,
+  SIU_BASE_URL,
+} from './jsonpTransport.js';
+export type {
+  JsonpRequestOptions,
+  JsonpTransport,
+  JsonpTransportOptions,
+} from './jsonpTransport.js';
+export { createSiuOperations } from './siuOperations.js';
+export type { SiuJsonpTransport, SiuOperations } from './siuOperations.js';
 
-const DEFAULT_TIMEOUT_MS = 8000;
+const compatibilityTransport = createJsonpTransport();
+const compatibilityOperations = createSiuOperations(compatibilityTransport);
 
-export async function fetchJsonp(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(`${SIU_BASE_URL}${path}`, { signal: controller.signal });
-
-    if (!response.ok) {
-      throw new BadGatewayError(`SIU Mobile respondeu com HTTP ${response.status}`);
-    }
-
-    return parseJsonp(await response.text());
-  } catch (error) {
-    if (error instanceof AppError) {
-      throw error;
-    }
-
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new GatewayTimeoutError('SIU Mobile não respondeu no tempo esperado', error);
-    }
-
-    throw new BadGatewayError('Falha ao consultar SIU Mobile', error);
-  } finally {
-    clearTimeout(timeout);
-  }
+export function fetchJsonp(path: string, timeoutMs = DEFAULT_JSONP_TIMEOUT_MS): Promise<unknown> {
+  return compatibilityTransport.requestJsonp(path, { timeoutMs });
 }
 
-export async function getStopPredictions(stopCode: string) {
-  const payload = await fetchJsonp(
-    `/V3/buscarPrevisoes/${encodeURIComponent(stopCode)}/false/0/BHZ/retornoJSON`,
-  );
-
-  return normalizePredictions(payload as Record<string, unknown>);
-}
-
-export async function getNearbyStops(latitude: number, longitude: number) {
-  const payload = await fetchJsonp(
-    `/V3/buscarParadasProximas/${encodeURIComponent(longitude)}/${encodeURIComponent(latitude)}/0/BHZ/retornoJSONH`,
-  );
-
-  return normalizeNearbyStops(payload as Record<string, unknown>);
-}
-
-export async function getRoutePoints(serviceId: string) {
-  const payload = await fetchJsonp(
-    `/V3/buscarItinerario/${encodeURIComponent(serviceId)}/0/BHZ/retornoJSONItinerario`,
-  );
-
-  return normalizeRoutePoints(payload as Record<string, unknown>);
-}
-
-export async function getVehicles(serviceId: string) {
-  const payload = await fetchJsonp(
-    `/V3/retornaVeiculosMapa/${encodeURIComponent(serviceId)}/0/BHZ/retornoJSONVeiculos`,
-  );
-
-  return normalizeVehicles(payload as Record<string, unknown>);
-}
-
-export async function getLines() {
-  return fetchJsonp('/buscarLinhas/jsonpCallback');
-}
-
-export async function checkSiuHealth(): Promise<{ ok: true }> {
-  await fetchJsonp('/buscarLinhas/jsonpCallback', 5000);
-
-  return { ok: true };
-}
+export const checkSiuHealth = compatibilityOperations.checkSiuHealth;
+export const getLines = compatibilityOperations.getLines;
+export const getNearbyStops = compatibilityOperations.getNearbyStops;
+export const getStopPredictions = compatibilityOperations.getStopPredictions;
+export const getRoutePoints = compatibilityOperations.getRoutePoints;
+export const getVehicles = compatibilityOperations.getVehicles;

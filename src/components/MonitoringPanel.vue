@@ -95,13 +95,19 @@ watch(
         :aria-expanded="collapsedSections.predictions"
         @click="toggleSection('predictions')"
       >
-        <span>Próximos ônibus</span>
+        <span class="collapse-toggle-label">
+          <span>Próximos ônibus</span>
+          <span v-if="predictions.length > 0" class="prediction-count">
+            {{ predictions.length }}
+          </span>
+        </span>
         <component :is="collapsedSections.predictions ? ChevronUp : ChevronDown" aria-hidden="true" />
       </button>
       <div v-show="collapsedSections.predictions" class="collapse-body">
         <PredictionCards
           :predictions="predictions"
           :selected-prediction-id="selectedPredictionId"
+          :is-loading="isLoading"
           @select-prediction="emit('selectPrediction', $event)"
         />
       </div>

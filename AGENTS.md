@@ -47,7 +47,7 @@ Não duplicar aqui:
 - Leaflet
 - Vitest
 - Vercel Functions em `api/`
-- Node.js `>=20`
+- Node.js `>=26`
 
 ## Agent skills
 

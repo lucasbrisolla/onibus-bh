@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import L from 'leaflet';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { MobilibusStop } from '../domain/mobilibusTypes';
 import MobilibusMap from './MobilibusMap.vue';
@@ -46,6 +46,9 @@ describe('MobilibusMap', () => {
     expect(wrapper.element.querySelector(`[title="${stop.name}"]`)).not.toBeNull();
     expect(wrapper.text()).toContain('1 ponto visível');
     expect(wrapper.emitted('requestTiles')?.[0]).toEqual([[{ x: 1547, y: 2279, zoom: 14 }]]);
+    expect(document.body.querySelector('.leaflet-control-attribution')?.textContent).toContain(
+      'OpenStreetMap',
+    );
 
     wrapper.unmount();
   });
@@ -67,6 +70,48 @@ describe('MobilibusMap', () => {
     expect(wrapper.emitted('toggleTheme')).toEqual([[]]);
 
     wrapper.unmount();
+  });
+
+  it('preserva a viewport ao trocar o tema e encerra o resize ao desmontar', async () => {
+    const mapFactory = vi.spyOn(L, 'map');
+    const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+    let triggerFrame: FrameRequestCallback | null = null;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      triggerFrame = callback;
+      return 1;
+    });
+    const wrapper = mount(MobilibusMap, { attachTo: document.body });
+    const runFrame = () => (triggerFrame as FrameRequestCallback | null)?.(0);
+
+    await wrapper.vm.$nextTick();
+    const mapSurface = wrapper.element.querySelector('.map-surface') as HTMLElement;
+    Object.defineProperties(mapSurface, {
+      clientHeight: { configurable: true, value: 480 },
+      clientWidth: { configurable: true, value: 640 },
+    });
+    runFrame();
+
+    const map = mapFactory.mock.results.at(-1)?.value as L.Map;
+    map.setView([-19.93, -44.01], 16);
+    const centerBeforeThemeChange = map.getCenter();
+
+    await wrapper.setProps({ themeMode: 'dark' });
+
+    expect(wrapper.element.querySelector('.map-base-tiles-dark')).not.toBeNull();
+    expect(map.getZoom()).toBe(16);
+    expect(map.getCenter().lat).toBeCloseTo(centerBeforeThemeChange.lat);
+    expect(map.getCenter().lng).toBeCloseTo(centerBeforeThemeChange.lng);
+
+    invalidateSize.mockClear();
+    window.dispatchEvent(new Event('resize'));
+    runFrame();
+    expect(invalidateSize).toHaveBeenCalledWith(false);
+
+    wrapper.unmount();
+    invalidateSize.mockClear();
+    window.dispatchEvent(new Event('resize'));
+    runFrame();
+    expect(invalidateSize).not.toHaveBeenCalled();
   });
 
   it('emite o ponto selecionado ao clicar no marcador', async () => {

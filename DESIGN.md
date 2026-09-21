@@ -92,8 +92,9 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - código do ponto fica em menor destaque;
 - o badge do ônibus selecionado deve mostrar linha e minutos, como `8350 - 2 min`;
 - o mapa não deve recentrar automaticamente a cada polling;
-- dark mode usa CartoDB Dark Matter no Leaflet;
-- light mode usa CartoDB Voyager no Leaflet;
+- com chave pública configurada, dark mode usa CartoDB Dark Matter no Leaflet;
+- com chave pública configurada, light mode usa CartoDB Voyager no Leaflet;
+- sem chave CARTO, os mapas usam OpenStreetMap com atribuição visível e fallback visual escuro;
 - marcadores de parada invertem contraste no dark mode;
 - cards de previsão não mostram `vehicleId` nem texto auxiliar `Chegando`;
 - o primeiro card só recebe destaque de próximo quando nenhum card estiver selecionado.

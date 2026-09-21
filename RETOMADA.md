@@ -31,12 +31,15 @@ git status --short --branch
 - bottom sheet mobile com estados `peek`, `half` e `full`;
 - toggles compactos no mapa para mostrar pontos e alternar modo escuro no mobile;
 - endpoints locais e serverless em `/api/*`;
+- transporte JSONP da SIU separado das operações, com timeout, parsing e erros upstream centralizados;
 - alertas básicos com `localStorage` e Notification API.
 
 ## Estado atual da interface
 
 - sidebar e dark mode usam paleta teal;
-- mapa usa CartoDB Voyager no modo claro e CartoDB Dark Matter no modo escuro;
+- mapa usa uma política compartilhada: CARTO Voyager/Dark Matter quando VITE_CARTO_API_KEY está configurada e OpenStreetMap como fallback sem marca d’água;
+- os dois mapas reutilizam `src/components/mapLifecycle.ts` para montagem, resize, tema e desmontagem do Leaflet;
+- o catálogo de pontos Ótimo/RMBH usa `src/services/mobilibusCatalog.ts` para cache, concorrência, estados e seleção;
 - FAB de localização usa teal;
 - marcadores de parada invertem contraste no dark mode;
 - badge principal do mapa mostra linha e minutos, como `8350 - 2 min`;
@@ -48,10 +51,10 @@ git status --short --branch
 
 ## Próximos passos sugeridos
 
-1. revisar favoritos e histórico, que ainda são placeholders;
-2. validar build e fluxo de deploy na Vercel após os ajustes recentes;
-3. evoluir PWA e notificações com app em segundo plano;
-4. reduzir complexidade de `App.vue` se continuar crescendo.
+1. implementar o histórico de alertas; favoritos municipais e Ótimo/RMBH já estão persistidos localmente;
+2. validar o deploy real na Vercel e conferir a paridade das rotas `/api/*`; a build local já está validada;
+3. evoluir o PWA com Service Worker e notificações em segundo plano usando Web Push;
+4. reavaliar a decomposição de `App.vue` se o arquivo voltar a crescer; as regras principais já estão nos módulos de monitoramento, seleção e catálogo.
 
 ## Validação recomendada
 

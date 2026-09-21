@@ -1,12 +1,6 @@
 import type { ApiContractOperations } from './apiContractDispatcher.js';
-import {
-  checkSiuHealth,
-  getLines,
-  getNearbyStops,
-  getRoutePoints,
-  getStopPredictions,
-  getVehicles,
-} from './siuClient.js';
+import { createJsonpTransport } from './jsonpTransport.js';
+import { createSiuOperations } from './siuOperations.js';
 import {
   getMobilibusStopsInTile,
   getMobilibusDepartures,
@@ -14,13 +8,10 @@ import {
   searchMobilibusLines,
 } from './mobilibusClient.js';
 
+const siuOperations = createSiuOperations(createJsonpTransport());
+
 export const defaultApiOperations: ApiContractOperations = {
-  checkSiuHealth,
-  getLines,
-  getNearbyStops,
-  getRoutePoints,
-  getStopPredictions,
-  getVehicles,
+  ...siuOperations,
   searchMobilibusLines,
   getMobilibusTimetable,
   getMobilibusStops: getMobilibusStopsInTile,

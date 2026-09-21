@@ -7,7 +7,7 @@ import type {
   MobilibusStop,
   MobilibusStopsStatus,
 } from '../domain/mobilibusTypes';
-import { darkTileUrl, lightTileUrl } from './MapView.vue';
+import { createMapLifecycle, type MapLifecycle } from './mapLifecycle';
 import { MOBILIBUS_STOPS_MIN_ZOOM, tilesFromBounds } from './mobilibusMapTiles';
 
 const DEFAULT_CENTER: L.LatLngTuple = [-19.916342, -43.993759];
@@ -39,10 +39,8 @@ const emit = defineEmits<{
 const mapElement = ref<HTMLElement | null>(null);
 const showStops = ref(true);
 const currentZoom = ref(MOBILIBUS_STOPS_MIN_ZOOM);
-let map: L.Map | null = null;
+let mapLifecycle: MapLifecycle | null = null;
 let stopLayer: L.LayerGroup | null = null;
-let baseTileLayer: L.TileLayer | null = null;
-let resizeObserver: ResizeObserver | null = null;
 
 const stopIconSvg = `
   <svg data-map-icon="mobilibus-stop" viewBox="0 0 24 24" aria-hidden="true">
@@ -84,37 +82,34 @@ function renderPopup(stop: MobilibusStop): string {
   return [`<strong>${escapePopupText(stop.name)}</strong>`, ...body.map(line => `<br>${escapePopupText(line)}`)].join('');
 }
 
-function updateBaseTileLayer() {
-  if (!map) {
-    return;
-  }
-
-  baseTileLayer?.remove();
-  baseTileLayer = L.tileLayer(props.themeMode === 'dark' ? darkTileUrl : lightTileUrl, {
-    className: props.themeMode === 'dark' ? 'map-base-tiles map-base-tiles-dark' : 'map-base-tiles',
-    maxZoom: 20,
-  });
-  baseTileLayer.addTo(map);
+function getMap(): L.Map | null {
+  return mapLifecycle?.getMap() ?? null;
 }
 
 function requestVisibleTiles() {
-  if (!map) {
+  const currentMap = getMap();
+
+  if (!currentMap) {
     return;
   }
 
-  currentZoom.value = Math.round(map.getZoom());
-  emit('requestTiles', tilesFromBounds(map.getBounds(), currentZoom.value));
+  currentZoom.value = Math.round(currentMap.getZoom());
+  emit('requestTiles', tilesFromBounds(currentMap.getBounds(), currentZoom.value));
 }
 
 function clearStopLayer() {
-  if (map && stopLayer) {
-    map.removeLayer(stopLayer);
+  const currentMap = getMap();
+
+  if (currentMap && stopLayer) {
+    currentMap.removeLayer(stopLayer);
   }
   stopLayer = null;
 }
 
 function renderStops() {
-  if (!map) {
+  const currentMap = getMap();
+
+  if (!currentMap) {
     return;
   }
 
@@ -140,11 +135,7 @@ function renderStops() {
     }
   }
 
-  stopLayer.addTo(map);
-}
-
-function invalidateMapSize() {
-  map?.invalidateSize(false);
+  stopLayer.addTo(currentMap);
 }
 
 function toggleStops() {
@@ -157,31 +148,24 @@ onMounted(() => {
     return;
   }
 
-  map = L.map(mapElement.value, {
-    zoomControl: false,
-    attributionControl: false,
-  }).setView(DEFAULT_CENTER, MOBILIBUS_STOPS_MIN_ZOOM);
-  updateBaseTileLayer();
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-  map.on('moveend', requestVisibleTiles);
-
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(invalidateMapSize);
-    resizeObserver.observe(mapElement.value);
-  }
-
-  window.addEventListener('resize', invalidateMapSize);
+  mapLifecycle = createMapLifecycle({
+    element: mapElement.value,
+    themeMode: props.themeMode,
+    initialView: {
+      center: DEFAULT_CENTER,
+      zoom: MOBILIBUS_STOPS_MIN_ZOOM,
+    },
+  });
+  mapLifecycle.mount();
+  mapLifecycle.listen('moveend', requestVisibleTiles);
   renderStops();
   requestVisibleTiles();
+  mapLifecycle.invalidateSize();
 });
 
 onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  window.removeEventListener('resize', invalidateMapSize);
-  map?.off('moveend', requestVisibleTiles);
-  map?.remove();
-  map = null;
+  mapLifecycle?.destroy();
+  mapLifecycle = null;
 });
 
 watch(
@@ -197,7 +181,7 @@ watch(
 
 watch(
   () => props.themeMode,
-  () => updateBaseTileLayer(),
+  themeMode => mapLifecycle?.setTheme(themeMode),
 );
 </script>
 

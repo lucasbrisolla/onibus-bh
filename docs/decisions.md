@@ -40,8 +40,12 @@ Este arquivo registra decisões estáveis do produto e da arquitetura para evita
 
 - O modo escuro não é só troca de cards e shell.
 - O mapa troca a camada base do Leaflet.
-- Modo claro usa CartoDB Voyager.
-- Modo escuro usa CartoDB Dark Matter.
+- A política de mapa-base é compartilhada pelos mapas municipal e Ótimo/RMBH.
+- Com VITE_CARTO_API_KEY, o modo claro usa CartoDB Voyager.
+- Com VITE_CARTO_API_KEY, o modo escuro usa CartoDB Dark Matter.
+- Sem a chave CARTO, ambos usam OpenStreetMap; o modo escuro recebe fallback visual.
+- A atribuição do provedor permanece visível.
+- A chave pública é configurada por ambiente e não é gravada no repositório.
 
 ## 8. A sidebar segue a identidade teal
 
@@ -98,3 +102,23 @@ Este arquivo registra decisões estáveis do produto e da arquitetura para evita
 - A rota usa base roxa contínua.
 - Um traço interno translúcido e animado indica movimento.
 - A animação deve respeitar `prefers-reduced-motion`.
+
+## 17. O ciclo de vida Leaflet é compartilhado
+
+- Os mapas municipal e Ótimo/RMBH usam `src/components/mapLifecycle.ts` para montar e destruir a instância Leaflet.
+- O módulo compartilhado também concentra camada-base, controle de zoom, ResizeObserver, resize da janela, troca de tema e limpeza de listeners.
+- Cada adapter mantém sua própria cena, seus eventos de domínio e sua política de viewport.
+
+## 18. O catálogo metropolitano concentra o estado dos pontos
+
+- `src/services/mobilibusCatalog.ts` é responsável por cache por tile, deduplicação, concorrência, versões contra respostas antigas, estados de carregamento e retry.
+- A apresentação do catálogo recebe estado e emite ações; ela não conhece o cache nem a coordenação das requisições.
+- A identidade Ótimo/RMBH permanece separada da SIU municipal.
+
+## 19. Transporte JSONP e operações SIU têm seams separados
+
+- `src/server/jsonpTransport.ts` concentra URL-base, `fetch`, timeout, parsing JSONP e tradução de falhas upstream.
+- `src/server/siuOperations.ts` recebe o transporte por uma interface substituível e concentra paths, codificação de parâmetros e escolha dos normalizadores.
+- Previsões continuam usando o `cod` interno da parada; o normalizador de paradas preserva o `siu` público para a apresentação.
+- A ordem longitude/latitude da consulta de paradas próximas e as regras de normalização existentes, incluindo a linha `8350` e ids de partidas programadas, permanecem inalteradas.
+- O browser continua consumindo exclusivamente `/api/*`; o transporte JSONP existe apenas no lado server-side.

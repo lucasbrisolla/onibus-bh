@@ -2,12 +2,8 @@ import { mount } from '@vue/test-utils';
 import L from 'leaflet';
 import { describe, expect, it, vi } from 'vitest';
 
-import MapView, {
-  darkTileUrl,
-  lightTileUrl,
-  routeBasePathOptions,
-  routeFlowPathOptions,
-} from './MapView.vue';
+import MapView, { routeBasePathOptions, routeFlowPathOptions } from './MapView.vue';
+import { getMapBaseLayerConfig } from './mapBaseLayer';
 import type { NearbyStop, Vehicle, VehicleApproachInfo } from '../domain/types';
 
 const stop: NearbyStop = {
@@ -259,9 +255,51 @@ describe('MapView', () => {
     wrapper.unmount();
   });
 
-  it('uses Carto Voyager in light mode and Carto Dark Matter in dark mode', () => {
-    expect(lightTileUrl).toContain('/rastertiles/voyager/');
-    expect(darkTileUrl).toContain('/dark_all/');
+  it('invalidates the map on window resize and stops after unmount', async () => {
+    const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+    let triggerFrame: FrameRequestCallback | null = null;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      triggerFrame = callback;
+      return 1;
+    });
+    const wrapper = mount(MapView, { attachTo: document.body });
+    const runFrame = () => (triggerFrame as FrameRequestCallback | null)?.(0);
+
+    await wrapper.vm.$nextTick();
+    const mapSurface = wrapper.element.querySelector('.map-surface') as HTMLElement;
+    Object.defineProperties(mapSurface, {
+      clientHeight: { configurable: true, value: 480 },
+      clientWidth: { configurable: true, value: 640 },
+    });
+    runFrame();
+    invalidateSize.mockClear();
+
+    window.dispatchEvent(new Event('resize'));
+    runFrame();
+
+    expect(invalidateSize).toHaveBeenCalledWith(false);
+
+    wrapper.unmount();
+    invalidateSize.mockClear();
+    window.dispatchEvent(new Event('resize'));
+    runFrame();
+
+    expect(invalidateSize).not.toHaveBeenCalled();
+  });
+
+  it('uses the configured provider and keeps map attribution visible', async () => {
+    const light = getMapBaseLayerConfig('light', { cartoApiKey: 'test-key' });
+    const dark = getMapBaseLayerConfig('dark', { cartoApiKey: 'test-key' });
+    const wrapper = mount(MapView, { attachTo: document.body });
+
+    await wrapper.vm.$nextTick();
+
+    expect(light.url).toContain('/rastertiles/voyager/');
+    expect(dark.url).toContain('/dark_all/');
+    expect(document.body.querySelector('.leaflet-control-attribution')?.textContent).toContain(
+      'OpenStreetMap',
+    );
+    wrapper.unmount();
   });
 
   it('executes the default viewport command when the scene has no bounds', async () => {

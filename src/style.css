@@ -345,6 +345,26 @@ label {
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.04);
 }
 
+.collapse-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.prediction-count {
+  display: inline-grid;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .collapse-toggle:hover {
   background: #f2f4f7;
 }
@@ -549,6 +569,37 @@ label {
   gap: 8px;
 }
 
+.prediction-state {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  margin: 0;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  padding: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.prediction-state-indicator {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid #99f6e4;
+  border-top-color: #0d9488;
+  border-radius: 999px;
+  animation: prediction-state-spin 700ms linear infinite;
+}
+
+@keyframes prediction-state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .prediction-cards {
   display: grid;
   gap: 8px;
@@ -559,6 +610,7 @@ label {
 
 .prediction-card {
   display: grid;
+  width: 100%;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
@@ -566,6 +618,9 @@ label {
   border-radius: 8px;
   background: #fff;
   padding: 10px 12px;
+  color: #101828;
+  font: inherit;
+  text-align: left;
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.04);
 }
 
@@ -698,6 +753,20 @@ label {
   height: 100%;
 }
 
+.map-base-tiles-dark-fallback {
+  filter: invert(0.88) hue-rotate(180deg) brightness(0.78) contrast(1.08) saturate(0.72);
+}
+
+.leaflet-control-attribution {
+  border-radius: 8px 0 0;
+  background: rgba(255, 255, 255, 0.88);
+  color: #475467;
+}
+
+.leaflet-control-attribution a {
+  color: #0f766e;
+}
+
 .map-route-base-path {
   filter: drop-shadow(0 0 3px rgba(124, 58, 237, 0.2));
 }
@@ -715,7 +784,8 @@ label {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map-route-flow-path {
+  .map-route-flow-path,
+  .prediction-state-indicator {
     animation: none;
   }
 }
@@ -958,6 +1028,15 @@ label {
   background: #0b1616;
 }
 
+.app-theme[data-theme='dark'] .leaflet-control-attribution {
+  background: rgba(8, 27, 26, 0.88);
+  color: #b7cfcb;
+}
+
+.app-theme[data-theme='dark'] .leaflet-control-attribution a {
+  color: #7dd3c7;
+}
+
 .app-theme[data-theme='dark'] .sidebar {
   background: #0c2b29;
 }
@@ -1020,6 +1099,22 @@ label {
 .app-theme[data-theme='dark'] .prediction-card.is-next {
   border-color: #22c55e;
   background: #0f2f27;
+}
+
+.app-theme[data-theme='dark'] .prediction-state {
+  border-color: #28514d;
+  background: #0f2423;
+  color: #99f6e4;
+}
+
+.app-theme[data-theme='dark'] .prediction-state-indicator {
+  border-color: #28514d;
+  border-top-color: #2dd4bf;
+}
+
+.app-theme[data-theme='dark'] .prediction-count {
+  background: #134e4a;
+  color: #99f6e4;
 }
 
 .app-theme[data-theme='dark'] .favorite-stop-button {

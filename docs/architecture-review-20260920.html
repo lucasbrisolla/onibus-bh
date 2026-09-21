@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revisão arquitetural · Ônibus BH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "neutral",
+        securityLevel: "loose",
+        flowchart: { curve: "basis", htmlLabels: true }
+      });
+    </script>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d9dee8;
+        --accent: #0f766e;
+        --accent-soft: #e7f6f3;
+        --danger: #be123c;
+        --danger-soft: #fff1f2;
+        --warning: #a16207;
+        --warning-soft: #fffbeb;
+        --deep: #172033;
+        --deep-2: #24324a;
+      }
+      body {
+        background:
+          radial-gradient(circle at 12% 0%, rgba(15, 118, 110, .11), transparent 32rem),
+          #f7f6f2;
+        color: var(--ink);
+      }
+      .serif { font-family: Georgia, "Times New Roman", serif; }
+      .eyebrow { letter-spacing: .15em; }
+      .seam { border-style: dashed; }
+      .diagram {
+        min-height: 318px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.96));
+      }
+      .schematic {
+        min-height: 250px;
+        position: relative;
+        overflow: hidden;
+        background: #fbfcfe;
+      }
+      .module-box {
+        border: 1px solid #bfc8d8;
+        background: #fff;
+        border-radius: .85rem;
+        padding: .75rem .9rem;
+        box-shadow: 0 8px 20px rgba(23, 32, 51, .06);
+      }
+      .module-box.deep {
+        background: linear-gradient(135deg, var(--deep), var(--deep-2));
+        border-color: var(--deep);
+        color: #fff;
+        box-shadow: 0 14px 26px rgba(23, 32, 51, .22);
+      }
+      .module-box.leak {
+        border-color: #fda4af;
+        background: var(--danger-soft);
+      }
+      .module-label {
+        font-size: .67rem;
+        line-height: 1.1;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        font-weight: 700;
+        color: #718096;
+      }
+      .deep .module-label { color: #9fe4da; }
+      .arrow-row {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        color: #8994a7;
+        font-size: .76rem;
+      }
+      .arrow-line {
+        height: 1px;
+        flex: 1;
+        background: #aab4c4;
+        position: relative;
+      }
+      .arrow-line::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: -4px;
+        border-left: 7px solid #8994a7;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+      }
+      .arrow-line.red { background: #fb7185; }
+      .arrow-line.red::after { border-left-color: #e11d48; }
+      .flow-stack {
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        justify-content: center;
+        height: 100%;
+      }
+      .mini-note {
+        border-left: 3px solid var(--accent);
+        background: var(--accent-soft);
+        padding: .7rem .85rem;
+        border-radius: 0 .6rem .6rem 0;
+      }
+      .file {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: .75rem;
+        color: #475467;
+        background: #f2f4f7;
+        padding: .14rem .35rem;
+        border-radius: .3rem;
+      }
+      .mermaid { overflow-x: auto; }
+      .mermaid svg { max-width: 100%; height: auto; }
+      .strike-soft { text-decoration: line-through; text-decoration-color: #fb7185; }
+    </style>
+  </head>
+  <body class="font-sans">
+    <main class="mx-auto max-w-6xl space-y-12 px-5 py-10 sm:px-8 lg:px-12">
+      <header class="space-y-7">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <span class="eyebrow text-xs font-bold uppercase text-teal-700">Revisão de arquitetura · 20/09/2026</span>
+          <span class="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600">worktree atual + histórico recente</span>
+        </div>
+        <div class="max-w-4xl space-y-4">
+          <h1 class="serif text-5xl leading-[.98] tracking-tight text-slate-900 sm:text-6xl">Onde o Ônibus BH pode ganhar profundidade</h1>
+          <p class="max-w-3xl text-lg leading-8 text-slate-600">
+            Quatro oportunidades encontradas nos hotspots recentes. Os candidatos 01 a 04 foram implementados no worktree atual, com testes, contratos preservados e documentação atualizada.
+          </p>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-slate-200 bg-white/80 p-4">
+            <div class="text-2xl font-bold text-emerald-700">4</div>
+            <div class="text-sm text-slate-500">candidatos implementados</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white/80 p-4">
+            <div class="text-2xl font-bold text-slate-900">2</div>
+            <div class="text-sm text-slate-500">fontes cartográficas</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white/80 p-4">
+            <div class="text-2xl font-bold text-slate-900">1.255</div>
+            <div class="text-sm text-slate-500">linhas no teste do módulo raiz</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4 text-xs text-slate-500">
+          <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded bg-white ring-1 ring-slate-300"></i>module</span>
+          <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded border border-dashed border-slate-500"></i>seam</span>
+          <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded bg-rose-100 ring-1 ring-rose-300"></i>leakage</span>
+          <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded bg-slate-800"></i>deep module</span>
+        </div>
+      </header>
+
+      <section id="candidates" class="space-y-10">
+        <article id="candidate-1" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-200 p-6 sm:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="eyebrow mb-2 text-xs font-bold uppercase text-teal-700">01 · mapa-base</div>
+                <h2 class="serif text-3xl tracking-tight">Dar profundidade à política de mapa-base</h2>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Strong</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Implementado</span>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <span class="file">src/components/MapView.vue</span>
+              <span class="file">src/components/MobilibusMap.vue</span>
+              <span class="file">src/components/mapBaseLayer.ts</span>
+              <span class="file">Carto raster tiles</span>
+            </div>
+          </div>
+          <div class="grid gap-5 p-6 sm:p-8 lg:grid-cols-2">
+            <div class="diagram rounded-2xl border border-slate-200 p-4">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Antes · configuração vazando</div>
+              <pre class="mermaid">flowchart LR
+  M["MapView.vue<br/>URL + camada base"] --> C["CARTO raster"]
+  N["MobilibusMap.vue<br/>importa URL de MapView"] --> M
+  N --> C
+  M -. "chave ausente / regra duplicada" .-> N
+  classDef leak fill:#fff1f2,stroke:#e11d48,stroke-width:2px;
+  class M,N leak</pre>
+            </div>
+            <div class="diagram rounded-2xl border border-slate-200 p-4">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-teal-700">Depois · módulo profundo</div>
+              <pre class="mermaid">flowchart LR
+  B["Basemap module<br/>estilo + chave + atribuição"] --> M["MapView adapter"]
+  B --> N["MobilibusMap adapter"]
+  M --> C["CARTO"]
+  N --> C
+  classDef deep fill:#172033,color:#fff,stroke:#172033,stroke-width:4px;
+  class B deep</pre>
+            </div>
+          </div>
+          <div class="grid gap-6 border-t border-slate-200 p-6 sm:p-8 lg:grid-cols-[1.15fr_.85fr]">
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Fricção</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  A implementação espalha URL, tema, classe CSS e ciclo da camada base; a tela Mobilibus importa a política cartográfica a partir de outro arquivo Vue. A ausência de chave CARTO virou uma marca d’água visível.
+                </p>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Deepening</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  Concentrar a política de mapa-base em um module que esconda provedor, credencial, atribuição, estilos e decisões de fallback. Os dois adapters continuam donos de seus dados e eventos.
+                </p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Leverage e locality</h3>
+              <ul class="space-y-2 text-sm leading-6 text-slate-700">
+                <li>• locality: chave e atribuição em um lugar</li>
+                <li>• leverage: dois mapas, uma política</li>
+                <li>• interface de tiles testável sem Leaflet</li>
+                <li>• troca de provedor concentrada no seam</li>
+              </ul>
+              <div class="mini-note text-sm leading-6 text-teal-950">
+                Atualiza a decisão 7 de <span class="file">docs/decisions.md</span> sem reabrir a separação SIU/Mobilibus.
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article id="candidate-2" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-200 p-6 sm:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="eyebrow mb-2 text-xs font-bold uppercase text-teal-700">02 · Leaflet</div>
+                <h2 class="serif text-3xl tracking-tight">Extrair o ciclo Leaflet compartilhado</h2>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Worth exploring</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Implementado</span>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <span class="file">MapView.vue</span>
+              <span class="file">MobilibusMap.vue</span>
+              <span class="file">src/components/mapLifecycle.ts</span>
+              <span class="file">ResizeObserver</span>
+              <span class="file">window.resize</span>
+            </div>
+          </div>
+          <div class="grid gap-5 p-6 sm:p-8 lg:grid-cols-2">
+            <div class="diagram schematic rounded-2xl border border-slate-200 p-5">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Antes · duas implementações</div>
+              <div class="flow-stack">
+                <div class="module-box leak"><div class="module-label">MapView</div><strong>mount map</strong> · tiles · zoom · resize · destroy</div>
+                <div class="arrow-row"><span class="arrow-line red"></span><span>mesma mecânica</span></div>
+                <div class="module-box leak"><div class="module-label">MobilibusMap</div><strong>mount map</strong> · tiles · zoom · resize · destroy</div>
+              </div>
+            </div>
+            <div class="diagram schematic rounded-2xl border border-slate-200 p-5">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-teal-700">Depois · seam real</div>
+              <div class="flow-stack">
+                <div class="module-box deep"><div class="module-label">Leaflet surface module</div><strong>ciclo de vida + resize + cleanup</strong></div>
+                <div class="arrow-row"><span class="arrow-line"></span><span>seam</span><span class="arrow-line"></span></div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="module-box text-center text-sm"><div class="module-label">adapter</div>MapView</div>
+                  <div class="module-box text-center text-sm"><div class="module-label">adapter</div>MobilibusMap</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="grid gap-6 border-t border-slate-200 p-6 sm:p-8 lg:grid-cols-[1.15fr_.85fr]">
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Fricção</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  Os dois módulos repetem criação do mapa, camada base, <span class="file">ResizeObserver</span>, evento de janela e desmontagem. Uma correção de resize ou cleanup precisa ser descoberta em dois lugares.
+                </p>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Deepening</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  Colocar o ciclo Leaflet atrás de um module compartilhado e deixar cada adapter concentrar apenas cena, marcadores, eventos e política de viewport próprios.
+                </p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Leverage e locality</h3>
+              <ul class="space-y-2 text-sm leading-6 text-slate-700">
+                <li>• locality: cleanup corrigido uma vez</li>
+                <li>• leverage: dois adapters reutilizam comportamento</li>
+                <li>• testes isolam resize e montagem</li>
+                <li>• deletion test: a duplicação desaparece</li>
+              </ul>
+              <div class="rounded-r-lg border-l-4 border-amber-400 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+                Só vale se o module esconder mecânica real; um helper que apenas repassa cinco argumentos seria shallow.
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article id="candidate-3" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-200 p-6 sm:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="eyebrow mb-2 text-xs font-bold uppercase text-teal-700">03 · catálogo metropolitano</div>
+                <h2 class="serif text-3xl tracking-tight">Aprofundar o módulo do catálogo Ótimo/RMBH</h2>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Strong</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Implementado</span>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <span class="file">src/App.vue</span>
+              <span class="file">MobilibusLinesPanel.vue</span>
+              <span class="file">src/services/mobilibusCatalog.ts</span>
+              <span class="file">settingsStore.ts</span>
+              <span class="file">App.test.ts</span>
+            </div>
+          </div>
+          <div class="grid gap-5 p-6 sm:p-8 lg:grid-cols-2">
+            <div class="diagram rounded-2xl border border-slate-200 p-4">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Antes · estado atravessando o seam</div>
+              <pre class="mermaid">flowchart TB
+  R["App.vue<br/>estado + cache + versões"] --> P["MobilibusLinesPanel<br/>9 props / 6 eventos"]
+  R --> T["apiClient<br/>pontos + partidas"]
+  R --> S["settingsStore<br/>favoritos"]
+  P --> M["MobilibusMap"]
+  R -. "1.255 linhas de teste" .-> X["App.test.ts"]
+  classDef leak fill:#fff1f2,stroke:#e11d48,stroke-width:2px;
+  class R,P leak</pre>
+            </div>
+            <div class="diagram rounded-2xl border border-slate-200 p-4">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-teal-700">Depois · catálogo profundo</div>
+              <pre class="mermaid">flowchart TB
+  R["App.vue<br/>composição de seções"] --> C["Catálogo metropolitano module<br/>estado + transições + cache"]
+  C --> V["view adapter"]
+  C --> T["Mobilibus adapter"]
+  C --> S["persistência adapter"]
+  C --> M["map adapter"]
+  classDef deep fill:#172033,color:#fff,stroke:#172033,stroke-width:4px;
+  class C deep</pre>
+            </div>
+          </div>
+          <div class="grid gap-6 border-t border-slate-200 p-6 sm:p-8 lg:grid-cols-[1.15fr_.85fr]">
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Fricção</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  O módulo raiz possui cache por tile, deduplicação de requisições, versões contra respostas antigas, seleção de ponto, partidas, favoritos e estados de erro. O arquivo Vue recebe uma interface quase tão larga quanto sua implementação, e não existe teste direto de <span class="file">MobilibusLinesPanel.vue</span>.
+                </p>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Deepening</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  Concentrar o comportamento do catálogo metropolitano em um module profundo. O arquivo de apresentação vira um adapter de renderização; o módulo raiz apenas compõe navegação e seções.
+                </p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Leverage e locality</h3>
+              <ul class="space-y-2 text-sm leading-6 text-slate-700">
+                <li>• locality: estados de ponto em um lugar</li>
+                <li>• leverage: cache e versões para todos os fluxos</li>
+                <li>• interface vira o test surface</li>
+                <li>• App.test deixa de carregar tudo</li>
+                <li>• bugs de respostas antigas ficam locais</li>
+              </ul>
+              <div class="mini-note text-sm leading-6 text-teal-950">
+                Mantém o ADR-0001: aprofundar o catálogo não mistura identidade Mobilibus com SIU municipal.
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article id="candidate-4" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-200 p-6 sm:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="eyebrow mb-2 text-xs font-bold uppercase text-teal-700">04 · monitoramento</div>
+                <h2 class="serif text-3xl tracking-tight">Aprofundar o workspace de monitoramento</h2>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Worth exploring</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Implementado</span>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <span class="file">src/App.vue</span>
+              <span class="file">predictionMonitor.ts</span>
+              <span class="file">stopSelection.ts</span>
+              <span class="file">mapDataService.ts</span>
+              <span class="file">App.test.ts</span>
+            </div>
+          </div>
+          <div class="grid gap-5 p-6 sm:p-8 lg:grid-cols-2">
+            <div class="diagram schematic rounded-2xl border border-slate-200 p-5">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Antes · composição com vazamento</div>
+              <div class="flow-stack">
+                <div class="module-box leak text-center"><div class="module-label">App.vue · 760 linhas</div><strong>navegação · geolocalização · tema · mapa · SIU · Mobilibus</strong></div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div class="module-box">prediction<br/>monitor</div>
+                  <div class="module-box">stop<br/>selection</div>
+                  <div class="module-box">map data<br/>loader</div>
+                </div>
+                <div class="arrow-row"><span class="arrow-line red"></span><span>três views repetidas em monitoramento e mapa</span><span class="arrow-line red"></span></div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs text-slate-600">
+                  <div class="module-box">MonitoringPanel</div>
+                  <div class="module-box">MapView</div>
+                  <div class="module-box">MobileBottomSheet</div>
+                </div>
+              </div>
+            </div>
+            <div class="diagram schematic rounded-2xl border border-slate-200 p-5">
+              <div class="mb-3 text-xs font-bold uppercase tracking-widest text-teal-700">Depois · capacidades com seams</div>
+              <div class="flow-stack">
+                <div class="module-box deep text-center"><div class="module-label">Monitoramento aprofundado</div><strong>predictionMonitor · stopSelection · mapDataService</strong></div>
+                <div class="arrow-row"><span class="arrow-line"></span><span>seams coesos</span><span class="arrow-line"></span></div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div class="module-box">prediction<br/>adapter</div>
+                  <div class="module-box">map<br/>adapter</div>
+                  <div class="module-box">mobile<br/>adapter</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="grid gap-6 border-t border-slate-200 p-6 sm:p-8 lg:grid-cols-[1.15fr_.85fr]">
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Fricção</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  Antes, <span class="file">App.vue</span> ligava polling, seleção, geolocalização, rota, veículos, tema e duas cópias da composição visual. Os tickets extraíram as capacidades críticas e reduziram o módulo raiz para composição e encaminhamento de ações.
+                </p>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Deepening</h3>
+                <p class="mt-2 leading-7 text-slate-700">
+                  O monitoramento agora concentra suas regras em módulos testáveis: polling e staleness em <span class="file">predictionMonitor</span>, seleção e favoritos em <span class="file">stopSelection</span>, e rota/veículos em <span class="file">mapDataService</span>. Os adapters de tela permanecem responsáveis pela apresentação.
+                </p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Leverage e locality</h3>
+              <ul class="space-y-2 text-sm leading-6 text-slate-700">
+                <li>• locality: mapa e previsão mudam juntos</li>
+                <li>• leverage: duas seções usam o mesmo contexto</li>
+                <li>• testes atravessam um seam coeso</li>
+                <li>• menos callbacks no módulo raiz</li>
+              </ul>
+              <div class="mini-note text-sm leading-6 text-teal-950">
+                Tickets arquiteturais 01–06 concluídos; o transporte JSONP da SIU também ficou separado das operações e testável por fake.
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="top-recommendation" class="rounded-3xl bg-slate-900 p-7 text-white shadow-xl sm:p-10">
+        <div class="eyebrow text-xs font-bold uppercase text-teal-300">Revisão concluída</div>
+        <h2 class="serif mt-3 text-4xl tracking-tight">Os quatro candidatos foram implementados</h2>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-slate-300">
+          Política de mapa-base, ciclo Leaflet, catálogo metropolitano e monitoramento foram aprofundados com seams testáveis. A separação entre SIU municipal e Mobilibus foi preservada, e a suíte completa permanece verde.
+        </p>
+        <a href="#candidates" class="mt-6 inline-flex rounded-full bg-teal-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-teal-300">Rever implementações</a>
+      </section>
+
+      <footer class="border-t border-slate-200 pt-6 text-sm text-slate-500">
+        Revisão baseada no histórico recente do Git, no vocabulário de <span class="file">CONTEXT.md</span>, nos ADRs e no código presente em 20/09/2026. Os candidatos 01 a 04 estão implementados no worktree atual.
+      </footer>
+    </main>
+  </body>
+</html>

@@ -18,7 +18,7 @@ O **Ônibus BH** é um app web para acompanhar ônibus de Belo Horizonte usando 
 - Leaflet
 - Vitest
 - Vercel Functions em `api/`
-- Node.js `>=20`
+- Node.js `>=26`
 
 ## Fluxo de dados
 
@@ -29,7 +29,9 @@ src/services/apiClient.ts
   ↓
 /api/* ou middleware local do Vite
   ↓
-src/server/siuClient.ts
+src/server/siuOperations.ts
+  ↓
+src/server/jsonpTransport.ts
   ↓
 SIU Mobile BH
   ↓
@@ -72,11 +74,15 @@ Regras puras e tipos compartilhados.
 
 Código server-side compartilhado entre Vercel e ambiente local.
 
-- `siuClient.ts`: chamadas à SIU.
-- `jsonp.ts`: parsing de respostas SIU.
+- `siuOperations.ts`: constrói paths, codifica parâmetros e escolhe os normalizadores da SIU.
+- `jsonpTransport.ts`: concentra URL-base, `fetch`, timeout, parsing JSONP e tradução de falhas upstream.
+- `jsonp.ts`: parsing isolado de respostas JSONP.
+- `siuClient.ts`: fachada de compatibilidade para os exports históricos do cliente SIU.
 - `normalizers.ts`: adaptação para tipos internos.
 - `localApiRouter.ts`: suporte a `/api/*` no `npm run dev`.
 - `errors.ts`: tratamento padronizado de erro.
+
+As operações SIU recebem um adapter `JsonpTransport`, o que permite testá-las com um fake sem mock global de rede. O transporte não conhece os tipos de domínio; as operações constroem os paths e encaminham cada payload ao normalizador correspondente. A consulta de previsões continua usando o `cod` interno, enquanto o normalizador de paradas preserva o `siu` público.
 
 ### `api/`
 
@@ -89,6 +95,7 @@ O browser deve sempre consumir `/api/*`, nunca a SIU diretamente.
 Serviços do frontend.
 
 - `apiClient.ts`: cliente HTTP do app.
+- `mobilibusCatalog.ts`: catálogo Ótimo/RMBH, cache por tile, deduplicação, concorrência, estados e seleção de ponto.
 - `mapDataService.ts`: seleção de itinerário, rota, veículos e leitura do ônibus selecionado.
 - `notificationService.ts`: Notification API.
 - `settingsStore.ts`: persistência em `localStorage`.
@@ -149,7 +156,12 @@ Comportamentos arquiteturais relevantes:
 - quando há seleção, o mapa prioriza somente o ônibus selecionado;
 - o usuário pode ocultar paradas próximas sem ocultar a parada monitorada;
 - o ajuste automático de viewport não deve ocorrer a cada polling.
-- o modo claro usa CartoDB Voyager e o modo escuro usa CartoDB Dark Matter.
+- a política de mapa-base centraliza provedor, estilos, atribuição e credencial pública;
+- com VITE_CARTO_API_KEY, o modo claro usa CartoDB Voyager e o modo escuro usa CartoDB Dark Matter;
+- sem a chave CARTO, os dois temas usam OpenStreetMap, com uma transformação visual no modo escuro;
+- a atribuição do provedor permanece visível nos dois mapas.
+- `mapLifecycle.ts` centraliza montagem, camada-base, controle de zoom, resize, troca de tema, listeners e desmontagem;
+- `MapView.vue` e `MobilibusMap.vue` mantêm apenas suas cenas, eventos e políticas de viewport específicas.
 - a rota é renderizada em duas camadas Leaflet: base roxa contínua e traço interno sutil animado.
 
 ## Interface mobile
@@ -161,6 +173,18 @@ O `MobileBottomSheet.vue` usa três estados internos:
 - `full`: painel expandido.
 
 Gestos verticais movem o painel um nível por vez. O mapa também expõe controles compactos para mostrar/ocultar pontos e alternar o modo escuro no mobile.
+
+## Catálogo Ótimo/RMBH
+
+O `mobilibusCatalog.ts` recebe o adapter de transporte e concentra:
+
+- tiles visíveis e cache de pontos por tile;
+- deduplicação de tiles e requisições pendentes;
+- versões para descartar respostas de áreas anteriores;
+- estados inicial, carregando, conteúdo, vazio e erro;
+- retry da área visível e seleção do ponto.
+
+O `MobilibusLinesPanel.vue` recebe estado e emite ações. Partidas e favoritos são coordenados por `src/services/mobilibusCatalog.ts`; o módulo raiz apenas conecta o catálogo à navegação e à apresentação.
 
 ## Normalização visual de textos
 
