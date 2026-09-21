@@ -56,15 +56,15 @@ Horários planejados não representam, por si só, a posição atual de um veíc
 - Leaflet
 - Vitest
 - Vercel Functions
-- Node.js `>=26`
+- Node.js `24.x`
 
-O arquivo [`.nvmrc`](.nvmrc) indica Node 26 para quem usa `nvm`. A versão instalada do Node precisa atender ao requisito definido em [`package.json`](package.json).
+O arquivo [`.nvmrc`](.nvmrc) indica a linha Node 24 para quem usa `nvm`. A Vercel seleciona a versão 24.x mais recente disponível, e a versão instalada localmente deve atender ao requisito definido em [`package.json`](package.json).
 
 ## Desenvolvimento local
 
 ### Pré-requisitos
 
-- Node.js `>=26`
+- Node.js `24.x`
 - npm
 - `nvm` é opcional, mas pode usar o `.nvmrc` para selecionar o runtime do projeto.
 
@@ -146,7 +146,7 @@ O projeto usa a configuração padrão de uma aplicação Vite:
 - **Build command:** `npm run build`
 - **Output directory:** `dist`
 - **Framework preset:** Vite
-- **Runtime mínimo:** Node.js `>=26`
+- **Runtime:** Node.js `24.x`
 
 ## Documentação
 

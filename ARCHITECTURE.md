@@ -18,7 +18,7 @@ O **Ônibus BH** é um app web para acompanhar ônibus de Belo Horizonte usando 
 - Leaflet
 - Vitest
 - Vercel Functions em `api/`
-- Node.js `>=26`
+- Node.js `24.x`
 
 ## Fluxo de dados
 
