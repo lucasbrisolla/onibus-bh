@@ -21,6 +21,13 @@ export interface Prediction {
   variant: BusVariant;
 }
 
+export type PredictionAlertScope = 'line' | 'variant';
+
+export interface PredictionAlertRequest {
+  prediction: Prediction;
+  scope: PredictionAlertScope;
+}
+
 export interface NearbyStop extends StopIdentity {
   latitude: number;
   longitude: number;

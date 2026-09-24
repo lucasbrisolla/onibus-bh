@@ -11,6 +11,7 @@ import type {
   AlertSettings,
   NearbyStop,
   Prediction,
+  PredictionAlertRequest,
   RoutePoint,
   Vehicle,
 } from './domain/types';
@@ -31,7 +32,7 @@ import {
   describeSelectedVehicleApproach,
   selectMapServiceId,
 } from './services/mapDataService';
-import { createNotificationService } from './services/notificationService';
+import { createNotificationService, type PermissionState } from './services/notificationService';
 import { createMobilibusCatalog } from './services/mobilibusCatalog';
 import { createPredictionMonitor } from './services/predictionMonitor';
 import {
@@ -100,7 +101,7 @@ const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
 const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
 const userLocation = ref<UserLocation | null>(null);
-const activeSection = ref<DashboardSection>('monitoramento');
+const activeSection = ref<DashboardSection>('mapa');
 const mobilibusCatalog = createMobilibusCatalog({
   fetchStops: fetchMobilibusStops,
   fetchDepartures: fetchMobilibusDepartures,
@@ -146,7 +147,7 @@ const stopSelection = createStopSelection({
   },
   effects: {
     onStopSelected: stop => {
-      activeSection.value = 'monitoramento';
+      activeSection.value = 'mapa';
       predictionMonitor.selectStop(stop);
     },
   },
@@ -190,8 +191,9 @@ watch(themeMode, value => {
   saveThemeMode(value);
 });
 
-async function requestPermission() {
+async function requestPermission(): Promise<PermissionState> {
   permission.value = await notificationService.requestPermission();
+  return permission.value;
 }
 
 function updateSettings(next: AlertSettings) {
@@ -250,6 +252,23 @@ function selectStop(stop: SelectableStop) {
 
 function selectPrediction(prediction: Prediction) {
   predictionMonitor.selectPrediction(prediction.id);
+}
+
+async function createAlertFromPrediction({ prediction, scope }: PredictionAlertRequest) {
+  const nextPermission = permission.value === 'granted' ? permission.value : await requestPermission();
+  const variantFilter =
+    scope === 'variant' && (prediction.variant === 'direto' || prediction.variant === 'nao-direto')
+      ? prediction.variant
+      : 'qualquer';
+
+  predictionMonitor.updateSettings({
+    ...predictionMonitor.state.settings,
+    lineCode: prediction.lineCode,
+    variantFilter,
+    enabled: nextPermission === 'granted',
+    lastNotifiedPredictionId: null,
+  });
+  activeSection.value = 'monitoramento';
 }
 
 function toggleSelectedStopFavorite() {
@@ -389,7 +408,7 @@ onBeforeUnmount(() => {
       @select-stop="selectStop"
       @toggle-theme="toggleTheme"
     >
-    <section v-if="activeSection === 'monitoramento'" class="dashboard-grid">
+    <section v-if="activeSection === 'mapa'" class="dashboard-grid">
       <MonitoringPanel
         display-mode="predictions-only"
         :settings="settings"
@@ -403,7 +422,9 @@ onBeforeUnmount(() => {
         :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
         @select-prediction="selectPrediction"
+        @create-alert="createAlertFromPrediction"
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+        @request-permission="requestPermission"
       />
 
       <section class="map-stage">
@@ -440,11 +461,13 @@ onBeforeUnmount(() => {
         :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
         @select-prediction="selectPrediction"
+        @create-alert="createAlertFromPrediction"
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+        @request-permission="requestPermission"
       />
     </section>
 
-    <section v-else-if="activeSection === 'mapa'" class="dashboard-grid">
+    <section v-else-if="activeSection === 'monitoramento'" class="dashboard-grid">
       <MonitoringPanel
         :settings="settings"
         :predictions="predictions"
@@ -457,7 +480,9 @@ onBeforeUnmount(() => {
         :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
         @select-prediction="selectPrediction"
+        @create-alert="createAlertFromPrediction"
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+        @request-permission="requestPermission"
       />
 
       <section class="map-stage">
@@ -493,7 +518,9 @@ onBeforeUnmount(() => {
         :is-selected-stop-favorite="isSelectedStopFavorite"
         @update="updateSettings"
         @select-prediction="selectPrediction"
+        @create-alert="createAlertFromPrediction"
         @toggle-selected-stop-favorite="toggleSelectedStopFavorite"
+        @request-permission="requestPermission"
       />
     </section>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { onBeforeUnmount, ref } from 'vue';
 import { BusFront } from '@lucide/vue';
-import type { Prediction } from '../domain/types';
+import type { Prediction, PredictionAlertRequest, PredictionAlertScope } from '../domain/types';
 
 defineProps<{
   predictions: Prediction[];
@@ -10,7 +11,77 @@ defineProps<{
 
 const emit = defineEmits<{
   selectPrediction: [prediction: Prediction];
+  createAlert: [request: PredictionAlertRequest];
 }>();
+
+const contextMenu = ref<{ prediction: Prediction; x: number; y: number } | null>(null);
+
+function closeContextMenu() {
+  contextMenu.value = null;
+  document.removeEventListener('pointerdown', closeContextMenu);
+  document.removeEventListener('keydown', handleContextMenuKeydown);
+}
+
+function handleContextMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeContextMenu();
+  }
+}
+
+function openContextMenu(event: MouseEvent | KeyboardEvent, prediction: Prediction) {
+  event.preventDefault();
+
+  const target = event.currentTarget as HTMLElement | null;
+  const targetRect = target?.getBoundingClientRect();
+  const rawX = 'clientX' in event && event.clientX > 0 ? event.clientX : targetRect?.left ?? 0;
+  const rawY = 'clientY' in event && event.clientY > 0 ? event.clientY : targetRect?.bottom ?? 0;
+  const menuWidth = 248;
+  const menuHeight = prediction.variant === 'not-applicable' ? 116 : 156;
+
+  contextMenu.value = {
+    prediction,
+    x: Math.max(8, Math.min(rawX, window.innerWidth - menuWidth - 8)),
+    y: Math.max(8, Math.min(rawY, window.innerHeight - menuHeight - 8)),
+  };
+
+  document.addEventListener('pointerdown', closeContextMenu);
+  document.addEventListener('keydown', handleContextMenuKeydown);
+}
+
+function selectPrediction(prediction: Prediction) {
+  closeContextMenu();
+  emit('selectPrediction', prediction);
+}
+
+function createAlert(scope: PredictionAlertScope) {
+  const request = contextMenu.value;
+  if (!request) {
+    return;
+  }
+
+  closeContextMenu();
+  emit('createAlert', { prediction: request.prediction, scope });
+}
+
+function describeVariant(variant: Prediction['variant']): string | null {
+  if (variant === 'direto') {
+    return 'Direto';
+  }
+
+  if (variant === 'nao-direto') {
+    return 'Não direto';
+  }
+
+  return null;
+}
+
+function handlePredictionKeydown(event: KeyboardEvent, prediction: Prediction) {
+  if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+    openContextMenu(event, prediction);
+  }
+}
+
+onBeforeUnmount(closeContextMenu);
 
 function describePredictionTime(prediction: Prediction): string {
   if (prediction.departureLabel) {
@@ -18,18 +89,6 @@ function describePredictionTime(prediction: Prediction): string {
   }
 
   return Number.isFinite(prediction.minutes) ? `${prediction.minutes} min` : 'Sem previsão';
-}
-
-function describeVariant(prediction: Prediction): string | null {
-  if (prediction.variant === 'direto') {
-    return 'Direto';
-  }
-
-  if (prediction.variant === 'nao-direto') {
-    return 'Não Direto';
-  }
-
-  return null;
 }
 
 function formatDisplayText(value: string): string {
@@ -47,7 +106,7 @@ function formatDisplayText(value: string): string {
 
 function describePredictionForScreenReader(prediction: Prediction): string {
   const destination = formatDisplayText(prediction.destination);
-  const variant = describeVariant(prediction);
+  const variant = describeVariant(prediction.variant);
   const time = describePredictionTime(prediction);
 
   return `${prediction.lineCode} para ${destination}${variant ? `, ${variant}` : ''}, ${time}`;
@@ -80,7 +139,10 @@ function describePredictionForScreenReader(prediction: Prediction): string {
           }"
           :aria-pressed="prediction.id === selectedPredictionId"
           :aria-label="describePredictionForScreenReader(prediction)"
-          @click="emit('selectPrediction', prediction)"
+          title="Clique com o botão direito para criar um alerta"
+          @click="selectPrediction(prediction)"
+          @contextmenu="openContextMenu($event, prediction)"
+          @keydown="handlePredictionKeydown($event, prediction)"
         >
           <div class="bus-token" aria-hidden="true">
             <BusFront />
@@ -89,11 +151,11 @@ function describePredictionForScreenReader(prediction: Prediction): string {
             <div class="prediction-line">
               <strong>{{ prediction.lineCode }}</strong>
               <span
-                v-if="describeVariant(prediction)"
+                v-if="describeVariant(prediction.variant)"
                 class="variant-pill"
                 :class="`variant-pill--${prediction.variant}`"
               >
-                {{ describeVariant(prediction) }}
+                {{ describeVariant(prediction.variant) }}
               </span>
             </div>
             <span class="prediction-destination">{{ formatDisplayText(prediction.destination) }}</span>
@@ -106,5 +168,31 @@ function describePredictionForScreenReader(prediction: Prediction): string {
         </button>
       </li>
     </ul>
+
+    <Teleport to="body">
+      <div
+        v-if="contextMenu"
+        class="prediction-context-menu"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+        role="menu"
+        @pointerdown.stop
+      >
+        <p>Opções para a linha {{ contextMenu.prediction.lineCode }}</p>
+        <button type="button" role="menuitem" @click="createAlert('line')">
+          Notificar esta linha
+        </button>
+        <button
+          v-if="contextMenu.prediction.variant !== 'not-applicable'"
+          type="button"
+          role="menuitem"
+          @click="createAlert('variant')"
+        >
+          Notificar somente {{ describeVariant(contextMenu.prediction.variant) }}
+        </button>
+        <button type="button" role="menuitem" @click="selectPrediction(contextMenu.prediction)">
+          Selecionar este ônibus
+        </button>
+      </div>
+    </Teleport>
   </section>
 </template>

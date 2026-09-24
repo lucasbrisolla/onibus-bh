@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import MonitoringPanel from './MonitoringPanel.vue';
-import type { AlertSettings, NearbyStop, Prediction } from '../domain/types';
+import type { AlertSettings, NearbyStop, Prediction, PredictionAlertRequest } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
 
 const SHEET_GESTURE_ZONE_HEIGHT = 108;
@@ -24,7 +24,9 @@ defineProps<{
 defineEmits<{
   update: [settings: AlertSettings];
   selectPrediction: [prediction: Prediction];
+  createAlert: [request: PredictionAlertRequest];
   toggleSelectedStopFavorite: [];
+  requestPermission: [];
 }>();
 
 const sheetState = ref<SheetState>('half');
@@ -116,7 +118,9 @@ function onTouchEnd(event: TouchEvent) {
       :is-selected-stop-favorite="isSelectedStopFavorite"
       @update="$emit('update', $event)"
       @select-prediction="$emit('selectPrediction', $event)"
+      @create-alert="$emit('createAlert', $event)"
       @toggle-selected-stop-favorite="$emit('toggleSelectedStopFavorite')"
+      @request-permission="$emit('requestPermission')"
     />
   </div>
 </template>
