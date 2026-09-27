@@ -466,9 +466,9 @@ watch(
 </script>
 
 <template>
-  <section class="map-panel map-view-panel tw:relative tw:h-full tw:min-h-[calc(100vh-79px)] tw:overflow-hidden tw:bg-[#e8ece6]">
-    <div ref="mapElement" class="map-surface tw:h-full tw:min-h-[calc(100vh-79px)]" aria-label="Mapa de ônibus e paradas"></div>
-    <div class="map-toggle-controls tw:absolute tw:left-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:justify-items-start tw:gap-2">
+  <section class="map-panel map-view-panel tw:relative tw:h-full tw:min-h-[calc(100vh-79px)] tw:overflow-hidden tw:bg-[#e8ece6] tw:dark:bg-[#0b1616] tw:max-[920px]:min-h-[calc(100vh-62px)]">
+    <div ref="mapElement" class="map-surface tw:h-full tw:min-h-[calc(100vh-79px)] tw:max-[920px]:min-h-[calc(100vh-62px)]" aria-label="Mapa de ônibus e paradas"></div>
+    <div class="map-toggle-controls tw:absolute tw:left-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[calc(100%-72px)] tw:justify-items-start tw:gap-2 tw:max-[920px]:top-3 tw:max-[920px]:left-3">
       <button
         type="button"
         class="map-compact-toggle map-points-toggle tw:inline-flex tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:px-[10px_8px_7px_10px]!"
@@ -480,13 +480,13 @@ watch(
         @click="emit('toggleNearbyStops', !showNearbyStops)"
       >
         <span>Mostrar pontos</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" aria-hidden="true">
-          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]"></span>
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="showNearbyStops ? (themeMode === 'dark' ? 'tw:bg-[#2dd4bf]' : 'tw:bg-bh-primary') : (themeMode === 'dark' ? 'tw:bg-[#28514d]' : '')" aria-hidden="true">
+          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="showNearbyStops ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
       <button
         type="button"
-        class="map-compact-toggle map-theme-toggle tw:inline-flex tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:px-[10px_8px_7px_10px]!"
+        class="map-compact-toggle map-theme-toggle tw:hidden tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:inline-flex tw:max-[920px]:px-[10px_8px_7px_10px]!"
         :class="[
           { 'is-active': themeMode === 'dark' },
           getCompactToggleThemeClasses(themeMode === 'dark'),
@@ -495,19 +495,19 @@ watch(
         @click="emit('toggleTheme')"
       >
         <span>Modo escuro</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" aria-hidden="true">
-          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]"></span>
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]' : ''" aria-hidden="true">
+          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
     </div>
-    <div class="map-location-control tw:absolute tw:right-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[280px] tw:justify-items-end tw:gap-[7px]">
+    <div class="map-location-control tw:absolute tw:right-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[280px] tw:justify-items-end tw:gap-[7px] tw:max-[920px]:top-3 tw:max-[920px]:right-3 tw:max-[920px]:max-w-[44px]">
       <button
         type="button"
-        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:p-0! tw:shadow-[0_12px_32px_rgba(13,148,136,0.25)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
-        :class="getLocationButtonThemeClasses()"
+        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:border-bh-primary tw:bg-bh-primary tw:p-0! tw:text-white tw:shadow-[0_12px_32px_rgba(13,148,136,0.25)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
         :aria-label="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :title="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :disabled="isLocating"
+        :class="['tw:disabled:cursor-progress tw:disabled:opacity-[.82]', getLocationButtonThemeClasses()]"
         @click="emit('useCurrentLocation')"
       >
         <LocateFixed v-if="!isLocating" class="tw:size-5 tw:stroke-[2.4]" aria-hidden="true" />

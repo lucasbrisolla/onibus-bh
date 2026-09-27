@@ -18,6 +18,7 @@ defineProps<{
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
   isSelectedStopFavorite: boolean;
+  themeMode?: 'light' | 'dark';
   displayMode?: 'full' | 'predictions-only';
 }>();
 
@@ -91,8 +92,14 @@ function onTouchEnd(event: TouchEvent) {
 <template>
   <div
     ref="sheetElement"
-    class="mobile-bottom-sheet tw:hidden tw:fixed tw:inset-x-2.5 tw:bottom-[68px] tw:z-[1000] tw:overflow-hidden tw:rounded-[18px_18px_8px_8px] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:backdrop-blur-[16px] tw:transition-[height,transform,box-shadow] tw:duration-[180ms] tw:will-change-[height,transform]"
-    :class="`is-${sheetState}`"
+    class="mobile-bottom-sheet tw:fixed tw:inset-x-2.5 tw:bottom-[68px] tw:z-[1000] tw:hidden tw:overflow-hidden tw:rounded-[18px_18px_8px_8px] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:backdrop-blur-[16px] tw:dark:border tw:dark:border-[#1f4a47] tw:dark:bg-[rgba(15,36,35,0.98)] tw:dark:shadow-[0_24px_60px_rgba(0,0,0,0.46)] tw:transition-[height,transform,box-shadow] tw:duration-[180ms] tw:will-change-[height,transform] tw:max-[920px]:block tw:max-[920px]:h-[min(42vh,340px)]"
+    :class="[
+      `is-${sheetState}`,
+      themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[rgba(15,36,35,0.98)]!' : '',
+      sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
+      sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
+      sheetState === 'full' ? 'tw:max-[920px]:h-[calc(100vh-104px)]' : '',
+    ]"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
@@ -103,7 +110,7 @@ function onTouchEnd(event: TouchEvent) {
       :aria-label="sheetState === 'peek' ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
       @click="toggleSheet"
     >
-      <div class="sheet-handle tw:h-[5px] tw:w-12 tw:rounded-full tw:bg-[#d0d5dd]"></div>
+      <div class="sheet-handle tw:h-[5px] tw:w-12 tw:rounded-full tw:bg-[#d0d5dd] tw:dark:bg-[#9eb7b4]"></div>
     </button>
     <MonitoringPanel
       :display-mode="displayMode"

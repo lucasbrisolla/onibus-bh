@@ -50,13 +50,26 @@ Horários planejados não representam, por si só, a posição atual de um veíc
 
 ## Stack
 
+### Em uso
+
 - Vue 3
 - TypeScript
 - Vite
+- Tailwind CSS 4, em migração gradual dos componentes
+- TanStack Query para Vue, integrado à primeira consulta de previsões
+- Zod, preparado para validar contratos da API em runtime
 - Leaflet
 - Vitest
 - Vercel Functions
 - Node.js `24.x`
+
+### Próximas evoluções
+
+- **Nuxt 4 + Nitro:** candidato para consolidar frontend e API quando a aplicação precisar de mais páginas, SSR ou regras de execução híbrida.
+- **Drizzle ORM + PostgreSQL serverless:** candidato para favoritos sincronizados, contas, alertas persistentes e uso em múltiplos dispositivos.
+- **Fastify:** não faz parte da stack atual. As rotas serverless existentes ainda atendem ao escopo do projeto.
+
+As decisões, os critérios de adoção e a ordem de migração estão em [`docs/stack-recommendations.md`](docs/stack-recommendations.md).
 
 O arquivo [`.nvmrc`](.nvmrc) indica a linha Node 24 para quem usa `nvm`. A Vercel seleciona a versão 24.x mais recente disponível, e a versão instalada localmente deve atender ao requisito definido em [`package.json`](package.json).
 
@@ -154,6 +167,7 @@ O projeto usa a configuração padrão de uma aplicação Vite:
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): estrutura técnica e fluxo de dados.
 - [`DESIGN.md`](DESIGN.md): decisões visuais, UX e paleta.
 - [`docs/decisions.md`](docs/decisions.md): decisões estáveis de produto e arquitetura.
+- [`docs/stack-recommendations.md`](docs/stack-recommendations.md): stacks avaliadas, critérios de adoção e ordem de migração.
 - [`docs/mobilibus-otimo-api-research.md`](docs/mobilibus-otimo-api-research.md): pesquisa sobre Mobilibus, Ótimo e SIU.
 - [`AGENTS.md`](AGENTS.md): instruções operacionais para agentes.
 
