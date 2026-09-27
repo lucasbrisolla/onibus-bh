@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core';
 import { BusFront, ChevronLeft, History, LayoutDashboard, MapPinned, Menu, MoonStar, Settings, Star, Sun } from '@lucide/vue';
 import { ref } from 'vue';
 import type { NearbyStop } from '../domain/types';
@@ -28,7 +29,11 @@ const emit = defineEmits<{
 }>();
 
 const isSidebarOpen = ref(true);
-let sidebarResizeTimeoutId: number | null = null;
+const dispatchDelayedResize = useDebounceFn(() => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('resize'));
+  }
+}, 220);
 
 function syncLayoutAfterSidebarToggle() {
   if (typeof window === 'undefined') {
@@ -36,16 +41,8 @@ function syncLayoutAfterSidebarToggle() {
   }
 
   window.dispatchEvent(new Event('resize'));
-
-  if (sidebarResizeTimeoutId !== null) {
-    window.clearTimeout(sidebarResizeTimeoutId);
-  }
-
   // Run again after the grid transition so Leaflet can refill tiles.
-  sidebarResizeTimeoutId = window.setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-    sidebarResizeTimeoutId = null;
-  }, 220);
+  dispatchDelayedResize();
 }
 
 function toggleSidebar() {

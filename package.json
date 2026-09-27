@@ -17,6 +17,7 @@
   "dependencies": {
     "@lucide/vue": "^1.47.0",
     "@tanstack/vue-query": "^5.104.0",
+    "@vueuse/core": "^15.0.0",
     "leaflet": "^1.9.4",
     "vue": "^3.5.43",
     "zod": "^4.6.5"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener, useStorage } from '@vueuse/core';
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue';
 import AppShell from './components/AppShell.vue';
 import type { DashboardSection } from './components/AppShell.vue';
@@ -44,9 +45,10 @@ import {
   saveFavoriteStops,
   saveMobilibusFavoriteStops,
   saveSettings,
-  saveThemeMode,
 } from './services/settingsStore';
+import type { ThemeMode } from './services/settingsStore';
 import { createStopSelection, type SelectableStop } from './services/stopSelection';
+import { useCurrentLocation as useCurrentLocationComposable } from './composables/useCurrentLocation';
 
 const DEFAULT_NEARBY_STOPS: NearbyStop[] = [
   {
@@ -126,7 +128,20 @@ const isSelectedMobilibusStopFavorite = toRef(
 const route = ref<RoutePoint[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 const activeMapServiceId = ref<string | null>(null);
-const themeMode = ref(loadThemeMode());
+const themeMode = useStorage<ThemeMode>('onibus-bh-theme', loadThemeMode(), undefined, {
+  writeDefaults: false,
+  serializer: {
+    read: value => (value === 'dark' ? 'dark' : 'light'),
+    write: value => value,
+  },
+  onError: () => {
+    // O tema continua funcionando em memória quando o storage não está disponível.
+  },
+});
+const currentLocation = useCurrentLocationComposable({
+  enableHighAccuracy: true,
+  timeout: 10_000,
+});
 const showNearbyStops = ref(true);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
@@ -189,10 +204,6 @@ watch(
   },
   { deep: true },
 );
-
-watch(themeMode, value => {
-  saveThemeMode(value);
-});
 
 async function requestPermission(): Promise<PermissionState> {
   permission.value = await notificationService.requestPermission();
@@ -283,7 +294,7 @@ function removeFavoriteStop(stopCode: string) {
 }
 
 async function useCurrentLocation() {
-  if (!navigator.geolocation) {
+  if (!currentLocation.isSupported.value) {
     statusMessage.value = 'Seu navegador não informou suporte a localização.';
     locationStatus.value = 'Geolocalização indisponível neste navegador.';
     return;
@@ -292,23 +303,16 @@ async function useCurrentLocation() {
   isLocating.value = true;
   locationStatus.value = 'Localizando...';
 
-  navigator.geolocation.getCurrentPosition(
-    position => {
-      userLocation.value = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      };
-      void loadNearbyStops(position.coords.latitude, position.coords.longitude).finally(() => {
-        isLocating.value = false;
-      });
-    },
-    () => {
-      statusMessage.value = 'Não foi possível acessar sua localização.';
-      locationStatus.value = 'Não foi possível acessar sua localização.';
-      isLocating.value = false;
-    },
-    { enableHighAccuracy: true, timeout: 10_000 },
-  );
+  try {
+    const location = await currentLocation.request();
+    userLocation.value = location;
+    await loadNearbyStops(location.latitude, location.longitude);
+  } catch {
+    statusMessage.value = 'Não foi possível acessar sua localização.';
+    locationStatus.value = 'Não foi possível acessar sua localização.';
+  } finally {
+    isLocating.value = false;
+  }
 }
 
 async function loadNearbyStops(
@@ -381,19 +385,17 @@ function handleVisibilityChange() {
   }
 }
 
+useEventListener(window, 'focus', handlePollingResume);
+useEventListener(window, 'pageshow', handlePollingResume);
+useEventListener(document, 'visibilitychange', handleVisibilityChange);
+
 onMounted(() => {
   predictionMonitor.start();
-  window.addEventListener('focus', handlePollingResume);
-  window.addEventListener('pageshow', handlePollingResume);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
   mobilibusCatalog.dispose();
   predictionMonitor.stop();
-  window.removeEventListener('focus', handlePollingResume);
-  window.removeEventListener('pageshow', handlePollingResume);
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 
