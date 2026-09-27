@@ -114,25 +114,32 @@ function describePredictionForScreenReader(prediction: Prediction): string {
 </script>
 
 <template>
-  <section class="prediction-section" :aria-busy="isLoading">
+  <section class="prediction-section tw:grid tw:gap-2" :aria-busy="isLoading">
     <p
       v-if="isLoading && predictions.length === 0"
-      class="prediction-state prediction-state--loading"
+      class="prediction-state prediction-state--loading tw:m-0 tw:flex tw:min-h-[52px] tw:items-center tw:gap-[9px] tw:rounded-[8px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-3 tw:text-bh-primary-hover tw:text-[0.84rem] tw:font-bold"
       role="status"
       aria-live="polite"
     >
-      <span class="prediction-state-indicator" aria-hidden="true"></span>
+      <span
+        class="prediction-state-indicator tw:size-[14px] tw:flex-none tw:rounded-full tw:border-2 tw:border-bh-border-accent tw:border-t-bh-primary tw:animate-[prediction-state-spin_700ms_linear_infinite]"
+        aria-hidden="true"
+      ></span>
       Buscando próximos ônibus…
     </p>
-    <p v-else-if="predictions.length === 0" class="muted empty-state" role="status">
+    <p
+      v-else-if="predictions.length === 0"
+      class="muted empty-state tw:m-0 tw:rounded-[8px] tw:border tw:border-dashed tw:border-[#d0d5dd] tw:p-[18px] tw:text-bh-muted tw:text-[0.8rem]"
+      role="status"
+    >
       Nenhuma previsão carregada.
     </p>
 
-    <ul v-else class="prediction-cards">
+    <ul v-else class="prediction-cards tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
       <li v-for="(prediction, index) in predictions" :key="prediction.id">
         <button
           type="button"
-          class="prediction-card"
+          class="prediction-card tw:grid tw:w-full tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-2.5 tw:text-left"
           :class="{
             'is-next': index === 0 && !selectedPredictionId,
             'is-selected': prediction.id === selectedPredictionId,
@@ -147,21 +154,26 @@ function describePredictionForScreenReader(prediction: Prediction): string {
           <div class="bus-token" aria-hidden="true">
             <BusFront />
           </div>
-          <div class="prediction-main">
-            <div class="prediction-line">
-              <strong>{{ prediction.lineCode }}</strong>
+          <div class="prediction-main tw:grid tw:min-w-0 tw:gap-0.5">
+            <div class="prediction-line tw:flex tw:min-w-0 tw:items-center tw:gap-2">
+              <strong class="tw:text-[0.98rem]">{{ prediction.lineCode }}</strong>
               <span
                 v-if="describeVariant(prediction.variant)"
-                class="variant-pill"
+                class="variant-pill tw:rounded-full tw:px-[7px] tw:py-[2px] tw:text-[0.68rem] tw:font-black tw:uppercase"
                 :class="`variant-pill--${prediction.variant}`"
               >
                 {{ describeVariant(prediction.variant) }}
               </span>
             </div>
-            <span class="prediction-destination">{{ formatDisplayText(prediction.destination) }}</span>
+            <span class="prediction-destination tw:text-bh-muted tw:text-[0.8rem]">
+              {{ formatDisplayText(prediction.destination) }}
+            </span>
           </div>
-          <div class="prediction-time">
-            <strong :class="{ 'is-departure': Boolean(prediction.departureLabel) }">
+          <div class="prediction-time tw:grid tw:justify-items-end tw:gap-0.5 tw:whitespace-nowrap">
+            <strong
+              class="tw:text-[#16a34a] tw:text-[1rem] tw:text-right"
+              :class="{ 'is-departure': Boolean(prediction.departureLabel) }"
+            >
               {{ describePredictionTime(prediction) }}
             </strong>
           </div>
@@ -172,12 +184,14 @@ function describePredictionForScreenReader(prediction: Prediction): string {
     <Teleport to="body">
       <div
         v-if="contextMenu"
-        class="prediction-context-menu"
+        class="prediction-context-menu tw:fixed tw:z-[1600] tw:grid tw:min-w-[248px] tw:gap-1 tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white tw:p-1.5 tw:shadow-[0_18px_48px_rgba(16,24,40,0.2)]"
         :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         role="menu"
         @pointerdown.stop
       >
-        <p>Opções para a linha {{ contextMenu.prediction.lineCode }}</p>
+        <p class="tw:m-[2px_8px_4px] tw:text-[#667085] tw:text-[0.72rem] tw:font-extrabold">
+          Opções para a linha {{ contextMenu.prediction.lineCode }}
+        </p>
         <button type="button" role="menuitem" @click="createAlert('line')">
           Notificar esta linha
         </button>

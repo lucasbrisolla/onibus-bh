@@ -91,19 +91,19 @@ function onTouchEnd(event: TouchEvent) {
 <template>
   <div
     ref="sheetElement"
-    class="mobile-bottom-sheet"
+    class="mobile-bottom-sheet tw:hidden tw:fixed tw:inset-x-2.5 tw:bottom-[68px] tw:z-[1000] tw:overflow-hidden tw:rounded-[18px_18px_8px_8px] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:backdrop-blur-[16px] tw:transition-[height,transform,box-shadow] tw:duration-[180ms] tw:will-change-[height,transform]"
     :class="`is-${sheetState}`"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
     <button
       type="button"
-      class="sheet-toggle"
+      class="sheet-toggle tw:grid tw:min-h-[34px] tw:w-full tw:place-items-center tw:border-0! tw:bg-transparent! tw:px-0! tw:py-[9px_0_6px]!"
       :aria-expanded="sheetState !== 'peek'"
       :aria-label="sheetState === 'peek' ? 'Expandir painel de monitoramento' : 'Recolher painel de monitoramento'"
       @click="toggleSheet"
     >
-      <div class="sheet-handle"></div>
+      <div class="sheet-handle tw:h-[5px] tw:w-12 tw:rounded-full tw:bg-[#d0d5dd]"></div>
     </button>
     <MonitoringPanel
       :display-mode="displayMode"

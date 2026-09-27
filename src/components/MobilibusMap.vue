@@ -186,46 +186,77 @@ watch(
 </script>
 
 <template>
-  <section class="map-panel mobilibus-map-panel" aria-label="Mapa de pontos Mobilibus">
+  <section
+    class="map-panel mobilibus-map-panel tw:relative tw:overflow-hidden"
+    aria-label="Mapa de pontos Mobilibus"
+  >
     <div ref="mapElement" class="map-surface" aria-label="Mapa de pontos da linha Mobilibus"></div>
 
-    <div class="map-toggle-controls">
+    <div class="map-toggle-controls tw:absolute tw:left-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:justify-items-start tw:gap-2">
       <button
         type="button"
-        class="map-compact-toggle map-points-toggle"
+        class="map-compact-toggle map-points-toggle tw:inline-flex tw:items-center tw:gap-2 tw:rounded-full tw:border tw:border-[#d0d5dd] tw:bg-white/[.94] tw:px-[11px] tw:py-[7px] tw:text-[.76rem] tw:font-extrabold tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-colors tw:duration-[160ms]"
         :class="{ 'is-active': showStops }"
         :aria-pressed="showStops"
         @click="toggleStops"
       >
         <span>Mostrar pontos</span>
-        <span class="compact-switch" aria-hidden="true"><span></span></span>
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" aria-hidden="true">
+          <span class="tw:size-3.5 tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]"></span>
+        </span>
       </button>
       <button
         type="button"
-        class="map-compact-toggle map-theme-toggle"
+        class="map-compact-toggle map-theme-toggle tw:inline-flex tw:items-center tw:gap-2 tw:rounded-full tw:border tw:border-[#d0d5dd] tw:bg-white/[.94] tw:px-[11px] tw:py-[7px] tw:text-[.76rem] tw:font-extrabold tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-colors tw:duration-[160ms]"
         :class="{ 'is-active': themeMode === 'dark' }"
         :aria-pressed="themeMode === 'dark'"
         @click="emit('toggleTheme')"
       >
         <span>Modo escuro</span>
-        <span class="compact-switch" aria-hidden="true"><span></span></span>
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" aria-hidden="true">
+          <span class="tw:size-3.5 tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]"></span>
+        </span>
       </button>
     </div>
 
-    <p v-if="currentZoom < MOBILIBUS_STOPS_MIN_ZOOM" class="mobilibus-map-message" role="status">
+    <p
+      v-if="currentZoom < MOBILIBUS_STOPS_MIN_ZOOM"
+      class="mobilibus-map-message tw:absolute tw:bottom-[18px] tw:left-[18px] tw:z-[700] tw:m-0 tw:max-w-[min(420px,calc(100%-36px))] tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white/[.95] tw:px-3 tw:py-2.5 tw:text-[.82rem] tw:font-bold tw:leading-[1.4] tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.12)] tw:backdrop-blur-[8px]"
+      role="status"
+    >
       Aproxime o mapa para carregar os pontos Mobilibus.
     </p>
-    <p v-else-if="status === 'loading' && stops.length === 0" class="mobilibus-map-message" role="status" aria-live="polite">
+    <p
+      v-else-if="status === 'loading' && stops.length === 0"
+      class="mobilibus-map-message tw:absolute tw:bottom-[18px] tw:left-[18px] tw:z-[700] tw:m-0 tw:max-w-[min(420px,calc(100%-36px))] tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white/[.95] tw:px-3 tw:py-2.5 tw:text-[.82rem] tw:font-bold tw:leading-[1.4] tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.12)] tw:backdrop-blur-[8px]"
+      role="status"
+      aria-live="polite"
+    >
       Carregando pontos Mobilibus...
     </p>
-    <p v-else-if="status === 'empty'" class="mobilibus-map-message" role="status">
+    <p
+      v-else-if="status === 'empty'"
+      class="mobilibus-map-message tw:absolute tw:bottom-[18px] tw:left-[18px] tw:z-[700] tw:m-0 tw:max-w-[min(420px,calc(100%-36px))] tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white/[.95] tw:px-3 tw:py-2.5 tw:text-[.82rem] tw:font-bold tw:leading-[1.4] tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.12)] tw:backdrop-blur-[8px]"
+      role="status"
+    >
       Nenhum ponto Mobilibus foi encontrado nesta área.
     </p>
-    <div v-else-if="status === 'error'" class="mobilibus-map-message mobilibus-map-message--error" role="alert">
+    <div
+      v-else-if="status === 'error'"
+      class="mobilibus-map-message mobilibus-map-message--error tw:flex tw:items-center tw:gap-3 tw:border-[#fda29b] tw:bg-[#fff5f5] tw:text-[#b42318]"
+      role="alert"
+    >
       <span>{{ error ?? 'Não foi possível carregar os pontos Mobilibus.' }}</span>
-      <button type="button" class="primary" @click="emit('retry')">Tentar novamente</button>
+      <button type="button" class="primary tw:shrink-0 tw:px-2.5 tw:py-2 tw:text-[.76rem]" @click="emit('retry')">
+        Tentar novamente
+      </button>
     </div>
-    <p v-else-if="stops.length > 0" class="mobilibus-map-count" role="status" aria-live="polite">
+    <p
+      v-else-if="stops.length > 0"
+      class="mobilibus-map-count tw:absolute tw:right-[18px] tw:top-[18px] tw:bottom-auto tw:left-auto tw:z-[700] tw:m-0 tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white/[.95] tw:px-3 tw:py-2.5 tw:text-[.82rem] tw:font-bold tw:text-bh-primary-hover tw:shadow-[0_10px_24px_rgba(23,32,26,0.12)] tw:backdrop-blur-[8px]"
+      role="status"
+      aria-live="polite"
+    >
       {{ stops.length }} {{ stops.length === 1 ? 'ponto visível' : 'pontos visíveis' }}
     </p>
   </section>

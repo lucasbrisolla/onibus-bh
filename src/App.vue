@@ -24,7 +24,6 @@ import {
   fetchMobilibusStops,
   fetchNearbyStops,
   fetchRoutePoints,
-  fetchStopPredictions,
   fetchVehicles,
 } from './services/apiClient';
 import {
@@ -35,6 +34,8 @@ import {
 import { createNotificationService, type PermissionState } from './services/notificationService';
 import { createMobilibusCatalog } from './services/mobilibusCatalog';
 import { createPredictionMonitor } from './services/predictionMonitor';
+import { queryClient } from './services/queryClient';
+import { createQueryScope, stopPredictionsQueryOptions } from './services/queryOptions';
 import {
   loadFavoriteStops,
   loadMobilibusFavoriteStops,
@@ -130,9 +131,11 @@ const showNearbyStops = ref(true);
 const notificationService = createNotificationService();
 const permission = ref(notificationService.getPermission());
 const mapDataLoader = createMapDataLoader({ fetchRoutePoints, fetchVehicles });
+const predictionQueryScope = createQueryScope();
 const predictionMonitor = createPredictionMonitor({
   initialSettings: loadSettings(),
-  fetchPredictions: fetchStopPredictions,
+  fetchPredictions: stopCode =>
+    queryClient.fetchQuery(stopPredictionsQueryOptions(stopCode, predictionQueryScope)),
   notifyArrival: input => notificationService.notifyArrival(input),
   onContextChange: context => {
     void refreshMapData(context.predictions, context.settings.lineCode, context.selectedPrediction);
@@ -408,7 +411,10 @@ onBeforeUnmount(() => {
       @select-stop="selectStop"
       @toggle-theme="toggleTheme"
     >
-    <section v-if="activeSection === 'mapa'" class="dashboard-grid">
+    <section
+      v-if="activeSection === 'mapa'"
+      class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)]"
+    >
       <MonitoringPanel
         display-mode="predictions-only"
         :settings="settings"
@@ -427,7 +433,7 @@ onBeforeUnmount(() => {
         @request-permission="requestPermission"
       />
 
-      <section class="map-stage">
+      <section class="map-stage tw:relative tw:min-w-0 tw:min-h-[calc(100vh-79px)]">
         <MapView
           :monitored-stop="monitoredStop"
           :nearby-stops="nearbyStops"
@@ -467,7 +473,10 @@ onBeforeUnmount(() => {
       />
     </section>
 
-    <section v-else-if="activeSection === 'monitoramento'" class="dashboard-grid">
+    <section
+      v-else-if="activeSection === 'monitoramento'"
+      class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)]"
+    >
       <MonitoringPanel
         :settings="settings"
         :predictions="predictions"
@@ -485,7 +494,7 @@ onBeforeUnmount(() => {
         @request-permission="requestPermission"
       />
 
-      <section class="map-stage">
+      <section class="map-stage tw:relative tw:min-w-0 tw:min-h-[calc(100vh-79px)]">
         <MapView
           :monitored-stop="monitoredStop"
           :nearby-stops="nearbyStops"
@@ -543,21 +552,30 @@ onBeforeUnmount(() => {
       @toggle-theme="toggleTheme"
     />
 
-    <section v-else-if="activeSection === 'favoritos'" class="section-page">
-      <div class="section-page-header">
-        <p class="section-kicker">Favoritos</p>
-        <h1>Favoritos salvos</h1>
-        <p>Suas paradas mais usadas ficam aqui, com o endereço em destaque.</p>
+    <section
+      v-else-if="activeSection === 'favoritos'"
+      class="section-page tw:grid tw:min-h-[calc(100vh-79px)] tw:content-start tw:gap-5 tw:overflow-y-auto tw:p-7"
+    >
+      <div class="section-page-header tw:grid tw:max-w-[720px] tw:gap-2">
+        <p class="section-kicker tw:m-0 tw:text-bh-primary tw:text-[.72rem] tw:font-black tw:uppercase">Favoritos</p>
+        <h1 class="tw:m-0 tw:text-bh-text tw:text-[clamp(1.6rem,3vw,2.35rem)] tw:leading-[1.15]">Favoritos salvos</h1>
+        <p class="tw:m-0 tw:text-bh-muted tw:leading-[1.55]">Suas paradas mais usadas ficam aqui, com o endereço em destaque.</p>
       </div>
       <div
         v-if="favoriteStops.length > 0 || mobilibusFavoriteStops.length > 0"
-        class="placeholder-grid favorites-grid"
+        class="placeholder-grid favorites-grid tw:grid tw:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] tw:gap-4"
       >
-        <article v-for="favorite in favoriteStops" :key="favorite.code" class="control-card favorite-stop-card">
+        <article
+          v-for="favorite in favoriteStops"
+          :key="favorite.code"
+          class="control-card favorite-stop-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]"
+        >
           <span class="section-kicker">Parada favorita</span>
-          <h3>{{ favorite.description }}</h3>
-          <p>Ponto {{ favorite.publicCode || favorite.code }}</p>
-          <div class="favorite-stop-actions">
+          <h3 class="tw:m-0 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35]">{{ favorite.description }}</h3>
+          <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.9rem] tw:font-bold">
+            Ponto {{ favorite.publicCode || favorite.code }}
+          </p>
+          <div class="favorite-stop-actions tw:flex tw:flex-wrap tw:gap-2.5">
             <button type="button" class="primary" @click="selectStop(favorite)">Abrir parada</button>
             <button type="button" @click="removeFavoriteStop(favorite.code)">Remover</button>
           </div>
@@ -565,12 +583,14 @@ onBeforeUnmount(() => {
         <article
           v-for="favorite in mobilibusFavoriteStops"
           :key="`mobilibus-${favorite.projectId}-${favorite.stopId}`"
-          class="control-card favorite-stop-card"
+          class="control-card favorite-stop-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]"
         >
           <span class="section-kicker">Ponto Ótimo favorito</span>
-          <h3>{{ favorite.name }}</h3>
-          <p>Ponto {{ favorite.code || favorite.stopId }}</p>
-          <div class="favorite-stop-actions">
+          <h3 class="tw:m-0 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35]">{{ favorite.name }}</h3>
+          <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.9rem] tw:font-bold">
+            Ponto {{ favorite.code || favorite.stopId }}
+          </p>
+          <div class="favorite-stop-actions tw:flex tw:flex-wrap tw:gap-2.5">
             <button type="button" class="primary" @click="openMobilibusFavoriteStop(favorite)">
               Abrir no Ótimo
             </button>
@@ -578,43 +598,49 @@ onBeforeUnmount(() => {
           </div>
         </article>
       </div>
-      <div v-else class="placeholder-grid">
-        <article class="control-card">
-          <strong>Nenhuma parada salva</strong>
-          <span>Use a estrela no card de Ponto selecionado para guardar endereços frequentes.</span>
+      <div v-else class="placeholder-grid tw:grid tw:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] tw:gap-4">
+        <article class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+          <strong class="tw:text-bh-title">Nenhuma parada salva</strong>
+          <span class="tw:text-bh-copy tw:leading-[1.4]">Use a estrela no card de Ponto selecionado para guardar endereços frequentes.</span>
         </article>
       </div>
     </section>
 
-    <section v-else-if="activeSection === 'historico'" class="section-page">
-      <div class="section-page-header">
-        <p class="section-kicker">Histórico</p>
-        <h1>Histórico de alertas</h1>
-        <p>Os próximos alertas enviados poderão ser listados aqui para auditoria rápida.</p>
+    <section
+      v-else-if="activeSection === 'historico'"
+      class="section-page tw:grid tw:min-h-[calc(100vh-79px)] tw:content-start tw:gap-5 tw:overflow-y-auto tw:p-7"
+    >
+      <div class="section-page-header tw:grid tw:max-w-[720px] tw:gap-2">
+        <p class="section-kicker tw:m-0 tw:text-bh-primary tw:text-[.72rem] tw:font-black tw:uppercase">Histórico</p>
+        <h1 class="tw:m-0 tw:text-bh-text tw:text-[clamp(1.6rem,3vw,2.35rem)] tw:leading-[1.15]">Histórico de alertas</h1>
+        <p class="tw:m-0 tw:text-bh-muted tw:leading-[1.55]">Os próximos alertas enviados poderão ser listados aqui para auditoria rápida.</p>
       </div>
-      <article class="control-card">
-        <strong>Última atualização</strong>
-        <span>{{ lastUpdated ?? 'Ainda sem consultas nesta sessão.' }}</span>
+      <article class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+        <strong class="tw:text-bh-title">Última atualização</strong>
+        <span class="tw:text-bh-copy">{{ lastUpdated ?? 'Ainda sem consultas nesta sessão.' }}</span>
       </article>
     </section>
 
-    <section v-else class="section-page">
-      <div class="section-page-header">
-        <p class="section-kicker">Configurações</p>
-        <h1>Configurações do app</h1>
-        <p>Ajustes de notificação, permissões e comportamento do PWA entram aqui nas próximas etapas.</p>
+    <section
+      v-else
+      class="section-page tw:grid tw:min-h-[calc(100vh-79px)] tw:content-start tw:gap-5 tw:overflow-y-auto tw:p-7"
+    >
+      <div class="section-page-header tw:grid tw:max-w-[720px] tw:gap-2">
+        <p class="section-kicker tw:m-0 tw:text-bh-primary tw:text-[.72rem] tw:font-black tw:uppercase">Configurações</p>
+        <h1 class="tw:m-0 tw:text-bh-text tw:text-[clamp(1.6rem,3vw,2.35rem)] tw:leading-[1.15]">Configurações do app</h1>
+        <p class="tw:m-0 tw:text-bh-muted tw:leading-[1.55]">Ajustes de notificação, permissões e comportamento do PWA entram aqui nas próximas etapas.</p>
       </div>
-      <div class="placeholder-grid">
-        <article class="control-card">
-          <strong>Permissão de notificação</strong>
-          <span>{{ permission }}</span>
+      <div class="placeholder-grid tw:grid tw:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] tw:gap-4">
+        <article class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+          <strong class="tw:text-bh-title">Permissão de notificação</strong>
+          <span class="tw:text-bh-copy">{{ permission }}</span>
           <button type="button" class="primary" @click="requestPermission">
             Permitir notificações
           </button>
         </article>
-        <article class="control-card">
-          <strong>Atualização automática</strong>
-          <span>Consultando a cada 10 segundos quando o monitoramento estiver ativo.</span>
+        <article class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+          <strong class="tw:text-bh-title">Atualização automática</strong>
+          <span class="tw:text-bh-copy tw:leading-[1.4]">Consultando a cada 10 segundos quando o monitoramento estiver ativo.</span>
         </article>
       </div>
     </section>

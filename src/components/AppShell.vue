@@ -66,70 +66,95 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
 </script>
 
 <template>
-  <main class="dashboard-shell" :class="{ 'is-sidebar-hidden': !isSidebarOpen }">
-    <aside v-show="isSidebarOpen" class="sidebar">
-      <a class="brand" href="#" aria-label="Ônibus BH">
-        <span class="brand-icon" aria-hidden="true">
-          <BusFront />
+  <main
+    class="dashboard-shell tw:grid tw:min-h-screen tw:grid-cols-[240px_minmax(0,1fr)] tw:bg-slate-50 tw:transition-[grid-template-columns] tw:duration-[180ms] tw:ease-out"
+    :class="{ 'is-sidebar-hidden': !isSidebarOpen, 'tw:grid-cols-[minmax(0,1fr)]': !isSidebarOpen }"
+  >
+    <aside
+      v-show="isSidebarOpen"
+      class="sidebar tw:flex tw:min-w-0 tw:flex-col tw:gap-8 tw:bg-[#0f2e2c] tw:p-[26px_18px] tw:text-slate-50"
+    >
+      <a class="brand tw:inline-flex tw:items-center tw:gap-2.5 tw:text-[1.18rem] tw:text-inherit tw:no-underline" href="#" aria-label="Ônibus BH">
+        <span class="brand-icon tw:grid tw:size-[30px] tw:place-items-center tw:rounded-lg tw:bg-green-500 tw:text-[#07111f]" aria-hidden="true">
+          <BusFront class="tw:size-[18px] tw:stroke-[2.2]" />
         </span>
         <strong>Ônibus BH</strong>
       </a>
 
-      <nav class="main-nav" aria-label="Navegação principal">
+      <nav class="main-nav tw:grid tw:gap-2" aria-label="Navegação principal">
         <button
           v-for="item in navItems"
           :key="item.id"
           type="button"
-          :class="{ active: item.id === activeSection }"
+          class="tw:flex tw:items-center tw:gap-2.5 tw:border-0! tw:p-3! tw:text-left tw:transition-colors tw:duration-[160ms]"
+          :class="{
+            active: item.id === activeSection,
+            'tw:bg-transparent!': item.id !== activeSection,
+            'tw:text-[rgba(94,234,212,0.72)]!': item.id !== activeSection && themeMode !== 'dark',
+            'tw:bg-[#0d9488]!': item.id === activeSection && themeMode !== 'dark',
+            'tw:text-white!': item.id === activeSection && themeMode !== 'dark',
+            'tw:bg-[#2dd4bf]!': item.id === activeSection && themeMode === 'dark',
+            'tw:text-[#0c2b29]!': item.id === activeSection && themeMode === 'dark',
+            'tw:text-[rgba(94,234,212,0.64)]!': item.id !== activeSection && themeMode === 'dark',
+          }"
           @click="emit('navigate', item.id)"
         >
-          <component :is="item.icon" aria-hidden="true" />
+          <component :is="item.icon" class="tw:shrink-0 tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
           {{ item.label }}
         </button>
       </nav>
 
       <button
         type="button"
-        class="theme-toggle"
+        class="theme-toggle tw:flex tw:items-center tw:gap-2.5 tw:border tw:border-[rgba(94,234,212,0.18)]! tw:bg-[rgba(94,234,212,0.08)]! tw:px-3.5 tw:py-2.5! tw:text-[#d5fbf4]! tw:hover:bg-[rgba(94,234,212,0.14)]!"
         :aria-label="themeMode === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'"
         @click="emit('toggleTheme')"
       >
-        <component :is="themeMode === 'dark' ? Sun : MoonStar" aria-hidden="true" />
+        <component :is="themeMode === 'dark' ? Sun : MoonStar" class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
         {{ themeMode === 'dark' ? 'Modo claro' : 'Modo escuro' }}
       </button>
 
-      <div class="sidebar-footer">
-        <span class="status-dot"></span>
-        <div class="sidebar-status-copy">
+      <div class="sidebar-footer tw:mt-auto tw:grid tw:grid-cols-[auto_minmax(0,1fr)] tw:items-start tw:gap-x-2.5 tw:gap-y-2 tw:border-t tw:border-[rgba(94,234,212,0.12)] tw:pt-[18px] tw:text-[0.86rem] tw:text-[#c7ede8]">
+        <span class="status-dot tw:size-[9px] tw:rounded-full tw:bg-green-500 tw:shadow-[0_0_0_4px_rgba(34,197,94,0.14)]"></span>
+        <div class="sidebar-status-copy tw:grid tw:gap-[3px]">
           <span>{{ isLoading ? 'Atualizando agora' : 'Atualizando a cada 10s' }}</span>
-          <span>{{ lastUpdated ? `Atualizado às ${lastUpdated}` : 'Aguardando atualização' }}</span>
+          <span class="tw:text-[0.78rem] tw:text-[rgba(148,163,184,0.9)]">{{ lastUpdated ? `Atualizado às ${lastUpdated}` : 'Aguardando atualização' }}</span>
         </div>
       </div>
     </aside>
 
-    <section class="app-workspace">
-      <header class="topbar">
+    <section class="app-workspace tw:relative tw:grid tw:min-w-0 tw:grid-rows-[auto_minmax(0,1fr)]">
+      <header class="topbar tw:z-[900] tw:grid tw:grid-cols-[auto_minmax(240px,420px)_auto] tw:items-center tw:gap-4 tw:border-b tw:border-[#e4e7ec] tw:bg-white/[0.88] tw:px-[22px] tw:py-[18px] tw:backdrop-blur-[16px]">
         <button
           type="button"
-          class="icon-button sidebar-toggle"
+          class="icon-button sidebar-toggle tw:justify-self-start tw:grid tw:size-[42px] tw:place-items-center tw:p-0!"
           :aria-label="isSidebarOpen ? 'Recolher sidebar' : 'Abrir sidebar'"
           @click="toggleSidebar"
         >
-          <ChevronLeft v-if="isSidebarOpen" aria-hidden="true" />
-          <Menu v-else aria-hidden="true" />
+          <ChevronLeft v-if="isSidebarOpen" class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
+          <Menu v-else class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
         </button>
-        <label class="search-box">
-          <span class="sr-only">Buscar parada ou endereço</span>
+        <label class="search-box tw:relative">
+          <span class="tw:sr-only">Buscar parada ou endereço</span>
           <input
+            :class="themeMode === 'dark' ? 'tw:bg-[#0f2423]!' : 'tw:bg-[#f2f4f7]!'"
             :value="searchQuery"
             placeholder="Buscar parada ou endereço"
             @input="emit('updateSearch', ($event.target as HTMLInputElement).value)"
           />
-          <div v-if="searchQuery.trim().length > 0" class="search-results">
+          <div
+            v-if="searchQuery.trim().length > 0"
+            class="search-results tw:absolute tw:left-0 tw:top-[calc(100%+8px)] tw:z-[1200] tw:grid tw:w-[min(440px,calc(100vw-44px))] tw:gap-1.5 tw:rounded-lg tw:border tw:border-[#e4e7ec] tw:bg-white tw:p-2 tw:shadow-[0_22px_60px_rgba(16,24,40,0.18)]"
+          >
             <button
               v-for="stop in searchResults"
               :key="stop.code"
               type="button"
+              class="tw:grid tw:gap-[3px] tw:border-0! tw:p-[10px_12px]! tw:text-left"
+              :class="themeMode === 'dark'
+                ? 'tw:bg-[#0f2423]! tw:hover:bg-[#163735]!'
+                : 'tw:bg-[#f8fafc]! tw:hover:bg-[#ecfdf5]!'
+              "
               @click="emit('selectStop', stop)"
             >
               <strong>{{ stop.publicCode || stop.code }}</strong>
@@ -140,17 +165,17 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
         </label>
         <button
           type="button"
-          class="icon-button"
+          class="icon-button tw:grid tw:size-[42px] tw:place-items-center tw:p-0!"
           aria-label="Configurações"
           @click="emit('navigate', 'configuracoes')"
         >
-          <Settings aria-hidden="true" />
+          <Settings class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
         </button>
       </header>
 
       <slot></slot>
 
-      <nav class="mobile-nav" aria-label="Navegação inferior">
+      <nav class="mobile-nav tw:hidden" aria-label="Navegação inferior">
         <button
           v-for="item in mobileNavItems"
           :key="item.id"
@@ -158,7 +183,7 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
           :class="{ active: item.id === activeSection }"
           @click="emit('navigate', item.id)"
         >
-          <component :is="item.icon" aria-hidden="true" />
+          <component :is="item.icon" class="tw:shrink-0 tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
           {{ item.label }}
         </button>
       </nav>

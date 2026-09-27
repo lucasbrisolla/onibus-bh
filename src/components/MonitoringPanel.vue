@@ -67,12 +67,20 @@ watch(
     @request-permission="emit('requestPermission')"
   />
 
-  <aside v-else class="monitoring-panel">
-    <section v-if="selectedStop" class="control-card">
-      <article class="selected-stop-card">
+  <aside
+    v-else
+    class="monitoring-panel tw:grid tw:content-start tw:gap-3 tw:overflow-y-auto tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px]"
+  >
+    <section
+      v-if="selectedStop"
+      class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)]"
+    >
+      <article
+        class="selected-stop-card tw:relative tw:grid tw:gap-1.5 tw:rounded-[8px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[12px_54px_12px_12px]"
+      >
         <button
           type="button"
-          class="favorite-stop-button"
+          class="favorite-stop-button tw:absolute tw:right-2.5 tw:top-2.5 tw:grid tw:size-[34px] tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms]"
           :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
           :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
           :data-active="isSelectedStopFavorite"
@@ -80,27 +88,36 @@ watch(
         >
           <Star aria-hidden="true" />
         </button>
-        <h3>{{ selectedStop.description }}</h3>
-        <p>Ponto {{ selectedStop.publicCode || selectedStop.code }}</p>
+        <h3 class="tw:m-0 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35]">{{ selectedStop.description }}</h3>
+        <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.9rem] tw:font-bold">
+          Ponto {{ selectedStop.publicCode || selectedStop.code }}
+        </p>
       </article>
     </section>
 
-    <section class="collapse-section">
+    <section class="collapse-section tw:grid tw:gap-2">
       <button
         type="button"
-        class="collapse-toggle"
+        class="collapse-toggle tw:flex tw:items-center tw:justify-between tw:rounded-[8px] tw:border tw:border-[#dbe4ee] tw:bg-[#f8fafc] tw:px-3.5 tw:py-3 tw:text-[.92rem] tw:font-extrabold tw:text-bh-text tw:shadow-[0_8px_24px_rgba(16,24,40,0.04)] tw:transition-colors tw:duration-[160ms]"
         :aria-expanded="collapsedSections.predictions"
         @click="toggleSection('predictions')"
       >
-        <span class="collapse-toggle-label">
+        <span class="collapse-toggle-label tw:inline-flex tw:min-w-0 tw:items-center tw:gap-2">
           <span>Próximos ônibus</span>
-          <span v-if="predictions.length > 0" class="prediction-count">
+          <span
+            v-if="predictions.length > 0"
+            class="prediction-count tw:inline-grid tw:size-[1.35rem] tw:min-w-[1.35rem] tw:place-items-center tw:rounded-full tw:bg-bh-highlight tw:text-bh-primary-hover tw:text-[0.72rem] tw:leading-none tw:[font-variant-numeric:tabular-nums]"
+          >
             {{ predictions.length }}
           </span>
         </span>
-        <component :is="collapsedSections.predictions ? ChevronUp : ChevronDown" aria-hidden="true" />
+        <component
+          :is="collapsedSections.predictions ? ChevronUp : ChevronDown"
+          class="tw:shrink-0"
+          aria-hidden="true"
+        />
       </button>
-      <div v-show="collapsedSections.predictions" class="collapse-body">
+      <div v-show="collapsedSections.predictions" class="collapse-body tw:grid tw:gap-2.5">
         <PredictionCards
           :predictions="predictions"
           :selected-prediction-id="selectedPredictionId"
