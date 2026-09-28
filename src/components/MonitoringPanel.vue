@@ -69,7 +69,7 @@ watch(
 
   <aside
     v-else
-    class="monitoring-panel tw:grid tw:content-start tw:gap-3 tw:overflow-y-auto tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-r-0 tw:max-[920px]:p-[6px_8px_10px]"
+    class="monitoring-panel tw:grid tw:content-start tw:gap-3 tw:overflow-y-auto tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:min-h-0 tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-r-0 tw:max-[920px]:p-[6px_8px_10px]"
   >
     <section
       v-if="selectedStop"

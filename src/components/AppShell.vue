@@ -177,7 +177,7 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
       <slot></slot>
 
       <nav
-        class="mobile-nav tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-[1100] tw:hidden tw:grid-cols-5 tw:border-t tw:border-bh-border tw:bg-white/[.95] tw:backdrop-blur-[16px] tw:max-[920px]:grid"
+        class="mobile-nav tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-[1100] tw:hidden tw:grid-cols-5 tw:border-t tw:border-bh-border tw:bg-white/[.95] tw:pb-[env(safe-area-inset-bottom)] tw:backdrop-blur-[16px] tw:max-[920px]:grid"
         :class="themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[rgba(19,47,45,0.95)]!' : ''"
         aria-label="Navegação inferior"
       >

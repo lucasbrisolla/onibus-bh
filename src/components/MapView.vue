@@ -157,16 +157,15 @@ function buildMapSceneInput(): MapSceneInput {
 }
 
 function getCompactToggleThemeClasses(isActive: boolean): string {
-  const themeClasses = props.themeMode === 'dark'
-    ? 'tw:border-[#28514d]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#e5e7eb]!'
-    : 'tw:border-[#d0d5dd]! tw:bg-white/[0.94]! tw:text-[#344054]!';
-  const activeClasses = isActive
-    ? props.themeMode === 'dark'
-      ? 'tw:border-[#2dd4bf]! tw:text-[#5eead4]!'
-      : 'tw:border-[#99f6e4]! tw:text-[#0f766e]!'
-    : '';
+  if (props.themeMode === 'dark') {
+    return isActive
+      ? 'tw:border-[#2dd4bf]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#5eead4]!'
+      : 'tw:border-[#28514d]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#e5e7eb]!';
+  }
 
-  return `${themeClasses} ${activeClasses}`.trim();
+  return isActive
+    ? 'tw:border-[#99f6e4]! tw:bg-white/[0.94]! tw:text-[#0f766e]!'
+    : 'tw:border-[#d0d5dd]! tw:bg-white/[0.94]! tw:text-[#344054]!';
 }
 
 function getLocationButtonThemeClasses(): string {
@@ -480,7 +479,7 @@ watch(
         @click="emit('toggleNearbyStops', !showNearbyStops)"
       >
         <span>Mostrar pontos</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="showNearbyStops ? (themeMode === 'dark' ? 'tw:bg-[#2dd4bf]' : 'tw:bg-bh-primary') : (themeMode === 'dark' ? 'tw:bg-[#28514d]' : '')" aria-hidden="true">
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="showNearbyStops ? (themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#0d9488]!') : (themeMode === 'dark' ? 'tw:bg-[#28514d]!' : 'tw:bg-[#d0d5dd]!')" aria-hidden="true">
           <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="showNearbyStops ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
@@ -495,7 +494,7 @@ watch(
         @click="emit('toggleTheme')"
       >
         <span>Modo escuro</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]' : ''" aria-hidden="true">
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#d0d5dd]!'" aria-hidden="true">
           <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>

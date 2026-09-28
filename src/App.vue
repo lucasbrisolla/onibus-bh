@@ -418,6 +418,7 @@ onBeforeUnmount(() => {
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
     >
       <MonitoringPanel
+        class="desktop-monitoring-panel tw:max-[920px]:hidden"
         display-mode="predictions-only"
         :settings="settings"
         :predictions="predictions"
@@ -481,6 +482,7 @@ onBeforeUnmount(() => {
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
     >
       <MonitoringPanel
+        class="desktop-monitoring-panel tw:max-[920px]:hidden"
         :settings="settings"
         :predictions="predictions"
         :selected-prediction-id="selectedPredictionId"

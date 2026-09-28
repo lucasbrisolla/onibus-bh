@@ -10,6 +10,7 @@ import type {
   MobilibusStopDepartures,
 } from '../domain/mobilibusTypes';
 import MobilibusMap from './MobilibusMap.vue';
+import { useBottomSheet } from '../composables/useBottomSheet';
 
 const props = defineProps<{
   stops: MobilibusStop[];
@@ -23,18 +24,22 @@ const props = defineProps<{
   themeMode: 'light' | 'dark';
 }>();
 
-const SHEET_GESTURE_ZONE_HEIGHT = 108;
-const SWIPE_THRESHOLD_PX = 56;
-type SheetState = 'peek' | 'half' | 'full';
-
 const departureFilter = ref('');
 const openSections = reactive({
   departures: true,
 });
-const sheetState = ref<SheetState>('half');
-const sheetElement = ref<HTMLElement | null>(null);
-let touchStartY: number | null = null;
-let isTrackingGesture = false;
+
+const {
+  sheetState,
+  setSheetElement,
+  dragStyle,
+  isDragging,
+  toggleSheet,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+  onTouchCancel,
+} = useBottomSheet();
 
 const emit = defineEmits<{
   requestMapTiles: [tiles: MobilibusMapTile[]];
@@ -86,59 +91,6 @@ const filteredDepartures = computed(() => {
   );
 });
 
-function toggleSheet() {
-  sheetState.value = sheetState.value === 'peek' ? 'half' : 'peek';
-}
-
-function moveSheet(direction: 'up' | 'down') {
-  const states: SheetState[] = ['peek', 'half', 'full'];
-  const currentIndex = states.indexOf(sheetState.value);
-  const nextIndex = direction === 'up'
-    ? Math.min(states.length - 1, currentIndex + 1)
-    : Math.max(0, currentIndex - 1);
-  sheetState.value = states[nextIndex];
-}
-
-function onTouchStart(event: TouchEvent) {
-  const firstTouch = event.touches[0];
-  if (!firstTouch) {
-    return;
-  }
-
-  const sheetTop = sheetElement.value?.getBoundingClientRect().top ?? 0;
-  const canStartGesture =
-    sheetState.value === 'peek' || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
-
-  if (!canStartGesture) {
-    touchStartY = null;
-    isTrackingGesture = false;
-    return;
-  }
-
-  isTrackingGesture = true;
-  touchStartY = firstTouch.clientY;
-}
-
-function onTouchEnd(event: TouchEvent) {
-  if (!isTrackingGesture || touchStartY === null) {
-    return;
-  }
-
-  const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
-  const deltaY = touchEndY - touchStartY;
-  touchStartY = null;
-  isTrackingGesture = false;
-
-  if (deltaY > SWIPE_THRESHOLD_PX) {
-    moveSheet('down');
-    return;
-  }
-
-  if (deltaY < -SWIPE_THRESHOLD_PX) {
-    moveSheet('up');
-  }
-}
-
 watch(
   () => props.selectedStop?.stopId,
   () => {
@@ -169,21 +121,25 @@ watch(
       </div>
 
       <div
-        ref="sheetElement"
-        class="mobilibus-mobile-bottom-sheet tw:contents tw:dark:text-[#e5e7eb] tw:max-[920px]:absolute tw:max-[920px]:right-2.5 tw:max-[920px]:bottom-[74px] tw:max-[920px]:left-2.5 tw:max-[920px]:z-[800] tw:max-[920px]:block tw:max-[920px]:h-[min(42vh,340px)] tw:max-[920px]:overflow-hidden tw:max-[920px]:rounded-[14px] tw:max-[920px]:border tw:max-[920px]:border-[rgba(208,213,221,0.9)] tw:max-[920px]:bg-white/[.94] tw:max-[920px]:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:max-[920px]:backdrop-blur-[16px] tw:max-[920px]:transition-[height,transform,box-shadow] tw:max-[920px]:duration-[180ms]"
+        :ref="setSheetElement"
+        class="mobilibus-mobile-bottom-sheet tw:dark:text-[#e5e7eb] tw:min-[921px]:contents tw:max-[920px]:absolute tw:max-[920px]:right-2.5 tw:max-[920px]:left-2.5 tw:max-[920px]:z-[800] tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:select-none tw:max-[920px]:overflow-hidden tw:max-[920px]:overscroll-contain tw:max-[920px]:rounded-[14px] tw:max-[920px]:border tw:max-[920px]:border-[rgba(208,213,221,0.9)] tw:max-[920px]:bg-white/[.94] tw:max-[920px]:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:max-[920px]:backdrop-blur-[16px] tw:max-[920px]:transition-[height,transform,box-shadow] tw:max-[920px]:duration-[180ms]"
+        :style="dragStyle"
         :class="[
           `is-${sheetState}`,
+          isDragging ? 'tw:max-[920px]:transition-none!' : '',
           themeMode === 'dark' ? 'tw:max-[920px]:border-[#28514d]! tw:max-[920px]:bg-[rgba(15,36,35,0.96)]!' : '',
           sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
           sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
-          sheetState === 'full' ? 'tw:max-[920px]:h-[calc(100vh-104px)]' : '',
+          sheetState === 'full' ? 'tw:max-[920px]:h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]! tw:max-[920px]:max-h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]!' : '',
         ]"
         @touchstart.passive="onTouchStart"
+        @touchmove="onTouchMove"
         @touchend.passive="onTouchEnd"
+        @touchcancel.passive="onTouchCancel"
       >
         <button
           type="button"
-          class="sheet-toggle mobilibus-sheet-toggle tw:hidden tw:min-h-[34px] tw:w-full tw:place-items-center tw:border-0! tw:bg-transparent! tw:px-0! tw:py-[9px_0_6px]! tw:max-[920px]:grid"
+          class="sheet-toggle mobilibus-sheet-toggle tw:hidden tw:min-h-[34px] tw:w-full tw:cursor-grab tw:place-items-center tw:border-0! tw:bg-transparent! tw:px-0! tw:py-[9px_0_6px]! tw:active:cursor-grabbing tw:max-[920px]:grid tw:max-[920px]:shrink-0"
           :aria-expanded="sheetState !== 'peek'"
           :aria-label="sheetState === 'peek' ? 'Expandir painel do Ótimo' : 'Recolher painel do Ótimo'"
           @click="toggleSheet"
@@ -192,7 +148,7 @@ watch(
         </button>
 
         <aside
-          class="mobilibus-lines-control-panel tw:relative tw:z-[1] tw:col-start-1 tw:row-start-1 tw:grid tw:min-h-[calc(100vh-79px)] tw:min-w-0 tw:max-h-[calc(100vh-79px)] tw:gap-3 tw:overflow-y-auto tw:rounded-none tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:shadow-none tw:backdrop-blur-none tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:z-auto tw:max-[920px]:col-auto tw:max-[920px]:row-auto tw:max-[920px]:min-h-0 tw:max-[920px]:h-[calc(100%-34px)] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-0! tw:max-[920px]:bg-transparent! tw:max-[920px]:p-[6px_8px_10px]"
+          class="mobilibus-lines-control-panel tw:relative tw:z-[1] tw:col-start-1 tw:row-start-1 tw:grid tw:min-h-[calc(100vh-79px)] tw:min-w-0 tw:max-h-[calc(100vh-79px)] tw:gap-3 tw:overflow-y-auto tw:rounded-none tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:shadow-none tw:backdrop-blur-none tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:z-auto tw:max-[920px]:col-auto tw:max-[920px]:row-auto tw:max-[920px]:min-h-0 tw:max-[920px]:flex-1 tw:max-[920px]:h-[calc(100%-34px)] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-0! tw:max-[920px]:bg-transparent! tw:max-[920px]:p-[6px_8px_10px]"
           aria-label="Detalhes do ponto Mobilibus"
         >
         <section

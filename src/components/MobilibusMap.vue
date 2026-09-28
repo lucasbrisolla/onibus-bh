@@ -143,6 +143,18 @@ function toggleStops() {
   renderStops();
 }
 
+function getCompactToggleThemeClasses(isActive: boolean): string {
+  if (props.themeMode === 'dark') {
+    return isActive
+      ? 'tw:border-[#2dd4bf]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#5eead4]!'
+      : 'tw:border-[#28514d]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#e5e7eb]!';
+  }
+
+  return isActive
+    ? 'tw:border-[#99f6e4]! tw:bg-white/[0.94]! tw:text-[#0f766e]!'
+    : 'tw:border-[#d0d5dd]! tw:bg-white/[0.94]! tw:text-[#344054]!';
+}
+
 onMounted(() => {
   if (!mapElement.value) {
     return;
@@ -198,14 +210,13 @@ watch(
         class="map-compact-toggle map-points-toggle tw:inline-flex tw:items-center tw:gap-2 tw:rounded-full tw:border tw:border-[#d0d5dd] tw:bg-white/[.94] tw:px-[11px] tw:py-[7px] tw:text-[.76rem] tw:font-extrabold tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-colors tw:duration-[160ms] tw:max-[920px]:px-[10px_8px_7px_10px]"
         :class="[
           { 'is-active': showStops },
-          themeMode === 'dark' ? 'tw:border-[#28514d]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#c7d7d4]!' : '',
-          showStops && themeMode === 'dark' ? 'tw:border-[#2dd4bf]! tw:text-[#5eead4]!' : '',
+          getCompactToggleThemeClasses(showStops),
         ]"
         :aria-pressed="showStops"
         @click="toggleStops"
       >
         <span>Mostrar pontos</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="[showStops ? 'tw:bg-bh-primary' : '', themeMode === 'dark' && !showStops ? 'tw:bg-[#28514d]' : '', themeMode === 'dark' && showStops ? 'tw:bg-[#2dd4bf]' : '']" aria-hidden="true">
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="showStops ? (themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#0d9488]!') : (themeMode === 'dark' ? 'tw:bg-[#28514d]!' : 'tw:bg-[#d0d5dd]!')" aria-hidden="true">
           <span class="tw:size-3.5 tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="showStops ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
@@ -214,13 +225,13 @@ watch(
         class="map-compact-toggle map-theme-toggle tw:hidden tw:items-center tw:gap-2 tw:rounded-full tw:border tw:border-[#d0d5dd] tw:bg-white/[.94] tw:px-[11px] tw:py-[7px] tw:text-[.76rem] tw:font-extrabold tw:text-[#344054] tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-colors tw:duration-[160ms] tw:max-[920px]:inline-flex tw:max-[920px]:px-[10px_8px_7px_10px]"
         :class="[
           { 'is-active': themeMode === 'dark' },
-          themeMode === 'dark' ? 'tw:border-[#2dd4bf]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#5eead4]!' : '',
+          getCompactToggleThemeClasses(themeMode === 'dark'),
         ]"
         :aria-pressed="themeMode === 'dark'"
         @click="emit('toggleTheme')"
       >
         <span>Modo escuro</span>
-        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]' : ''" aria-hidden="true">
+        <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#d0d5dd]!'" aria-hidden="true">
           <span class="tw:size-3.5 tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
