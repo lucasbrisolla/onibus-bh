@@ -46,7 +46,7 @@ const {
     :style="dragStyle"
     :class="[
       `is-${sheetState}`,
-      isDragging ? 'tw:transition-none!' : '',
+      isDragging ? 'is-dragging tw:backdrop-filter-none! tw:shadow-none! tw:transition-none!' : '',
       themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[rgba(15,36,35,0.98)]!' : '',
       sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
       sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',

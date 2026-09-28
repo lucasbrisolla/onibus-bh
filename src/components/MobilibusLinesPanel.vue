@@ -126,7 +126,7 @@ watch(
         :style="dragStyle"
         :class="[
           `is-${sheetState}`,
-          isDragging ? 'tw:max-[920px]:transition-none!' : '',
+          isDragging ? 'is-dragging tw:max-[920px]:backdrop-filter-none! tw:max-[920px]:shadow-none! tw:max-[920px]:transition-none!' : '',
           themeMode === 'dark' ? 'tw:max-[920px]:border-[#28514d]! tw:max-[920px]:bg-[rgba(15,36,35,0.96)]!' : '',
           sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
           sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
