@@ -31,22 +31,25 @@ const {
   setSheetElement,
   dragStyle,
   isDragging,
+  isSettling,
   toggleSheet,
   onTouchStart,
   onTouchMove,
   onTouchEnd,
   onTouchCancel,
+  onTransitionEnd,
 } = useBottomSheet();
 </script>
 
 <template>
   <div
     :ref="setSheetElement"
-    class="mobile-bottom-sheet tw:fixed tw:inset-x-2.5 tw:z-[1000] tw:hidden tw:select-none tw:overflow-hidden tw:overscroll-contain tw:rounded-[18px_18px_8px_8px] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:backdrop-blur-[16px] tw:dark:border tw:dark:border-[#1f4a47] tw:dark:bg-[rgba(15,36,35,0.98)] tw:dark:shadow-[0_24px_60px_rgba(0,0,0,0.46)] tw:transition-[height,transform,box-shadow] tw:duration-[180ms] tw:will-change-[height,transform] tw:max-[920px]:block tw:max-[920px]:bottom-[calc(68px_+_env(safe-area-inset-bottom))] tw:max-[920px]:h-[min(42vh,340px)]"
+    class="mobile-bottom-sheet tw:fixed tw:inset-x-2.5 tw:z-[1000] tw:hidden tw:select-none tw:overflow-hidden tw:overscroll-contain tw:rounded-[18px_18px_8px_8px] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:dark:border tw:dark:border-[#1f4a47] tw:dark:bg-[rgba(15,36,35,0.98)] tw:dark:shadow-[0_24px_60px_rgba(0,0,0,0.46)] tw:transition-[height,transform] tw:duration-[180ms] tw:will-change-transform tw:max-[920px]:block tw:max-[920px]:bottom-[calc(68px_+_env(safe-area-inset-bottom))] tw:max-[920px]:h-[min(42vh,340px)]"
     :style="dragStyle"
     :class="[
       `is-${sheetState}`,
-      isDragging ? 'is-dragging tw:backdrop-filter-none! tw:shadow-none! tw:transition-none!' : '',
+      isDragging ? 'is-dragging tw:shadow-none! tw:transition-none!' : '',
+      isSettling ? 'is-settling tw:shadow-none!' : '',
       themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[rgba(15,36,35,0.98)]!' : '',
       sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
       sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
@@ -56,6 +59,7 @@ const {
     @touchmove="onTouchMove"
     @touchend.passive="onTouchEnd"
     @touchcancel.passive="onTouchCancel"
+    @transitionend="onTransitionEnd"
   >
     <button
       type="button"

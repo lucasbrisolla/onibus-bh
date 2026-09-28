@@ -1,10 +1,19 @@
 import { expect, test } from '@playwright/test';
 
-test('desativa efeitos caros enquanto o bottom-sheet acompanha o dedo', async ({ page }) => {
+for (const { section, selector, theme } of [
+  { section: 'Mapa', selector: '.mobile-bottom-sheet', theme: 'light' },
+  { section: 'Mapa', selector: '.mobile-bottom-sheet', theme: 'dark' },
+  { section: 'Ótimo', selector: '.mobilibus-mobile-bottom-sheet', theme: 'dark' },
+]) {
+test(`mantém o encaixe half → full fluido no ${section} (${theme})`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 393, height: 852 });
+  await page.addInitScript(mode => localStorage.setItem('onibus-bh-theme', mode), theme);
   await page.goto('http://localhost:5173/', { waitUntil: 'domcontentloaded' });
+  if (section === 'Ótimo') {
+    await page.getByRole('navigation', { name: 'Navegação inferior' }).getByRole('button', { name: 'Ótimo' }).click();
+  }
 
-  const sheet = page.locator('.mobile-bottom-sheet');
+  const sheet = page.locator(selector);
   await expect(sheet).toBeVisible();
   const box = await sheet.boundingBox();
   expect(box).not.toBeNull();
@@ -58,7 +67,20 @@ test('desativa efeitos caros enquanto o bottom-sheet acompanha o dedo', async ({
   });
   await expect(sheet).toHaveClass(/is-full/);
   await expect(sheet).not.toHaveClass(/is-dragging/);
+  await expect(sheet).toHaveClass(/is-settling/);
+  const settlingStyles = await sheet.evaluate(element => {
+    const styles = getComputedStyle(element);
+    return { backdropFilter: styles.backdropFilter, boxShadow: styles.boxShadow };
+  });
+  expect(settlingStyles.backdropFilter).toBe('none');
+  expect(settlingStyles.boxShadow).toMatch(/none|rgba\(0, 0, 0, 0\)/);
   await page.waitForTimeout(400);
+  await expect(sheet).not.toHaveClass(/is-settling/);
+  const fullBox = await sheet.boundingBox();
+  const layoutTop = section === 'Ótimo'
+    ? (await page.locator('.mobilibus-lines-map-layout').boundingBox())?.y ?? 0
+    : 0;
+  expect(fullBox?.y).toBeLessThanOrEqual(layoutTop + 12);
 
   const frameMetrics = await page.evaluate(() => {
     const frames = (window as Window & { __bottomSheetFrames?: number[] }).__bottomSheetFrames ?? [];
@@ -69,4 +91,6 @@ test('desativa efeitos caros enquanto o bottom-sheet acompanha o dedo', async ({
     };
   });
   console.log(JSON.stringify({ afterFix: frameMetrics }));
+  await page.screenshot({ path: testInfo.outputPath(`${section === 'Mapa' ? 'mapa' : 'otimo'}-${theme}-full.png`) });
 });
+}

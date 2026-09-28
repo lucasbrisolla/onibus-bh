@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
 const SHEET_GESTURE_ZONE_HEIGHT = 108;
 const SWIPE_THRESHOLD_PX = 56;
@@ -9,6 +9,7 @@ const HALF_MAX_HEIGHT_PX = 340;
 const FULL_BOTTOM_OFFSET_PX = 68;
 const FULL_TOP_GAP_PX = 8;
 const CLICK_SUPPRESSION_MS = 400;
+const SETTLE_FALLBACK_MS = 500;
 
 export type SheetState = 'peek' | 'half' | 'full';
 
@@ -38,12 +39,14 @@ export function useBottomSheet() {
   const sheetElement = ref<HTMLElement | null>(null);
   const dragHeight = ref<number | null>(null);
   const isDragging = ref(false);
+  const isSettling = ref(false);
 
   let touchStartY: number | null = null;
   let touchStartHeight = getSheetHeight('half');
   let isTrackingGesture = false;
   let hasDragged = false;
   let ignoreClickUntil = 0;
+  let settleTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const dragStyle = computed(() => (
     dragHeight.value === null ? undefined : { height: `${dragHeight.value}px` }
@@ -51,6 +54,27 @@ export function useBottomSheet() {
 
   function setSheetElement(element: unknown) {
     sheetElement.value = element instanceof HTMLElement ? element : null;
+  }
+
+  function finishSettling() {
+    if (settleTimeout !== null) {
+      clearTimeout(settleTimeout);
+      settleTimeout = null;
+    }
+    isSettling.value = false;
+  }
+
+  function beginSettling() {
+    finishSettling();
+    isSettling.value = true;
+    // Uma transição pode não disparar transitionend (movimento reduzido ou altura já no limite).
+    settleTimeout = setTimeout(finishSettling, SETTLE_FALLBACK_MS);
+  }
+
+  function onTransitionEnd(event: TransitionEvent) {
+    if (event.target === sheetElement.value && event.propertyName === 'height') {
+      finishSettling();
+    }
   }
 
   function moveSheet(direction: 'up' | 'down') {
@@ -69,6 +93,7 @@ export function useBottomSheet() {
     }
 
     sheetState.value = sheetState.value === 'peek' ? 'half' : 'peek';
+    beginSettling();
   }
 
   function onTouchStart(event: TouchEvent) {
@@ -87,6 +112,7 @@ export function useBottomSheet() {
       return;
     }
 
+    finishSettling();
     isTrackingGesture = true;
     hasDragged = false;
     touchStartY = firstTouch.clientY;
@@ -139,29 +165,36 @@ export function useBottomSheet() {
 
     if (deltaY > SWIPE_THRESHOLD_PX) {
       moveSheet('down');
+      beginSettling();
       return;
     }
 
     if (deltaY < -SWIPE_THRESHOLD_PX) {
       moveSheet('up');
+      beginSettling();
     }
   }
 
   function onTouchCancel() {
     if (isTrackingGesture) {
       resetGesture();
+      beginSettling();
     }
   }
+
+  onBeforeUnmount(finishSettling);
 
   return {
     sheetState,
     setSheetElement,
     dragStyle,
     isDragging,
+    isSettling,
     toggleSheet,
     onTouchStart,
     onTouchMove,
     onTouchEnd,
     onTouchCancel,
+    onTransitionEnd,
   };
 }

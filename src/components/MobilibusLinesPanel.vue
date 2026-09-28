@@ -34,11 +34,13 @@ const {
   setSheetElement,
   dragStyle,
   isDragging,
+  isSettling,
   toggleSheet,
   onTouchStart,
   onTouchMove,
   onTouchEnd,
   onTouchCancel,
+  onTransitionEnd,
 } = useBottomSheet();
 
 const emit = defineEmits<{
@@ -122,11 +124,12 @@ watch(
 
       <div
         :ref="setSheetElement"
-        class="mobilibus-mobile-bottom-sheet tw:dark:text-[#e5e7eb] tw:min-[921px]:contents tw:max-[920px]:absolute tw:max-[920px]:right-2.5 tw:max-[920px]:left-2.5 tw:max-[920px]:z-[800] tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:select-none tw:max-[920px]:overflow-hidden tw:max-[920px]:overscroll-contain tw:max-[920px]:rounded-[14px] tw:max-[920px]:border tw:max-[920px]:border-[rgba(208,213,221,0.9)] tw:max-[920px]:bg-white/[.94] tw:max-[920px]:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:max-[920px]:backdrop-blur-[16px] tw:max-[920px]:transition-[height,transform,box-shadow] tw:max-[920px]:duration-[180ms]"
+        class="mobilibus-mobile-bottom-sheet tw:dark:text-[#e5e7eb] tw:min-[921px]:contents tw:max-[920px]:absolute tw:max-[920px]:right-2.5 tw:max-[920px]:left-2.5 tw:max-[920px]:z-[800] tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:select-none tw:max-[920px]:overflow-hidden tw:max-[920px]:overscroll-contain tw:max-[920px]:rounded-[14px] tw:max-[920px]:border tw:max-[920px]:border-[rgba(208,213,221,0.9)] tw:max-[920px]:bg-white/[.94] tw:max-[920px]:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:max-[920px]:transition-[height,transform] tw:max-[920px]:duration-[180ms]"
         :style="dragStyle"
         :class="[
           `is-${sheetState}`,
-          isDragging ? 'is-dragging tw:max-[920px]:backdrop-filter-none! tw:max-[920px]:shadow-none! tw:max-[920px]:transition-none!' : '',
+          isDragging ? 'is-dragging tw:max-[920px]:shadow-none! tw:max-[920px]:transition-none!' : '',
+          isSettling ? 'is-settling tw:max-[920px]:shadow-none!' : '',
           themeMode === 'dark' ? 'tw:max-[920px]:border-[#28514d]! tw:max-[920px]:bg-[rgba(15,36,35,0.96)]!' : '',
           sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
           sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
@@ -136,6 +139,7 @@ watch(
         @touchmove="onTouchMove"
         @touchend.passive="onTouchEnd"
         @touchcancel.passive="onTouchCancel"
+        @transitionend="onTransitionEnd"
       >
         <button
           type="button"
