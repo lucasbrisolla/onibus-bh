@@ -1,4 +1,5 @@
 import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../domain/types';
+import { formatStopDescription } from './stopPresentation';
 
 export interface MapCoordinate {
   latitude: number;
@@ -14,6 +15,7 @@ export interface MapBounds {
 
 export interface MapSceneLabel {
   text: string;
+  secondaryText?: string;
   permanent: boolean;
 }
 
@@ -103,19 +105,6 @@ export const mapRouteLayerStyles = {
 
 const routeLayers: readonly MapSceneRouteLayer[] = [mapRouteLayerStyles.base, mapRouteLayerStyles.flow];
 
-function normalizeMapDisplayText(value: string): string {
-  const hasLetters = /\p{L}/u.test(value);
-  const isAllCaps = hasLetters && value === value.toLocaleUpperCase('pt-BR');
-
-  if (!isAllCaps) {
-    return value;
-  }
-
-  return value.toLocaleLowerCase('pt-BR').replace(/\p{L}[\p{L}\p{M}]*/gu, word =>
-    word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1),
-  );
-}
-
 function createMapBounds(coordinates: readonly MapCoordinate[]): MapBounds | null {
   if (coordinates.length === 0) {
     return null;
@@ -155,7 +144,7 @@ export function createMapScene(input: MapSceneInput = {}): MapScene {
     }
 
     seenStopCodes.add(source.code);
-    const displayDescription = normalizeMapDisplayText(source.description);
+    const displayDescription = formatStopDescription(source.description);
     stops.push({
       source,
       coordinate: {
@@ -163,15 +152,18 @@ export function createMapScene(input: MapSceneInput = {}): MapScene {
         longitude: source.longitude,
       },
       role,
-      markerTitle: displayDescription,
+      markerTitle: displayDescription.fullName,
       popup: {
         title: source.publicCode || source.code,
-        body: [displayDescription, 'Clique para ver os ônibus desta parada.'],
+        body: [displayDescription.fullName, 'Clique para ver os ônibus desta parada.'],
       },
       label:
         role === 'monitored'
           ? {
-              text: displayDescription,
+              text: displayDescription.name,
+              ...(displayDescription.addressNumber
+                ? { secondaryText: displayDescription.addressNumber }
+                : {}),
               permanent: true,
             }
           : null,

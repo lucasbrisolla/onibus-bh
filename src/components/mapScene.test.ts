@@ -79,13 +79,14 @@ describe('createMapScene', () => {
     const scene = createMapScene({ monitoredStop });
 
     expect(scene.stops[0]).toMatchObject({
-      markerTitle: 'Rod Anel Rodoviario Celso Mello Azevedo, 11749',
+      markerTitle: 'Rod Anel Rodoviário Celso Mello Azevedo, 11749',
       popup: {
-        body: ['Rod Anel Rodoviario Celso Mello Azevedo, 11749', 'Clique para ver os ônibus desta parada.'],
+        body: ['Rod Anel Rodoviário Celso Mello Azevedo, 11749', 'Clique para ver os ônibus desta parada.'],
       },
       label: {
         permanent: true,
-        text: 'Rod Anel Rodoviario Celso Mello Azevedo, 11749',
+        text: 'Rod Anel Rodoviário Celso Mello Azevedo',
+        secondaryText: '11749',
       },
     });
     expect(monitoredStop.description).toBe(originalDescription);

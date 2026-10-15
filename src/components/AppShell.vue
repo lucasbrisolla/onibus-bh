@@ -52,7 +52,7 @@ function toggleSidebar() {
 
 const navItems: { id: DashboardSection; label: string; icon: typeof BusFront }[] = [
   { id: 'mapa', label: 'Mapa', icon: MapPinned },
-  { id: 'monitoramento', label: 'Monitoramento', icon: LayoutDashboard },
+  { id: 'monitoramento', label: 'Alerta', icon: LayoutDashboard },
   { id: 'linhas', label: 'Ótimo', icon: BusFront },
   { id: 'favoritos', label: 'Favoritos', icon: Star },
   { id: 'historico', label: 'Histórico', icon: History },
@@ -164,14 +164,6 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
             <p v-if="searchResults.length === 0" class="tw:m-0 tw:text-bh-muted tw:text-[0.82rem] tw:font-semibold tw:dark:text-[#9eb7b4]">Nenhum ponto carregado encontrado.</p>
           </div>
         </label>
-        <button
-          type="button"
-          class="icon-button tw:grid tw:size-[42px] tw:place-items-center tw:p-0! tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb] tw:max-[920px]:hidden"
-          aria-label="Configurações"
-          @click="emit('navigate', 'configuracoes')"
-        >
-          <Settings class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
-        </button>
       </header>
 
       <slot></slot>

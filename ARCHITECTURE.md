@@ -107,7 +107,8 @@ Composição da interface.
 - `AppShell.vue`: sidebar, topbar e navegação.
 - `MapView.vue`: mapa Leaflet, marcadores e trajetória.
 - `MonitoringPanel.vue`: monitoramento, previsões e status.
-- `MobileBottomSheet.vue`: versão mobile do painel.
+- `MobileBottomSheet.vue`: adapter do painel municipal para a experiência mobile.
+- `MobilePanelSheet.vue`: gestos, encaixes, alturas, transições e apresentação compartilhados pelos painéis móveis; o conteúdo entra por slot.
 - `PredictionCards.vue`: lista resumida de próximos ônibus.
 
 ## Regras de domínio importantes
@@ -166,13 +167,13 @@ Comportamentos arquiteturais relevantes:
 
 ## Interface mobile
 
-O `MobileBottomSheet.vue` usa três estados internos:
+O `MobilePanelSheet.vue` concentra os três estados internos:
 
 - `peek`: alça recolhida;
 - `half`: painel intermediário;
 - `full`: painel expandido.
 
-Gestos verticais movem o painel um nível por vez. O mapa também expõe controles compactos para mostrar/ocultar pontos e alternar o modo escuro no mobile.
+Gestos verticais movem o painel um nível por vez. O mesmo shell atende o painel municipal e o painel Ótimo/RMBH; cada um fornece seu próprio conteúdo. O mapa também expõe controles compactos para mostrar/ocultar pontos e alternar o modo escuro no mobile.
 
 ## Catálogo Ótimo/RMBH
 

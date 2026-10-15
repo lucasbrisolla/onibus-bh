@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BellRing, Star } from '@lucide/vue';
 import { computed } from 'vue';
+import { formatStopDescription } from './stopPresentation';
 import PredictionCards from './PredictionCards.vue';
 import type {
   AlertSettings,
@@ -22,6 +23,10 @@ const props = defineProps<{
   selectedStop: NearbyStop | null;
   isSelectedStopFavorite: boolean;
 }>();
+
+const selectedStopPresentation = computed(() => (
+  props.selectedStop ? formatStopDescription(props.selectedStop.description) : null
+));
 
 const emit = defineEmits<{
   update: [settings: AlertSettings];
@@ -85,20 +90,23 @@ function updateMinutes(event: Event) {
 
     <section
       v-if="selectedStop"
-      class="alert-stop-summary tw:relative tw:grid tw:gap-1.5 tw:rounded-[10px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[14px_54px_14px_14px] tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:max-[920px]:p-[10px_48px_10px_10px]"
+      class="alert-stop-summary tw:relative tw:grid tw:gap-1.5 tw:rounded-[10px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[14px_60px_14px_14px] tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:max-[920px]:p-[10px_60px_10px_10px]"
     >
       <div>
         <span class="alert-field-label tw:text-bh-primary tw:text-[0.72rem] tw:font-black tw:tracking-normal tw:uppercase">
           Parada selecionada
         </span>
-        <h3 class="tw:m-0 tw:text-bh-title tw:text-[0.98rem] tw:leading-[1.35] tw:dark:text-[#f9fafb]">{{ selectedStop.description }}</h3>
+        <h3 class="tw:m-0 tw:pr-2 tw:text-bh-title tw:text-[0.98rem] tw:leading-[1.35] tw:dark:text-[#f9fafb]">{{ selectedStopPresentation?.name }}</h3>
+        <p v-if="selectedStopPresentation?.addressNumber" class="tw:m-0 tw:text-[#475467] tw:text-[0.8rem] tw:font-medium tw:dark:text-[#b7cfcb]">
+          Nº {{ selectedStopPresentation.addressNumber }}
+        </p>
         <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.84rem] tw:font-bold tw:dark:text-[#5eead4]">
           Ponto {{ selectedStop.publicCode || selectedStop.code }}
         </p>
       </div>
       <button
         type="button"
-        class="favorite-stop-button tw:absolute tw:right-2.5 tw:top-2.5 tw:grid tw:size-[34px] tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms] tw:hover:bg-[rgba(13,148,136,0.14)] tw:dark:border-[rgba(94,234,212,0.18)] tw:dark:bg-[rgba(45,212,191,0.08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[rgba(45,212,191,0.14)] tw:max-[920px]:top-2 tw:max-[920px]:right-2 tw:max-[920px]:size-[30px]"
+        class="favorite-stop-button tw:absolute tw:right-2 tw:top-2 tw:grid tw:size-11 tw:min-h-11 tw:min-w-11 tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms] tw:hover:bg-[rgba(13,148,136,0.14)] tw:dark:border-[rgba(94,234,212,0.18)] tw:dark:bg-[rgba(45,212,191,0.08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[rgba(45,212,191,0.14)]"
         :class="isSelectedStopFavorite ? 'tw:border-[rgba(245,158,11,0.28)] tw:bg-[rgba(245,158,11,0.14)] tw:text-[#d97706] tw:dark:border-[rgba(251,191,36,0.28)] tw:dark:bg-[rgba(245,158,11,0.16)] tw:dark:text-[#fbbf24]' : ''"
         :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
         :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
@@ -226,7 +234,7 @@ function updateMinutes(event: Event) {
     >
       <div class="alert-section-heading tw:flex tw:items-baseline tw:justify-between tw:gap-2.5">
         <h3 class="tw:m-0 tw:text-bh-text tw:text-[0.98rem] tw:dark:text-[#f9fafb]">Próximos ônibus</h3>
-        <span v-if="lastUpdated" class="tw:m-0 tw:whitespace-nowrap tw:text-bh-muted tw:text-[0.72rem] tw:dark:text-[#9eb7b4] tw:max-[920px]:text-[0.66rem]">
+        <span v-if="lastUpdated" class="tw:m-0 tw:whitespace-nowrap tw:text-[#475467] tw:text-[0.8rem] tw:dark:text-[#b7cfcb] tw:max-[920px]:text-[0.75rem] tw:[font-variant-numeric:tabular-nums]">
           Atualizado às {{ lastUpdated }}
         </span>
       </div>

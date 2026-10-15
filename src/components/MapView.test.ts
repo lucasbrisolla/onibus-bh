@@ -62,7 +62,7 @@ describe('MapView', () => {
 
     await wrapper.vm.$nextTick();
     const marker = wrapper.element.querySelector(
-      '[title="Rod Anel Rodoviario Celso Mello Azevedo, 11749"]',
+      '[title="Rod Anel Rodoviário Celso Mello Azevedo, 11749"]',
     );
     expect(marker).not.toBeNull();
 
@@ -114,7 +114,7 @@ describe('MapView', () => {
     await wrapper.vm.$nextTick();
 
     const monitoredStopLabel = wrapper.element.querySelector('.map-stop-tooltip');
-    expect(monitoredStopLabel?.textContent).toContain('Rod Anel Rodoviario Celso Mello Azevedo, 11749');
+    expect(monitoredStopLabel?.textContent).toContain('Rod Anel Rodoviário Celso Mello Azevedo, 11749');
     expect(monitoredStopLabel?.textContent).not.toContain('ROD ANEL');
     wrapper.unmount();
   });
@@ -233,7 +233,7 @@ describe('MapView', () => {
     await wrapper.vm.$nextTick();
 
     expect(
-      wrapper.element.querySelector('[title="Rod Anel Rodoviario Celso Mello Azevedo, 11749"]'),
+      wrapper.element.querySelector('[title="Rod Anel Rodoviário Celso Mello Azevedo, 11749"]'),
     ).not.toBeNull();
     expect(wrapper.element.querySelector('[title="Pca Capela Nova, 20"]')).toBeNull();
     wrapper.unmount();

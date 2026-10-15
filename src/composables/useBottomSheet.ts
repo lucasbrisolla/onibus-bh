@@ -3,7 +3,9 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 const SHEET_GESTURE_ZONE_HEIGHT = 108;
 const SWIPE_THRESHOLD_PX = 56;
 const DRAG_START_TOLERANCE_PX = 8;
-const PEEK_HEIGHT_PX = 44;
+const PEEK_HEIGHT_RATIO = 0.25;
+const PEEK_MIN_HEIGHT_PX = 160;
+const PEEK_MAX_HEIGHT_PX = 240;
 const HALF_HEIGHT_RATIO = 0.42;
 const HALF_MAX_HEIGHT_PX = 340;
 const FULL_BOTTOM_OFFSET_PX = 68;
@@ -21,7 +23,10 @@ function getViewportHeight(): number {
 
 function getSheetHeight(state: SheetState): number {
   if (state === 'peek') {
-    return PEEK_HEIGHT_PX;
+    return Math.min(
+      PEEK_MAX_HEIGHT_PX,
+      Math.max(PEEK_MIN_HEIGHT_PX, getViewportHeight() * PEEK_HEIGHT_RATIO),
+    );
   }
 
   if (state === 'half') {
@@ -29,7 +34,7 @@ function getSheetHeight(state: SheetState): number {
   }
 
   return Math.max(
-    PEEK_HEIGHT_PX,
+    getSheetHeight('peek'),
     getViewportHeight() - FULL_BOTTOM_OFFSET_PX - FULL_TOP_GAP_PX,
   );
 }
@@ -103,8 +108,7 @@ export function useBottomSheet() {
     }
 
     const sheetTop = sheetElement.value?.getBoundingClientRect().top ?? 0;
-    const canStartGesture =
-      sheetState.value === 'peek' || firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
+    const canStartGesture = firstTouch.clientY <= sheetTop + SHEET_GESTURE_ZONE_HEIGHT;
 
     if (!canStartGesture) {
       touchStartY = null;

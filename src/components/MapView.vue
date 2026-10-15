@@ -38,9 +38,13 @@ import {
   type MapScene,
   type MapSceneInput,
   type MapScenePopup,
+  type MapSceneStop,
   type UserLocation as MapUserLocation,
 } from './mapScene';
 import type { MapViewportCommand } from './mapViewportPolicy';
+
+const STOP_CLUSTER_ZOOM_THRESHOLD = 16;
+const STOP_CLUSTER_RADIUS_PX = 44;
 
 const props = withDefaults(
   defineProps<{
@@ -86,6 +90,7 @@ let routeLayer: L.LayerGroup | null = null;
 let vehicleLayer: L.LayerGroup | null = null;
 let userLocationLayer: L.LayerGroup | null = null;
 let isExecutingProgrammaticViewportCommand = false;
+let activeMapScene: MapScene | null = null;
 const mapBehavior = createMapBehavior();
 
 const stopIconSvg = `
@@ -118,12 +123,12 @@ const userLocationIconSvg = `
   </svg>
 `;
 
-function createMarkerIcon(className: string, markup: string) {
+function createMarkerIcon(className: string, markup: string, size = 34) {
   return L.divIcon({
     className: `map-marker ${className}`,
     html: `<span>${markup}</span>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -201,21 +206,42 @@ function renderStops(scene: MapScene) {
   if (!currentMap) {
     return;
   }
+  const map: L.Map = currentMap;
 
   clearLayer(stopLayer);
-  stopLayer = L.layerGroup();
+  const nextLayer = L.layerGroup();
+  stopLayer = nextLayer;
 
-  for (const stop of scene.stops) {
+  function renderStopMarker(stop: MapSceneStop) {
+    const isMonitored = stop.role === 'monitored';
     const marker = L.marker([stop.coordinate.latitude, stop.coordinate.longitude], {
-      icon: createMarkerIcon(stop.role === 'monitored' ? 'is-monitored' : 'is-stop', stopIconSvg),
+      icon: createMarkerIcon(
+        isMonitored ? 'is-monitored' : 'is-stop',
+        stopIconSvg,
+        isMonitored ? 34 : 24,
+      ),
       title: stop.markerTitle,
       keyboard: true,
+      zIndexOffset: isMonitored ? 1400 : 0,
     });
 
     marker.bindPopup(renderPopup(stop.popup)).on('click', () => emit('selectStop', stop.source));
 
     if (stop.label) {
-      marker.bindTooltip(stop.label.text, {
+      const tooltipContent = document.createElement('span');
+      tooltipContent.className = 'map-stop-tooltip-content';
+      const name = document.createElement('span');
+      name.textContent = stop.label.text;
+      tooltipContent.append(name);
+
+      if (stop.label.secondaryText) {
+        const number = document.createElement('span');
+        number.className = 'map-stop-tooltip-number';
+        number.textContent = `, ${stop.label.secondaryText}`;
+        tooltipContent.append(number);
+      }
+
+      marker.bindTooltip(tooltipContent, {
         className: 'map-stop-tooltip',
         direction: 'top',
         offset: [0, -18],
@@ -224,10 +250,121 @@ function renderStops(scene: MapScene) {
       });
     }
 
-    marker.addTo(stopLayer);
+    marker.addTo(nextLayer);
   }
 
-  stopLayer.addTo(currentMap);
+  function renderStopCluster(stops: readonly MapSceneStop[]) {
+    if (stops.length < 2) {
+      return;
+    }
+
+    const locations = stops.map(stop => L.latLng(stop.coordinate.latitude, stop.coordinate.longitude));
+    const bounds = L.latLngBounds(locations);
+    const marker = L.marker(bounds.getCenter(), {
+      icon: L.divIcon({
+        className: 'map-stop-cluster',
+        html: `<span aria-hidden="true">${stops.length}</span>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      }),
+      title: `${stops.length} pontos próximos`,
+      keyboard: true,
+      zIndexOffset: 100,
+    });
+
+    marker.on('click', () => executeProgrammaticViewportChange(() => {
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: STOP_CLUSTER_ZOOM_THRESHOLD });
+    }));
+    marker.addTo(nextLayer);
+  }
+
+  function groupNearbyStops(stops: readonly MapSceneStop[]): MapSceneStop[][] {
+    if (map.getZoom() >= STOP_CLUSTER_ZOOM_THRESHOLD) {
+      return stops.map(stop => [stop]);
+    }
+
+    const projected = stops.map(stop => ({
+      stop,
+      point: map.project([stop.coordinate.latitude, stop.coordinate.longitude]),
+    }));
+    const parents = projected.map((_, index) => index);
+    const buckets = new Map<string, number[]>();
+
+    function find(index: number): number {
+      if (parents[index] !== index) {
+        parents[index] = find(parents[index]);
+      }
+      return parents[index];
+    }
+
+    function unite(left: number, right: number) {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) {
+        parents[rightRoot] = leftRoot;
+      }
+    }
+
+    projected.forEach(({ point }, index) => {
+      const cellX = Math.floor(point.x / STOP_CLUSTER_RADIUS_PX);
+      const cellY = Math.floor(point.y / STOP_CLUSTER_RADIUS_PX);
+
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+          const neighborKey = `${cellX + offsetX}:${cellY + offsetY}`;
+          for (const otherIndex of buckets.get(neighborKey) ?? []) {
+            if (point.distanceTo(projected[otherIndex].point) <= STOP_CLUSTER_RADIUS_PX) {
+              unite(index, otherIndex);
+            }
+          }
+        }
+      }
+
+      const key = `${cellX}:${cellY}`;
+      const cell = buckets.get(key) ?? [];
+      cell.push(index);
+      buckets.set(key, cell);
+    });
+
+    const groups = new Map<number, MapSceneStop[]>();
+    projected.forEach(({ stop }, index) => {
+      const root = find(index);
+      const group = groups.get(root) ?? [];
+      group.push(stop);
+      groups.set(root, group);
+    });
+
+    return [...groups.values()];
+  }
+
+  const monitoredStop = scene.stops.find(stop => stop.role === 'monitored');
+  if (monitoredStop) {
+    renderStopMarker(monitoredStop);
+  }
+
+  const nearbyStops = scene.stops.filter(stop => stop.role === 'nearby');
+  for (const group of groupNearbyStops(nearbyStops)) {
+    if (map.getZoom() >= STOP_CLUSTER_ZOOM_THRESHOLD) {
+      renderStopMarker(group[0]);
+    } else {
+      renderStopCluster(group);
+    }
+  }
+
+  nextLayer.addTo(map);
+}
+
+function getMobileSheetHeight(): number {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function' ||
+    !window.matchMedia('(max-width: 920px)').matches
+  ) {
+    return 0;
+  }
+
+  const sheet = document.querySelector<HTMLElement>('.mobile-bottom-sheet');
+  return sheet ? Math.ceil(sheet.getBoundingClientRect().height) : 0;
 }
 
 function renderUserLocation(scene: MapScene) {
@@ -368,7 +505,8 @@ function executeViewportCommand(command: MapViewportCommand) {
     case 'fit-bounds':
       executeProgrammaticViewportChange(() => {
         currentMap.fitBounds(createComfortableBounds(command.bounds, command.minimumSpan), {
-          padding: [...command.padding],
+          paddingTopLeft: [...command.padding],
+          paddingBottomRight: [command.padding[0], command.padding[1] + getMobileSheetHeight()],
           maxZoom: command.maxZoom,
         });
       });
@@ -413,12 +551,19 @@ function renderMapData() {
     type: 'scene-updated',
     input: buildMapSceneInput(),
   });
+  activeMapScene = result.scene;
   renderStops(result.scene);
   renderUserLocation(result.scene);
   renderRoute(result.scene);
   renderVehicles(result.scene);
   executeViewportCommand(result.viewport);
   invalidateMapSize();
+}
+
+function handleMapZoomEnd() {
+  if (activeMapScene) {
+    renderStops(activeMapScene);
+  }
 }
 
 onMounted(() => {
@@ -434,6 +579,7 @@ onMounted(() => {
   mapLifecycle.mount();
   mapLifecycle.listen('movestart', handleMapMoveStart);
   mapLifecycle.listen('moveend', handleMapMoveEnd);
+  mapLifecycle.listen('zoomend', handleMapZoomEnd);
   renderMapData();
   invalidateMapSize();
 });

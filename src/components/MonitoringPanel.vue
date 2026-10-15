@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronUp, Star } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import AlertSetupPanel from './AlertSetupPanel.vue';
 import PredictionCards from './PredictionCards.vue';
+import { formatStopDescription } from './stopPresentation';
 import type { AlertSettings, NearbyStop, Prediction, PredictionAlertRequest } from '../domain/types';
 import type { PermissionState } from '../services/notificationService';
 
@@ -27,22 +28,23 @@ const emit = defineEmits<{
   requestPermission: [];
 }>();
 
-const collapsedSections = reactive({
-  predictions: false,
+const expandedSections = reactive({
+  predictions: Boolean(props.selectedStop),
 });
 
-function toggleSection(section: keyof typeof collapsedSections) {
-  collapsedSections[section] = !collapsedSections[section];
+const selectedStopPresentation = computed(() => (
+  props.selectedStop ? formatStopDescription(props.selectedStop.description) : null
+));
+
+function toggleSection(section: keyof typeof expandedSections) {
+  expandedSections[section] = !expandedSections[section];
 }
 
 watch(
-  () => [props.selectedStop?.code ?? null, props.predictions.length] as const,
-  ([stopCode, predictionCount], [previousStopCode, previousPredictionCount]) => {
-    const hasNewStop = stopCode !== null && stopCode !== previousStopCode;
-    const hasFreshPredictions = predictionCount > 0 && previousPredictionCount === 0;
-
-    if (hasNewStop || hasFreshPredictions) {
-      collapsedSections.predictions = true;
+  () => props.selectedStop?.code ?? null,
+  (stopCode, previousStopCode) => {
+    if (stopCode && stopCode !== previousStopCode) {
+      expandedSections.predictions = true;
     }
   },
 );
@@ -76,11 +78,11 @@ watch(
       class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:gap-2 tw:max-[920px]:p-[9px]"
     >
       <article
-        class="selected-stop-card tw:relative tw:grid tw:gap-1.5 tw:rounded-[8px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[12px_54px_12px_12px] tw:dark:border-[#134e4a] tw:dark:bg-[#134e4a] tw:max-[920px]:gap-1 tw:max-[920px]:p-[8px_44px_8px_8px]"
+        class="selected-stop-card tw:relative tw:grid tw:gap-1.5 tw:rounded-[8px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[12px_60px_12px_12px] tw:dark:border-[#134e4a] tw:dark:bg-[#134e4a] tw:max-[920px]:gap-1 tw:max-[920px]:p-[8px_60px_8px_8px]"
       >
         <button
           type="button"
-          class="favorite-stop-button tw:absolute tw:right-2.5 tw:top-2.5 tw:grid tw:size-[34px] tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms] tw:hover:bg-[rgba(13,148,136,0.14)] tw:dark:border-[rgba(94,234,212,0.18)] tw:dark:bg-[rgba(45,212,191,0.08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[rgba(45,212,191,0.14)] tw:max-[920px]:size-[30px]"
+          class="favorite-stop-button tw:absolute tw:right-2 tw:top-2 tw:grid tw:size-11 tw:min-h-11 tw:min-w-11 tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms] tw:hover:bg-[rgba(13,148,136,0.14)] tw:dark:border-[rgba(94,234,212,0.18)] tw:dark:bg-[rgba(45,212,191,0.08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[rgba(45,212,191,0.14)]"
           :class="isSelectedStopFavorite ? 'tw:border-[rgba(245,158,11,0.28)] tw:bg-[rgba(245,158,11,0.14)] tw:text-[#d97706] tw:dark:border-[rgba(251,191,36,0.28)] tw:dark:bg-[rgba(245,158,11,0.16)] tw:dark:text-[#fbbf24]' : ''"
           :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
           :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
@@ -89,18 +91,25 @@ watch(
         >
           <Star class="tw:size-4" :class="isSelectedStopFavorite ? 'tw:fill-current' : ''" aria-hidden="true" />
         </button>
-        <h3 class="tw:m-0 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35] tw:dark:text-[#f9fafb] tw:max-[920px]:text-[0.92rem] tw:max-[920px]:leading-[1.28]">{{ selectedStop.description }}</h3>
+        <h3 class="tw:m-0 tw:pr-2 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35] tw:dark:text-[#f9fafb] tw:max-[920px]:text-[0.92rem] tw:max-[920px]:leading-[1.28]">{{ selectedStopPresentation?.name }}</h3>
+        <p v-if="selectedStopPresentation?.addressNumber" class="tw:m-0 tw:text-[#475467] tw:text-[0.82rem] tw:font-medium tw:dark:text-[#b7cfcb]">
+          Nº {{ selectedStopPresentation.addressNumber }}
+        </p>
         <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.9rem] tw:font-bold tw:dark:text-[#5eead4] tw:max-[920px]:text-[0.82rem]">
           Ponto {{ selectedStop.publicCode || selectedStop.code }}
         </p>
       </article>
     </section>
 
-    <section class="collapse-section tw:grid tw:gap-2">
+    <p v-if="!selectedStop" class="tw:m-0 tw:rounded-lg tw:bg-[#f8fafc] tw:p-3 tw:text-[0.88rem] tw:leading-[1.4] tw:text-[#475467] tw:dark:bg-[#0f2423] tw:dark:text-[#b7cfcb]">
+      Selecione um ponto no mapa para ver os próximos ônibus.
+    </p>
+
+    <section v-if="selectedStop" class="collapse-section tw:grid tw:gap-2">
       <button
         type="button"
         class="collapse-toggle tw:flex tw:items-center tw:justify-between tw:rounded-[8px] tw:border tw:border-[#dbe4ee] tw:bg-[#f8fafc] tw:px-3.5 tw:py-3 tw:text-[.92rem] tw:font-extrabold tw:text-bh-text tw:shadow-[0_8px_24px_rgba(16,24,40,0.04)] tw:transition-colors tw:duration-[160ms] tw:hover:bg-[#f2f4f7] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:dark:hover:bg-[#163735] tw:max-[920px]:min-h-[34px] tw:max-[920px]:px-2.5 tw:max-[920px]:py-2"
-        :aria-expanded="collapsedSections.predictions"
+        :aria-expanded="expandedSections.predictions"
         @click="toggleSection('predictions')"
       >
         <span class="collapse-toggle-label tw:inline-flex tw:min-w-0 tw:items-center tw:gap-2">
@@ -113,12 +122,12 @@ watch(
           </span>
         </span>
         <component
-          :is="collapsedSections.predictions ? ChevronUp : ChevronDown"
+          :is="expandedSections.predictions ? ChevronUp : ChevronDown"
           class="tw:size-[18px] tw:shrink-0 tw:stroke-[2.2]"
           aria-hidden="true"
         />
       </button>
-      <div v-show="collapsedSections.predictions" class="collapse-body tw:grid tw:gap-2.5">
+      <div v-show="expandedSections.predictions" class="collapse-body tw:grid tw:gap-2.5">
         <PredictionCards
           :predictions="predictions"
           :selected-prediction-id="selectedPredictionId"

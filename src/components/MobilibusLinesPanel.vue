@@ -10,7 +10,7 @@ import type {
   MobilibusStopDepartures,
 } from '../domain/mobilibusTypes';
 import MobilibusMap from './MobilibusMap.vue';
-import { useBottomSheet } from '../composables/useBottomSheet';
+import MobilePanelSheet from './MobilePanelSheet.vue';
 
 const props = defineProps<{
   stops: MobilibusStop[];
@@ -28,20 +28,6 @@ const departureFilter = ref('');
 const openSections = reactive({
   departures: true,
 });
-
-const {
-  sheetState,
-  setSheetElement,
-  dragStyle,
-  isDragging,
-  isSettling,
-  toggleSheet,
-  onTouchStart,
-  onTouchMove,
-  onTouchEnd,
-  onTouchCancel,
-  onTransitionEnd,
-} = useBottomSheet();
 
 const emit = defineEmits<{
   requestMapTiles: [tiles: MobilibusMapTile[]];
@@ -122,35 +108,12 @@ watch(
         />
       </div>
 
-      <div
-        :ref="setSheetElement"
-        class="mobilibus-mobile-bottom-sheet tw:dark:text-[#e5e7eb] tw:min-[921px]:contents tw:max-[920px]:absolute tw:max-[920px]:right-2.5 tw:max-[920px]:left-2.5 tw:max-[920px]:z-[800] tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:select-none tw:max-[920px]:overflow-hidden tw:max-[920px]:overscroll-contain tw:max-[920px]:rounded-[14px] tw:max-[920px]:border tw:max-[920px]:border-[rgba(208,213,221,0.9)] tw:max-[920px]:bg-white/[.94] tw:max-[920px]:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:max-[920px]:transition-[height,transform] tw:max-[920px]:duration-[180ms]"
-        :style="dragStyle"
-        :class="[
-          `is-${sheetState}`,
-          isDragging ? 'is-dragging tw:max-[920px]:shadow-none! tw:max-[920px]:transition-none!' : '',
-          isSettling ? 'is-settling tw:max-[920px]:shadow-none!' : '',
-          themeMode === 'dark' ? 'tw:max-[920px]:border-[#28514d]! tw:max-[920px]:bg-[rgba(15,36,35,0.96)]!' : '',
-          sheetState === 'peek' ? 'tw:max-[920px]:h-11 tw:max-[920px]:translate-y-[calc(100%-34px)] tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
-          sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
-          sheetState === 'full' ? 'tw:max-[920px]:h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]! tw:max-[920px]:max-h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]!' : '',
-        ]"
-        @touchstart.passive="onTouchStart"
-        @touchmove="onTouchMove"
-        @touchend.passive="onTouchEnd"
-        @touchcancel.passive="onTouchCancel"
-        @transitionend="onTransitionEnd"
+      <MobilePanelSheet
+        class="mobilibus-mobile-bottom-sheet"
+        panel-name="do Ótimo"
+        placement="map"
+        :theme-mode="themeMode"
       >
-        <button
-          type="button"
-          class="sheet-toggle mobilibus-sheet-toggle tw:hidden tw:min-h-[34px] tw:w-full tw:cursor-grab tw:place-items-center tw:border-0! tw:bg-transparent! tw:px-0! tw:py-[9px_0_6px]! tw:active:cursor-grabbing tw:max-[920px]:grid tw:max-[920px]:shrink-0"
-          :aria-expanded="sheetState !== 'peek'"
-          :aria-label="sheetState === 'peek' ? 'Expandir painel do Ótimo' : 'Recolher painel do Ótimo'"
-          @click="toggleSheet"
-        >
-          <div class="sheet-handle tw:h-[5px] tw:w-12 tw:rounded-full tw:bg-[#d0d5dd] tw:dark:bg-[#9eb7b4]"></div>
-        </button>
-
         <aside
           class="mobilibus-lines-control-panel tw:relative tw:z-[1] tw:col-start-1 tw:row-start-1 tw:grid tw:min-h-[calc(100vh-79px)] tw:min-w-0 tw:max-h-[calc(100vh-79px)] tw:gap-3 tw:overflow-y-auto tw:rounded-none tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:shadow-none tw:backdrop-blur-none tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:z-auto tw:max-[920px]:col-auto tw:max-[920px]:row-auto tw:max-[920px]:min-h-0 tw:max-[920px]:flex-1 tw:max-[920px]:h-[calc(100%-34px)] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-0! tw:max-[920px]:bg-transparent! tw:max-[920px]:p-[6px_8px_10px]"
           aria-label="Detalhes do ponto Mobilibus"
@@ -292,7 +255,7 @@ watch(
         </div>
 
         </aside>
-      </div>
+      </MobilePanelSheet>
     </div>
   </section>
 </template>

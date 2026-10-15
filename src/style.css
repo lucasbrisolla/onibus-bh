@@ -98,6 +98,10 @@
   }
 }
 
+.map-base-tiles:not(.map-base-tiles-dark) {
+  filter: grayscale(0.78) saturate(0.48) brightness(1.04) contrast(0.9);
+}
+
 .map-base-tiles-dark-fallback {
   filter: invert(0.88) hue-rotate(180deg) brightness(0.78) contrast(1.08) saturate(0.72);
 }
@@ -176,12 +180,17 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
 }
 
 .app-theme[data-theme='dark'] .map-marker.is-stop {
-  border-color: #e5e7eb;
-  background: #111827;
-  color: #f9fafb;
-  box-shadow:
-    0 0 0 3px rgba(229, 231, 235, 0.16),
-    0 12px 24px rgba(0, 0, 0, 0.36);
+  border-color: #94a3b8;
+  background: #253b3e;
+  color: #e2e8f0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.38);
+}
+
+.app-theme[data-theme='dark'] .map-stop-cluster {
+  border-color: #d1d5db;
+  background: #334155;
+  color: #f8fafc;
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.56), 0 4px 12px rgba(0, 0, 0, 0.42);
 }
 
 .app-theme[data-theme='dark'] .map-marker.is-monitored {
@@ -221,9 +230,27 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
 }
 
 .map-marker.is-stop {
-  border: 3px solid #111827;
+  border: 2px solid #64748b;
   background: #ffffff;
-  color: #111827;
+  color: #475467;
+  box-shadow: 0 3px 9px rgba(23, 32, 26, 0.18);
+}
+
+.map-stop-cluster {
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  border-radius: 50%;
+  background: #475467;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(71, 84, 103, 0.75), 0 4px 12px rgba(16, 24, 40, 0.28);
+}
+
+.map-stop-cluster > span {
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .map-marker.is-mobilibus-stop {
@@ -254,6 +281,12 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
   stroke-linejoin: round;
 }
 
+.map-marker.is-stop svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
 .map-marker.is-vehicle {
   border: 2px solid rgba(255, 255, 255, 0.38);
   background: linear-gradient(145deg, #2dd4bf 0%, #14b8a6 48%, #0f766e 100%);
@@ -277,15 +310,16 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
 }
 
 .leaflet-tooltip.map-vehicle-tooltip {
-  border: 1px solid rgba(13, 148, 136, 0.32);
+  z-index: 1000 !important;
+  border: 2px solid rgba(255, 255, 255, 0.98);
   border-radius: 999px;
   background: rgba(8, 47, 43, 0.94);
   color: #f0fdfa;
   padding: 6px 10px;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 12px 24px rgba(8, 47, 43, 0.28);
+  box-shadow: 0 0 0 1px rgba(8, 47, 43, 0.72), 0 12px 24px rgba(8, 47, 43, 0.28);
 }
 
 .leaflet-tooltip.map-vehicle-tooltip::before {
@@ -300,7 +334,7 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
   padding: 7px 10px;
   min-width: 140px;
   max-width: 220px;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.3;
   white-space: normal;
@@ -312,6 +346,27 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
 
 .leaflet-tooltip.map-stop-tooltip::before {
   display: none;
+}
+
+.map-stop-tooltip-content {
+  display: grid;
+  gap: 2px;
+}
+
+.map-stop-tooltip-number {
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.app-theme[data-theme='dark'] .leaflet-tooltip.map-stop-tooltip {
+  border-color: rgba(251, 191, 36, 0.48);
+  background: rgba(20, 36, 35, 0.98);
+  color: #f9fafb;
+}
+
+.app-theme[data-theme='dark'] .map-stop-tooltip-number {
+  color: #b7cfcb;
 }
 
 .map-marker.is-user-location {
@@ -331,15 +386,4 @@ body:has(.app-theme[data-theme='dark']) .prediction-context-menu button:focus-vi
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-@media (max-width: 920px) {
-  .mobile-bottom-sheet.is-peek .monitoring-panel {
-    pointer-events: none;
-  }
-
-  .mobilibus-mobile-bottom-sheet.is-peek .mobilibus-lines-control-panel {
-    pointer-events: none;
-  }
-
 }
