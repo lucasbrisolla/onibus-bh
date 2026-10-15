@@ -17,3 +17,4 @@ pnpm-debug.log*
 /research-local/
 /*.apk
 /architecture-review-*.html
+/.scratch/

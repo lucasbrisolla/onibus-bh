@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-theme tw:min-h-screen tw:bg-[#eef2f7] tw:text-bh-text tw:dark:bg-[#081b1a] tw:dark:text-[#e5e7eb]" :data-theme="themeMode">
+  <div class="app-theme tw:min-h-screen tw:font-sans tw:bg-[#eef2f7] tw:text-bh-text tw:dark:bg-[#081b1a] tw:dark:text-[#e5e7eb]" :data-theme="themeMode">
     <AppShell
       :last-updated="lastUpdated"
       :is-loading="isLoading"
@@ -413,13 +413,17 @@ onBeforeUnmount(() => {
       @select-stop="selectStop"
       @toggle-theme="toggleTheme"
     >
+      <template #default="{ isSidebarOpen }">
     <section
       v-if="activeSection === 'mapa'"
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
+      :class="{ 'tw:grid-cols-[minmax(0,1fr)]!': !isSidebarOpen }"
     >
       <MonitoringPanel
+        v-show="isSidebarOpen"
         class="desktop-monitoring-panel tw:max-[920px]:hidden"
         display-mode="predictions-only"
+        :theme-mode="themeMode"
         :settings="settings"
         :predictions="predictions"
         :selected-prediction-id="selectedPredictionId"
@@ -480,9 +484,12 @@ onBeforeUnmount(() => {
     <section
       v-else-if="activeSection === 'monitoramento'"
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
+      :class="{ 'tw:grid-cols-[minmax(0,1fr)]!': !isSidebarOpen }"
     >
       <MonitoringPanel
+        v-show="isSidebarOpen"
         class="desktop-monitoring-panel tw:max-[920px]:hidden"
+        :theme-mode="themeMode"
         :settings="settings"
         :predictions="predictions"
         :selected-prediction-id="selectedPredictionId"
@@ -658,6 +665,7 @@ onBeforeUnmount(() => {
         </article>
       </div>
     </section>
+      </template>
     </AppShell>
   </div>
 </template>

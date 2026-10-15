@@ -23,10 +23,10 @@ const CARTO_DARK_TILE_URL =
   'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const OPEN_STREET_MAP_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OPEN_STREET_MAP_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a> contributors';
+  '&copy; <a class="tw:text-bh-primary-hover! tw:dark:text-[#7dd3c7]!" href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 const CARTO_ATTRIBUTION =
   OPEN_STREET_MAP_ATTRIBUTION +
-  ' &copy; <a href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>';
+  ' &copy; <a class="tw:text-bh-primary-hover! tw:dark:text-[#7dd3c7]!" href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>';
 const defaultCartoApiKey = import.meta.env.VITE_CARTO_API_KEY?.trim() ?? '';
 
 function appendCartoApiKey(url: string, apiKey: string): string {
@@ -74,11 +74,23 @@ export function createMapBaseTileLayer(
   options: MapBaseLayerOptions = {},
 ): L.TileLayer {
   const config = getMapBaseLayerConfig(theme, options);
-
-  return L.tileLayer(config.url, {
+  const tileLayer = L.tileLayer(config.url, {
     attribution: config.attribution,
     className: config.className,
     maxZoom: config.maxZoom,
     subdomains: config.subdomains,
   });
+  const tileFilterUtility = config.className.includes('map-base-tiles-dark-fallback')
+    ? 'tw:[filter:invert(0.88)_hue-rotate(180deg)_brightness(0.78)_contrast(1.08)_saturate(0.72)]'
+    : config.theme === 'light'
+      ? 'tw:[filter:grayscale(0.78)_saturate(0.48)_brightness(1.04)_contrast(0.9)]'
+      : null;
+
+  if (tileFilterUtility) {
+    tileLayer.on('tileload', event => {
+      event.tile.classList.add(tileFilterUtility);
+    });
+  }
+
+  return tileLayer;
 }

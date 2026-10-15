@@ -31,6 +31,7 @@ defineEmits<{
   <MobilePanelSheet class="mobile-bottom-sheet" panel-name="de monitoramento" :theme-mode="themeMode">
     <MonitoringPanel
       class="tw:max-[920px]:min-h-0"
+      :theme-mode="themeMode"
       :display-mode="displayMode"
       :settings="settings"
       :predictions="predictions"

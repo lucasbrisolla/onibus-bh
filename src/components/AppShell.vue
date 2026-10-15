@@ -65,7 +65,7 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
 <template>
   <main
     class="dashboard-shell tw:grid tw:min-h-screen tw:grid-cols-[240px_minmax(0,1fr)] tw:bg-slate-50 tw:transition-[grid-template-columns] tw:duration-[180ms] tw:ease-out tw:max-[920px]:grid-cols-1 tw:dark:bg-[#081b1a]"
-    :class="{ 'is-sidebar-hidden': !isSidebarOpen, 'tw:grid-cols-[minmax(0,1fr)]': !isSidebarOpen }"
+    :class="{ 'tw:grid-cols-[minmax(0,1fr)]': !isSidebarOpen }"
   >
     <aside
       v-show="isSidebarOpen"
@@ -166,7 +166,7 @@ const mobileNavItems = navItems.filter(item => item.id !== 'historico');
         </label>
       </header>
 
-      <slot></slot>
+      <slot :is-sidebar-open="isSidebarOpen"></slot>
 
       <nav
         class="mobile-nav tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-[1100] tw:hidden tw:grid-cols-5 tw:border-t tw:border-bh-border tw:bg-white/[.95] tw:pb-[env(safe-area-inset-bottom)] tw:backdrop-blur-[16px] tw:max-[920px]:grid"

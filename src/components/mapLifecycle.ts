@@ -65,6 +65,16 @@ export function createMapLifecycle(options: MapLifecycleOptions): MapLifecycle {
       zoomControl: false,
     });
     map = currentMap;
+    currentMap
+      .getContainer()
+      .querySelector<HTMLElement>('.leaflet-control-attribution')
+      ?.classList.add(
+        'tw:rounded-tl-lg',
+        'tw:bg-[rgba(255,255,255,0.88)]!',
+        'tw:text-[#475467]!',
+        'tw:dark:bg-[rgba(8,27,26,0.88)]!',
+        'tw:dark:text-[#b7cfcb]!',
+      );
 
     if (options.initialView) {
       currentMap.setView(options.initialView.center, options.initialView.zoom);

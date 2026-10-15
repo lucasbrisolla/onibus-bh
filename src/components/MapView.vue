@@ -13,6 +13,11 @@ function createRoutePathOptions(layer: SceneRouteLayer) {
   };
 }
 
+const routePathUtilityClasses: Record<SceneRouteLayer['kind'], string> = {
+  base: 'tw:drop-shadow-[0_0_3px_rgba(124,58,237,0.2)]',
+  flow: 'tw:animate-route-flow tw:[mix-blend-mode:screen] tw:pointer-events-none tw:motion-reduce:animate-none',
+};
+
 export const routeBasePathOptions = {
   ...createRoutePathOptions(mapRouteLayerStyles.base),
 };
@@ -33,6 +38,16 @@ import type { NearbyStop, RoutePoint, Vehicle, VehicleApproachInfo } from '../do
 import { createMapBehavior } from './mapBehavior';
 import { createMapInteractionOptions } from './mapInteractionOptions';
 import { createMapLifecycle, type MapLifecycle } from './mapLifecycle';
+import {
+  getMapMarkerUtilityClasses,
+  mapMarkerContentUtilities,
+  mapStopClusterTextUtilities,
+  mapStopClusterUtilities,
+  mapStopTooltipClassName,
+  mapStopTooltipContentClassName,
+  mapStopTooltipNumberClassName,
+  mapVehicleTooltipClassName,
+} from './mapMarkerStyles';
 import {
   type MapBounds,
   type MapScene,
@@ -94,13 +109,16 @@ let activeMapScene: MapScene | null = null;
 const mapBehavior = createMapBehavior();
 
 const stopIconSvg = `
-  <svg data-map-icon="stop" viewBox="0 0 24 24" aria-hidden="true">
+  <svg data-map-icon="stop" class="tw:size-[14px] tw:fill-none tw:stroke-current tw:stroke-[2.2] tw:stroke-linecap-round tw:stroke-linejoin-round" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
     <circle cx="12" cy="10" r="3" />
   </svg>
 `;
+const monitoredStopIconSvg = stopIconSvg
+  .replace('tw:size-[14px]', 'tw:size-5')
+  .replace('tw:stroke-[2.2]', 'tw:stroke-2');
 const vehicleIconSvg = `
-  <svg data-map-icon="vehicle" viewBox="0 0 24 24" aria-hidden="true">
+  <svg data-map-icon="vehicle" class="tw:size-[18px] tw:fill-none tw:stroke-current tw:stroke-[2.1] tw:stroke-linecap-round tw:stroke-linejoin-round" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 6 2 7" />
     <path d="M10 6h4" />
     <path d="m22 7-2-1" />
@@ -113,7 +131,7 @@ const vehicleIconSvg = `
   </svg>
 `;
 const userLocationIconSvg = `
-  <svg data-map-icon="user-location" viewBox="0 0 24 24" aria-hidden="true">
+  <svg data-map-icon="user-location" class="tw:size-[22px] tw:fill-none tw:stroke-current tw:stroke-2 tw:stroke-linecap-round tw:stroke-linejoin-round" viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="3.5" />
     <path d="M12 2v3" />
     <path d="M12 19v3" />
@@ -125,8 +143,8 @@ const userLocationIconSvg = `
 
 function createMarkerIcon(className: string, markup: string, size = 34) {
   return L.divIcon({
-    className: `map-marker ${className}`,
-    html: `<span>${markup}</span>`,
+    className: ['map-marker', className, getMapMarkerUtilityClasses(className)].join(' '),
+    html: '<span class="' + mapMarkerContentUtilities + '">' + markup + '</span>',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -217,7 +235,7 @@ function renderStops(scene: MapScene) {
     const marker = L.marker([stop.coordinate.latitude, stop.coordinate.longitude], {
       icon: createMarkerIcon(
         isMonitored ? 'is-monitored' : 'is-stop',
-        stopIconSvg,
+        isMonitored ? monitoredStopIconSvg : stopIconSvg,
         isMonitored ? 34 : 24,
       ),
       title: stop.markerTitle,
@@ -229,20 +247,20 @@ function renderStops(scene: MapScene) {
 
     if (stop.label) {
       const tooltipContent = document.createElement('span');
-      tooltipContent.className = 'map-stop-tooltip-content';
+      tooltipContent.className = mapStopTooltipContentClassName;
       const name = document.createElement('span');
       name.textContent = stop.label.text;
       tooltipContent.append(name);
 
       if (stop.label.secondaryText) {
         const number = document.createElement('span');
-        number.className = 'map-stop-tooltip-number';
+        number.className = mapStopTooltipNumberClassName;
         number.textContent = `, ${stop.label.secondaryText}`;
         tooltipContent.append(number);
       }
 
       marker.bindTooltip(tooltipContent, {
-        className: 'map-stop-tooltip',
+        className: mapStopTooltipClassName,
         direction: 'top',
         offset: [0, -18],
         opacity: 1,
@@ -262,8 +280,8 @@ function renderStops(scene: MapScene) {
     const bounds = L.latLngBounds(locations);
     const marker = L.marker(bounds.getCenter(), {
       icon: L.divIcon({
-        className: 'map-stop-cluster',
-        html: `<span aria-hidden="true">${stops.length}</span>`,
+        className: 'map-stop-cluster ' + mapStopClusterUtilities,
+        html: '<span aria-hidden="true" class="' + mapStopClusterTextUtilities + '">' + stops.length + '</span>',
         iconSize: [36, 36],
         iconAnchor: [18, 18],
       }),
@@ -417,6 +435,12 @@ function renderRoute(scene: MapScene) {
 
   try {
     routeLayer.addTo(currentMap);
+    routePaths.forEach((path, index) => {
+      const kind = scene.route?.layers[index]?.kind;
+      if (kind) {
+        path.getElement()?.classList.add(...routePathUtilityClasses[kind].split(/\s+/));
+      }
+    });
   } catch {
     routeLayer = null;
   }
@@ -444,7 +468,7 @@ function renderVehicles(scene: MapScene) {
 
     if (vehicle.label) {
       marker.bindTooltip(vehicle.label.text, {
-        className: 'map-vehicle-tooltip',
+        className: mapVehicleTooltipClassName,
         direction: 'top',
         offset: [0, -18],
         opacity: 1,

@@ -17,6 +17,7 @@ const props = defineProps<{
   lastUpdated: string | null;
   selectedStop: NearbyStop | null;
   isSelectedStopFavorite: boolean;
+  themeMode?: 'light' | 'dark';
   displayMode?: 'full' | 'predictions-only';
 }>();
 
@@ -129,6 +130,7 @@ watch(
       </button>
       <div v-show="expandedSections.predictions" class="collapse-body tw:grid tw:gap-2.5">
         <PredictionCards
+          :theme-mode="themeMode"
           :predictions="predictions"
           :selected-prediction-id="selectedPredictionId"
           :is-loading="isLoading"

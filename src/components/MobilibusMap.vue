@@ -8,6 +8,7 @@ import type {
   MobilibusStopsStatus,
 } from '../domain/mobilibusTypes';
 import { createMapLifecycle, type MapLifecycle } from './mapLifecycle';
+import { getMapMarkerUtilityClasses, mapMarkerContentUtilities } from './mapMarkerStyles';
 import { MOBILIBUS_STOPS_MIN_ZOOM, tilesFromBounds } from './mobilibusMapTiles';
 
 const DEFAULT_CENTER: L.LatLngTuple = [-19.916342, -43.993759];
@@ -43,16 +44,24 @@ let mapLifecycle: MapLifecycle | null = null;
 let stopLayer: L.LayerGroup | null = null;
 
 const stopIconSvg = `
-  <svg data-map-icon="mobilibus-stop" viewBox="0 0 24 24" aria-hidden="true">
+  <svg data-map-icon="mobilibus-stop" class="tw:size-[14px] tw:fill-none tw:stroke-current tw:stroke-[2.2] tw:stroke-linecap-round tw:stroke-linejoin-round" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 1 1 16 0" />
     <circle cx="12" cy="10" r="3" />
   </svg>
 `;
 
 function createMarkerIcon(isSelected: boolean) {
+  const semanticClassName = isSelected
+    ? 'is-stop is-mobilibus-stop is-selected-mobilibus-stop'
+    : 'is-stop is-mobilibus-stop';
+
   return L.divIcon({
-    className: `map-marker is-stop is-mobilibus-stop${isSelected ? ' is-selected-mobilibus-stop' : ''}`,
-    html: `<span>${stopIconSvg}</span>`,
+    className: [
+      'map-marker',
+      semanticClassName,
+      getMapMarkerUtilityClasses(semanticClassName),
+    ].join(' '),
+    html: '<span class="' + mapMarkerContentUtilities + '">' + stopIconSvg + '</span>',
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });

@@ -3,10 +3,11 @@ import { onBeforeUnmount, ref } from 'vue';
 import { BusFront } from '@lucide/vue';
 import type { Prediction, PredictionAlertRequest, PredictionAlertScope } from '../domain/types';
 
-defineProps<{
+const props = defineProps<{
   predictions: Prediction[];
   selectedPredictionId?: string | null;
   isLoading?: boolean;
+  themeMode?: 'light' | 'dark';
 }>();
 
 const emit = defineEmits<{
@@ -125,7 +126,7 @@ function describePredictionForScreenReader(prediction: Prediction): string {
       aria-live="polite"
     >
       <span
-        class="prediction-state-indicator tw:size-[14px] tw:flex-none tw:rounded-full tw:border-2 tw:border-bh-border-accent tw:border-t-bh-primary tw:animate-[prediction-state-spin_700ms_linear_infinite] tw:dark:border-[#28514d] tw:dark:border-t-[#2dd4bf]"
+        class="prediction-state-indicator tw:size-[14px] tw:flex-none tw:rounded-full tw:border-2 tw:border-bh-border-accent tw:border-t-bh-primary tw:animate-[spin_700ms_linear_infinite] tw:motion-reduce:animate-none tw:dark:border-[#28514d] tw:dark:border-t-[#2dd4bf]"
         aria-hidden="true"
       ></span>
       Buscando próximos ônibus…
@@ -204,16 +205,18 @@ function describePredictionForScreenReader(prediction: Prediction): string {
       <div
         v-if="contextMenu"
         class="prediction-context-menu tw:fixed tw:z-[1600] tw:grid tw:min-w-[248px] tw:gap-1 tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white tw:p-1.5 tw:shadow-[0_18px_48px_rgba(16,24,40,0.2)]"
+        :class="props.themeMode === 'dark' ? 'tw:border-[#28514d]! tw:bg-[#132f2d]!' : ''"
         :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         role="menu"
         @pointerdown.stop
       >
-        <p class="tw:m-[2px_8px_4px] tw:text-[#667085] tw:text-[0.72rem] tw:font-extrabold">
+        <p class="tw:m-[2px_8px_4px] tw:text-[#667085] tw:text-[0.72rem] tw:font-extrabold" :class="props.themeMode === 'dark' ? 'tw:text-[#9eb7b4]!' : ''">
           Opções para a linha {{ contextMenu.prediction.lineCode }}
         </p>
         <button
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
           role="menuitem"
           @click="createAlert('line')"
         >
@@ -223,6 +226,7 @@ function describePredictionForScreenReader(prediction: Prediction): string {
           v-if="contextMenu.prediction.variant !== 'not-applicable'"
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
           role="menuitem"
           @click="createAlert('variant')"
         >
@@ -231,6 +235,7 @@ function describePredictionForScreenReader(prediction: Prediction): string {
         <button
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
           role="menuitem"
           @click="selectPrediction(contextMenu.prediction)"
         >
