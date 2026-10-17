@@ -75,7 +75,18 @@ export function saveSettings(settings: AlertSettings): void {
 export function loadThemeMode(): ThemeMode {
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    return raw === 'dark' ? 'dark' : 'light';
+    if (raw === 'dark' || raw === 'light') {
+      return raw;
+    }
+  } catch {
+    // A indisponibilidade do armazenamento não deve impedir a preferência do sistema.
+  }
+
+  try {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   } catch {
     return 'light';
   }

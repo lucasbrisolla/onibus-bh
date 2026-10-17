@@ -41,36 +41,105 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - ao selecionar um card, o mapa deve priorizar apenas aquele ônibus;
 - o box principal do mapa deve usar número da linha, não `vehicleId`.
 - em mobile, controles compactos no mapa podem alternar pontos e modo escuro.
-- a rota deve parecer viva, mas discreta: linha roxa contínua com traço interno translúcido e suave.
+- a rota do ônibus usa a linha principal `#0F766E` e um traço interno animado `#99F6E4`, claro e suave;
+- a parada selecionada usa o único destaque âmbar do mapa; rota e ônibus permanecem na paleta teal.
 
-## Paleta
+## Sistema de cores
 
-### Light mode
+`src/style.css` é a fonte de verdade para os tokens globais. As cores de estado, do mapa e da instalação ficam documentadas abaixo para manter a mesma semântica em todos os componentes.
 
-- primária: `#0D9488`
-- hover primário: `#0F766E`
-- destaque suave: `#F0FDFA`
-- texto principal: `#101828`
-- fundo geral: `#EEF2F7`
+### Neutros, superfícies e texto
 
-### Dark mode
+O tema claro usa uma escala de cinza frio. O tema escuro usa uma escala teal profunda. Não introduzir uma terceira família neutra.
 
-- fundo base: `#081B1A`
-- sidebar: `#0C2B29`
-- topbar/cards principais: `#132F2D`
-- primária: `#2DD4BF`
-- hover primário: `#5EEAD4`
-- destaque suave invertido: `#134E4A`
-- texto claro: `#E5E7EB`
+| Papel | Claro | Escuro |
+| --- | --- | --- |
+| `surface-0` — fundo geral | `#EDF3F2` | `#081B1A` |
+| `surface-1` — camada de navegação | `#F9FAFB` | `#0C2B29` |
+| `surface-2` — cards e topbar | `#FFFFFF` | `#132F2D` |
+| `surface-3` — hover elevado | `#F2F4F7` | `#163735` |
+| `surface-inset` — campos e listas internas | `#FFFFFF` | `#0F2423` |
+| Sidebar de marca | `#0F2E2C` | `#0C2B29` |
+| Realce selecionado | `#F0FDFA` | `#134E4A` |
+| Borda principal | `#E4E7EC` / `#D0D5DD` | `#1F4A47` / `#28514D` |
+| Texto principal | `#101828` | `#E5E7EB` |
+| Título | `#1D2939` | `#F9FAFB` |
+| Texto de apoio | `#475467` | `#C7D7D4` |
+| Texto discreto | `#5B6678` | `#9EB7B4` |
 
-## Estados semânticos
+A topbar escura usa `surface-2`; a sidebar usa `surface-1`. Campos escuros usam `surface-inset`, que fica abaixo dos cards na hierarquia visual. `surface-3` é o único hover elevado nos dois temas.
 
-- sucesso e atividade: verde;
-- ação primária: teal;
-- alerta/erro: vermelho com versão mais clara no dark mode;
-- ônibus selecionado: destaque visual próprio no mapa e nos cards.
-- ação primária e FABs do mapa: teal, não azul.
-- variantes de linha devem usar cores distintas: `Direto` em azul e `Não Direto` em âmbar.
+A escala clara substitui os antigos slates: `#F9FAFB`, `#D0D5DD`, `#667085`, `#98A2B3` e `#344054`. O texto discreto do tema claro usa `#5B6678` sobre `#EDF3F2` para preservar contraste AA.
+
+### Ações e identidade
+
+| Uso | Claro | Escuro |
+| --- | --- | --- |
+| Ação primária | Fundo `#0F766E`, texto branco | Fundo `#2DD4BF`, texto `#082F2B` |
+| Hover da ação primária | `#115E59` | `#5EEAD4` |
+| Foco, ícones e detalhes teal | `#0D9488` | `#5EEAD4` no foco |
+| Item ativo da sidebar | Fundo `#0F766E`, texto branco | Fundo `#2DD4BF`, texto `#0C2B29` |
+| Itens inativos da sidebar | `#99F6E4` | `#99F6E4` |
+| Localização da pessoa | Azul `#60A5FA` → `#2563EB` → `#1D4ED8` | Mesmo gradiente azul |
+
+O texto de toda ação primária clara é branco. O fundo `#0D9488` fica reservado a foco, ícones e detalhes decorativos; o botão primário usa `#0F766E` e passa a `#115E59` no hover.
+
+### Estados
+
+| Estado | Claro | Escuro |
+| --- | --- | --- |
+| Em tempo real | Fundo `#F0FDF4`, borda `#A7F3D0`, texto `#166534`, ponto `#16A34A` | Fundo `#153A2C`, borda `#1F6651`, texto `#86EFAC`, ponto `#4ADE80` |
+| Programado | Fundo `#F2F4F7`, borda `#D0D5DD`, texto `#475467`, ícone de relógio | `surface-inset`, borda `#28514D`, texto `#C7D7D4`, ícone de relógio |
+| Não direto | Fundo `#FFF7ED`, texto `#C2410C` | Fundo `#431F13`, texto `#FDBA74` |
+| Permissão concedida | Fundo `#DCFCE7`, texto `#166534` | Fundo `#153A2C`, texto `#86EFAC` |
+| Permissão bloqueada | Fundo `#FFF7ED`, texto `#9A3412` | Fundo `#431F13`, texto `#FDBA74` |
+| Erro | Fundo `#FFF5F5`, borda `#FDA29B`, texto `#B42318` | Fundo `#3B1717`, borda `#7F1D1D`, texto `#FECACA` |
+| Estado neutro | Fundo `#F2F4F7`, texto `#475467` | `surface-inset`, texto `#C7D7D4` |
+
+O ponto pulsante e o rótulo “Em tempo real” identificam a atualização ao vivo; a cor verde não é o único sinal. “Programado” é um estado neutro. “Não direto” é o único badge de variante e usa laranja-queimado. “Direto” não recebe badge. O azul da paleta própria da interface fica reservado à localização. Âmbar identifica parada selecionada ou favorita.
+
+### Mapa
+
+| Elemento | Claro | Escuro |
+| --- | --- | --- |
+| Rota do ônibus | Linha `#0F766E`; fluxo `#99F6E4` | Linha `#14B8A6`; fluxo `#CCFBF1` |
+| Marcador de ônibus | Gradiente `#2DD4BF` → `#14B8A6` → `#0F766E`; texto `#ECFEFF` | Mesmo gradiente teal |
+| Localização da pessoa | Gradiente `#60A5FA` → `#2563EB` → `#1D4ED8`; texto `#EFF6FF` | Mesmo gradiente azul |
+| Parada SIU comum | Borda `#667085`, fundo branco, texto `#475467` | Borda `#98A2B3`, fundo `#0F2423`, texto `#E5E7EB` |
+| Parada do Ótimo | Borda `#0F766E`, fundo `#CCFBF1`, texto `#115E59` | Borda `#5EEAD4`, fundo `#0F2423`, texto `#99F6E4` |
+| Parada selecionada ou monitorada | Borda `#D97706`, fundo `#FFF7ED`, texto `#9A3412`; halo `#F59E0B` | Borda e texto `#FBBF24`, fundo `#3B2410` |
+| Agrupamento de paradas | Fundo `#475467`, texto branco | Fundo `#344054`, texto `#F9FAFB` |
+| Tooltip de parada | Branco translúcido, texto `#111827`, contorno teal | Fundo `#0F2423`, texto `#F9FAFB`, contorno `#2DD4BF` |
+| Tooltip de veículo | Fundo `rgba(8, 47, 43, 0.94)`, texto `#F0FDFA`, borda branca translúcida | Mesmo tratamento escuro |
+| Créditos do mapa | Link `#115E59` | Link `#5EEAD4` |
+
+A rota clara usa opacidade `0.88` e largura de `5 px`; o fluxo usa opacidade `0.58`, largura `3 px` e padrão `2 12`. No tema escuro, a rota muda para `#14B8A6` e o fluxo para `#CCFBF1`. O contêiner dos mapas usa `#E8ECE6` no claro e `#0B1616` no escuro. CartoDB Positron fornece os tiles claros e CartoDB Dark Matter, os escuros. Sem chave CARTO, o OpenStreetMap recebe filtro visual; os tiles externos não têm um hexadecimal fixo no app.
+
+### Cores fornecidas pela API
+
+A API do Ótimo fornece `color` e pode fornecer `textColor` para cada linha. A lista de partidas mostra o número da linha em uma pequena etiqueta com `color` validada como hexadecimal. O app ignora `textColor` e calcula texto preto (`#000000`) ou branco pela luminância relativa da cor de fundo, escolhendo a opção com maior contraste. A rota do mapa continua usando a paleta teal, sem receber a cor da linha.
+
+Exemplos registrados em `docs/mobilibus-otimo-api-research.md`: `#EF7D01`, `#592379`, `#BED000` e `#012841`. Essas cores pertencem aos dados da linha, não à marca nem aos tokens da interface. A integração SIU também retorna `cor` numérica; esse campo é metadado.
+
+### Ícone, navegador e PWA
+
+O favicon e o ícone SVG usam gradiente teal `#0F766E` → `#0D9488` → `#14B8A6` com traço `#F9FAFB`. O ícone da marca no shell usa `bh-primary` com símbolo branco. O manifesto usa `#0F2E2C` como fundo. As meta tags `theme-color` usam `#0F2E2C` no tema claro e `#081B1A` no escuro por meio de `media` para cada preferência.
+
+### Transparências e controles desabilitados
+
+As transparências de interface usam tokens CSS `--bh-<família>-08`, `-16` e `-28`, calculados com `color-mix(in srgb, ...)`. As famílias cobrem ação teal, detalhe/foco, menta, rota, âmbar, atenção, localização, sucesso, sombra, branco, preto e borda. Hover, halo e contorno usam esses três degraus, sem valores `rgba()` espalhados nos componentes.
+
+Vidros de mapa e superfícies internas usam tokens próprios de vidro, porque precisam manter alta opacidade para o texto ficar legível sobre os tiles. Eles compartilham os mesmos nomes semânticos e ficam centralizados em `src/style.css`.
+
+Os tokens `bh-disabled-bg` e `bh-disabled-text` usam fundo `#E4E7EC` e texto `#475467`; `bh-disabled-dark-bg` e `bh-disabled-dark-text` usam fundo `#1F4A47` e texto `#9EB7B4`. Não reduzir a opacidade do controle, pois isso também reduz o contraste do conteúdo.
+
+### Regras de manutenção da paleta
+
+- `src/style.css` mantém os tokens globais, as camadas de superfície, os estados desabilitados e as transparências.
+- Antes de criar um novo hexadecimal, verificar se um token existente representa o mesmo papel.
+- Teal identifica ação e ônibus; azul, localização; verde, atividade ao vivo; âmbar, parada selecionada ou favorita; laranja-queimado, atenção; vermelho, erro.
+- Não usar a cor da API na rota do mapa nem o `textColor` sugerido pela API na etiqueta da linha.
+- Ao alterar uma cor, atualizar este inventário e os dois temas.
 
 ## Tipografia
 
@@ -93,8 +162,10 @@ O produto deve parecer um painel de mobilidade urbana, com mapa dominante, naveg
 - o badge do ônibus selecionado deve mostrar linha e minutos, como `8350 - 2 min`;
 - o mapa não deve recentrar automaticamente a cada polling;
 - com chave pública configurada, dark mode usa CartoDB Dark Matter no Leaflet;
-- com chave pública configurada, light mode usa CartoDB Voyager no Leaflet;
+- com chave pública configurada, light mode usa CartoDB Positron no Leaflet;
 - sem chave CARTO, os mapas usam OpenStreetMap com atribuição visível e fallback visual escuro;
 - marcadores de parada invertem contraste no dark mode;
+- cards de previsão são ordenados pelo número da linha em ordem numérica; linhas iguais usam o menor tempo previsto como desempate;
+- o card com menor tempo previsto válido recebe o rótulo e o destaque `Próximo`, independentemente da posição na lista;
 - cards de previsão não mostram `vehicleId` nem texto auxiliar `Chegando`;
-- o primeiro card só recebe destaque de próximo quando nenhum card estiver selecionado.
+- durante uma atualização, previsões já carregadas permanecem visíveis; se a lista estiver vazia, são exibidos indicadores de carregamento em formato de cartão.

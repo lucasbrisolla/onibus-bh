@@ -14,7 +14,7 @@ function createRoutePathOptions(layer: SceneRouteLayer) {
 }
 
 const routePathUtilityClasses: Record<SceneRouteLayer['kind'], string> = {
-  base: 'tw:drop-shadow-[0_0_3px_rgba(124,58,237,0.2)]',
+  base: 'tw:drop-shadow-[0_0_3px_var(--bh-action-28)]',
   flow: 'tw:animate-route-flow tw:[mix-blend-mode:screen] tw:pointer-events-none tw:motion-reduce:animate-none',
 };
 
@@ -182,19 +182,19 @@ function buildMapSceneInput(): MapSceneInput {
 function getCompactToggleThemeClasses(isActive: boolean): string {
   if (props.themeMode === 'dark') {
     return isActive
-      ? 'tw:border-[#2dd4bf]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#5eead4]!'
-      : 'tw:border-[#28514d]! tw:bg-[rgba(15,36,35,0.94)]! tw:text-[#e5e7eb]!';
+      ? 'tw:border-[#2dd4bf]! tw:bg-[var(--bh-glass-inset)]! tw:text-[#5eead4]!'
+      : 'tw:border-[#28514d]! tw:bg-[var(--bh-glass-inset)]! tw:text-[#e5e7eb]!';
   }
 
   return isActive
-    ? 'tw:border-[#99f6e4]! tw:bg-white/[0.94]! tw:text-[#0f766e]!'
-    : 'tw:border-[#d0d5dd]! tw:bg-white/[0.94]! tw:text-[#344054]!';
+    ? 'tw:border-[#99f6e4]! tw:bg-[var(--bh-glass-white)]! tw:text-[#0f766e]!'
+    : 'tw:border-[#d0d5dd]! tw:bg-[var(--bh-glass-white)]! tw:text-[#344054]!';
 }
 
 function getLocationButtonThemeClasses(): string {
   return props.themeMode === 'dark'
     ? 'tw:border-[#2dd4bf]! tw:bg-[#2dd4bf]! tw:text-[#082f2b]!'
-    : 'tw:border-[#0d9488]! tw:bg-[#0d9488]! tw:text-white!';
+    : 'tw:border-bh-primary! tw:bg-bh-primary! tw:text-white!';
 }
 
 function escapePopupText(value: string): string {
@@ -255,7 +255,7 @@ function renderStops(scene: MapScene) {
       if (stop.label.secondaryText) {
         const number = document.createElement('span');
         number.className = mapStopTooltipNumberClassName;
-        number.textContent = `, ${stop.label.secondaryText}`;
+        number.textContent = stop.label.secondaryText;
         tooltipContent.append(number);
       }
 
@@ -428,9 +428,13 @@ function renderRoute(scene: MapScene) {
   const routeCoordinates = scene.route.coordinates.map(
     point => [point.latitude, point.longitude] as L.LatLngTuple,
   );
-  const routePaths = scene.route.layers.map(layer =>
-    L.polyline(routeCoordinates, createRoutePathOptions(layer)),
-  );
+  const routePaths = scene.route.layers.map(layer => {
+    const themedLayer = props.themeMode === 'dark'
+      ? { ...layer, color: layer.kind === 'base' ? '#14b8a6' : '#ccfbf1' }
+      : layer;
+
+    return L.polyline(routeCoordinates, createRoutePathOptions(themedLayer));
+  });
   routeLayer = L.layerGroup(routePaths);
 
   try {
@@ -630,7 +634,12 @@ watch(
 
 watch(
   () => props.themeMode,
-  themeMode => mapLifecycle?.setTheme(themeMode),
+  themeMode => {
+    mapLifecycle?.setTheme(themeMode);
+    if (activeMapScene) {
+      renderRoute(activeMapScene);
+    }
+  },
 );
 </script>
 
@@ -640,7 +649,7 @@ watch(
     <div class="map-toggle-controls tw:absolute tw:left-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[calc(100%-72px)] tw:justify-items-start tw:gap-2 tw:max-[920px]:top-3 tw:max-[920px]:left-3">
       <button
         type="button"
-        class="map-compact-toggle map-points-toggle tw:inline-flex tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:px-[10px_8px_7px_10px]!"
+        class="map-compact-toggle map-points-toggle tw:inline-flex tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_var(--bh-shadow-08)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:px-[10px_8px_7px_10px]!"
         :class="[
           { 'is-active': showNearbyStops },
           getCompactToggleThemeClasses(showNearbyStops),
@@ -650,12 +659,12 @@ watch(
       >
         <span>Mostrar pontos</span>
         <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="showNearbyStops ? (themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#0d9488]!') : (themeMode === 'dark' ? 'tw:bg-[#28514d]!' : 'tw:bg-[#d0d5dd]!')" aria-hidden="true">
-          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="showNearbyStops ? 'tw:translate-x-3' : ''"></span>
+          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_var(--bh-shadow-16)] tw:transition-transform tw:duration-[160ms]" :class="showNearbyStops ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
       <button
         type="button"
-        class="map-compact-toggle map-theme-toggle tw:hidden tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_rgba(23,32,26,0.1)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:inline-flex tw:max-[920px]:px-[10px_8px_7px_10px]!"
+        class="map-compact-toggle map-theme-toggle tw:hidden tw:touch-manipulation tw:select-none tw:items-center tw:gap-2 tw:rounded-full! tw:px-[11px_9px_7px_11px]! tw:text-[0.76rem] tw:font-extrabold tw:shadow-[0_10px_24px_var(--bh-shadow-08)] tw:backdrop-blur-[10px] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:inline-flex tw:max-[920px]:px-[10px_8px_7px_10px]!"
         :class="[
           { 'is-active': themeMode === 'dark' },
           getCompactToggleThemeClasses(themeMode === 'dark'),
@@ -665,18 +674,18 @@ watch(
       >
         <span>Modo escuro</span>
         <span class="compact-switch tw:inline-flex tw:h-[18px] tw:w-[30px] tw:items-center tw:rounded-full tw:bg-[#d0d5dd] tw:p-0.5 tw:transition-colors tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:bg-[#2dd4bf]!' : 'tw:bg-[#d0d5dd]!'" aria-hidden="true">
-          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_rgba(16,24,40,0.22)] tw:transition-transform tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:translate-x-3' : ''"></span>
+          <span class="tw:size-[14px] tw:rounded-full tw:bg-white tw:shadow-[0_1px_3px_var(--bh-shadow-16)] tw:transition-transform tw:duration-[160ms]" :class="themeMode === 'dark' ? 'tw:translate-x-3' : ''"></span>
         </span>
       </button>
     </div>
-    <div class="map-location-control tw:absolute tw:right-[18px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[280px] tw:justify-items-end tw:gap-[7px] tw:max-[920px]:top-3 tw:max-[920px]:right-3 tw:max-[920px]:max-w-[44px]">
+    <div class="map-location-control tw:absolute tw:right-[26px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[280px] tw:justify-items-end tw:gap-[7px] tw:max-[920px]:top-3 tw:max-[920px]:right-4 tw:max-[920px]:max-w-[44px]">
       <button
         type="button"
-        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:border-bh-primary tw:bg-bh-primary tw:p-0! tw:text-white tw:shadow-[0_12px_32px_rgba(13,148,136,0.25)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
+        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:border-bh-primary tw:bg-bh-primary tw:p-0! tw:text-white tw:shadow-[0_12px_32px_var(--bh-accent-28)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
         :aria-label="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :title="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :disabled="isLocating"
-        :class="['tw:disabled:cursor-progress tw:disabled:opacity-[.82]', getLocationButtonThemeClasses()]"
+        :class="['tw:disabled:cursor-progress tw:disabled:bg-bh-disabled-bg tw:disabled:text-bh-disabled-text tw:dark:disabled:bg-bh-disabled-dark-bg tw:dark:disabled:text-bh-disabled-dark-text', getLocationButtonThemeClasses()]"
         @click="emit('useCurrentLocation')"
       >
         <LocateFixed v-if="!isLocating" class="tw:size-5 tw:stroke-[2.4]" aria-hidden="true" />

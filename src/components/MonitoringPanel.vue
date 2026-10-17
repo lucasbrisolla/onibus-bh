@@ -27,6 +27,7 @@ const emit = defineEmits<{
   createAlert: [request: PredictionAlertRequest];
   toggleSelectedStopFavorite: [];
   requestPermission: [];
+  startMonitoring: [];
 }>();
 
 const expandedSections = reactive({
@@ -68,23 +69,24 @@ watch(
     @create-alert="emit('createAlert', $event)"
     @toggle-selected-stop-favorite="emit('toggleSelectedStopFavorite')"
     @request-permission="emit('requestPermission')"
+    @start-monitoring="emit('startMonitoring')"
   />
 
   <aside
     v-else
-    class="monitoring-panel tw:grid tw:content-start tw:gap-3 tw:overflow-y-auto tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:min-h-0 tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-r-0 tw:max-[920px]:p-[6px_8px_10px]"
+    class="monitoring-panel tw:grid tw:content-start tw:gap-3 tw:overflow-y-auto tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb] tw:max-[920px]:min-h-0 tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-r-0 tw:max-[920px]:p-[6px_8px_10px]"
   >
     <section
       v-if="selectedStop"
-      class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:max-[920px]:gap-2 tw:max-[920px]:p-[9px]"
+      class="control-card tw:grid tw:gap-3 tw:rounded-[8px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_var(--bh-shadow-08)] tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb] tw:max-[920px]:gap-2 tw:max-[920px]:p-[9px]"
     >
       <article
         class="selected-stop-card tw:relative tw:grid tw:gap-1.5 tw:rounded-[8px] tw:border tw:border-bh-border-accent tw:bg-bh-surface tw:p-[12px_60px_12px_12px] tw:dark:border-[#134e4a] tw:dark:bg-[#134e4a] tw:max-[920px]:gap-1 tw:max-[920px]:p-[8px_60px_8px_8px]"
       >
         <button
           type="button"
-          class="favorite-stop-button tw:absolute tw:right-2 tw:top-2 tw:grid tw:size-11 tw:min-h-11 tw:min-w-11 tw:place-items-center tw:rounded-full tw:border tw:border-[rgba(13,148,136,0.18)] tw:bg-[rgba(13,148,136,0.08)] tw:p-0 tw:text-bh-primary tw:transition-colors tw:duration-[160ms] tw:hover:bg-[rgba(13,148,136,0.14)] tw:dark:border-[rgba(94,234,212,0.18)] tw:dark:bg-[rgba(45,212,191,0.08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[rgba(45,212,191,0.14)]"
-          :class="isSelectedStopFavorite ? 'tw:border-[rgba(245,158,11,0.28)] tw:bg-[rgba(245,158,11,0.14)] tw:text-[#d97706] tw:dark:border-[rgba(251,191,36,0.28)] tw:dark:bg-[rgba(245,158,11,0.16)] tw:dark:text-[#fbbf24]' : ''"
+          class="favorite-stop-button tw:absolute tw:right-2 tw:top-2 tw:grid tw:size-11 tw:min-h-11 tw:min-w-11 tw:place-items-center tw:rounded-full tw:border tw:border-[var(--bh-accent-16)] tw:bg-[var(--bh-accent-08)] tw:p-0 tw:text-bh-accent tw:transition-colors tw:duration-[160ms] tw:hover:bg-[var(--bh-accent-16)] tw:dark:border-[var(--bh-focus-16)] tw:dark:bg-[var(--bh-mint-08)] tw:dark:text-[#5eead4] tw:dark:hover:bg-[var(--bh-mint-16)]"
+          :class="isSelectedStopFavorite ? 'tw:border-[#d97706] tw:bg-[#fff7ed] tw:text-[#d97706] tw:dark:border-[#fbbf24] tw:dark:bg-[#3b2410] tw:dark:text-[#fbbf24]' : ''"
           :aria-label="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
           :title="isSelectedStopFavorite ? 'Remover dos favoritos' : 'Salvar parada'"
           :data-active="isSelectedStopFavorite"
@@ -93,7 +95,7 @@ watch(
           <Star class="tw:size-4" :class="isSelectedStopFavorite ? 'tw:fill-current' : ''" aria-hidden="true" />
         </button>
         <h3 class="tw:m-0 tw:pr-2 tw:text-bh-title tw:text-[1rem] tw:leading-[1.35] tw:dark:text-[#f9fafb] tw:max-[920px]:text-[0.92rem] tw:max-[920px]:leading-[1.28]">{{ selectedStopPresentation?.name }}</h3>
-        <p v-if="selectedStopPresentation?.addressNumber" class="tw:m-0 tw:text-[#475467] tw:text-[0.82rem] tw:font-medium tw:dark:text-[#b7cfcb]">
+        <p v-if="selectedStopPresentation?.addressNumber" class="tw:m-0 tw:text-[#475467] tw:text-[0.82rem] tw:font-medium tw:dark:text-[#c7d7d4]">
           Nº {{ selectedStopPresentation.addressNumber }}
         </p>
         <p class="tw:m-0 tw:text-bh-primary-hover tw:text-[0.9rem] tw:font-bold tw:dark:text-[#5eead4] tw:max-[920px]:text-[0.82rem]">
@@ -102,14 +104,14 @@ watch(
       </article>
     </section>
 
-    <p v-if="!selectedStop" class="tw:m-0 tw:rounded-lg tw:bg-[#f8fafc] tw:p-3 tw:text-[0.88rem] tw:leading-[1.4] tw:text-[#475467] tw:dark:bg-[#0f2423] tw:dark:text-[#b7cfcb]">
+    <p v-if="!selectedStop" class="tw:m-0 tw:rounded-lg tw:bg-[#f9fafb] tw:p-3 tw:text-[0.88rem] tw:leading-[1.4] tw:text-[#475467] tw:dark:bg-bh-surface-inset tw:dark:text-[#c7d7d4]">
       Selecione um ponto no mapa para ver os próximos ônibus.
     </p>
 
     <section v-if="selectedStop" class="collapse-section tw:grid tw:gap-2">
       <button
         type="button"
-        class="collapse-toggle tw:flex tw:items-center tw:justify-between tw:rounded-[8px] tw:border tw:border-[#dbe4ee] tw:bg-[#f8fafc] tw:px-3.5 tw:py-3 tw:text-[.92rem] tw:font-extrabold tw:text-bh-text tw:shadow-[0_8px_24px_rgba(16,24,40,0.04)] tw:transition-colors tw:duration-[160ms] tw:hover:bg-[#f2f4f7] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb] tw:dark:hover:bg-[#163735] tw:max-[920px]:min-h-[34px] tw:max-[920px]:px-2.5 tw:max-[920px]:py-2"
+        class="collapse-toggle tw:flex tw:items-center tw:justify-between tw:rounded-[8px] tw:border tw:border-[#d0d5dd] tw:bg-[#f9fafb] tw:px-3.5 tw:py-3 tw:text-[.92rem] tw:font-extrabold tw:text-bh-text tw:shadow-[0_8px_24px_var(--bh-shadow-08)] tw:transition-colors tw:duration-[160ms] tw:hover:bg-[#f2f4f7] tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb] tw:dark:hover:bg-bh-surface-3 tw:max-[920px]:min-h-[34px] tw:max-[920px]:px-2.5 tw:max-[920px]:py-2"
         :aria-expanded="expandedSections.predictions"
         @click="toggleSection('predictions')"
       >

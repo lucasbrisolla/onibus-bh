@@ -86,19 +86,19 @@ export interface MapSceneInput {
 export const mapRouteLayerStyles = {
   base: {
     kind: 'base',
-    color: '#7c3aed',
+    color: '#0f766e',
     lineCap: 'round',
     lineJoin: 'round',
-    opacity: 0.68,
+    opacity: 0.88,
     weight: 5,
   },
   flow: {
     kind: 'flow',
-    color: '#ddd6fe',
+    color: '#99f6e4',
     dashPattern: '2 12',
     lineCap: 'round',
     lineJoin: 'round',
-    opacity: 0.42,
+    opacity: 0.58,
     weight: 3,
   },
 } as const satisfies Record<MapRouteLayerKind, MapSceneRouteLayer>;
@@ -155,14 +155,20 @@ export function createMapScene(input: MapSceneInput = {}): MapScene {
       markerTitle: displayDescription.fullName,
       popup: {
         title: source.publicCode || source.code,
-        body: [displayDescription.fullName, 'Clique para ver os ônibus desta parada.'],
+        body: [
+          displayDescription.name,
+          ...(displayDescription.addressNumber
+            ? [`Nº ${displayDescription.addressNumber}`]
+            : []),
+          'Clique para ver os ônibus desta parada.',
+        ],
       },
       label:
         role === 'monitored'
           ? {
               text: displayDescription.name,
               ...(displayDescription.addressNumber
-                ? { secondaryText: displayDescription.addressNumber }
+                ? { secondaryText: `Nº ${displayDescription.addressNumber}` }
                 : {}),
               permanent: true,
             }

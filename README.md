@@ -44,6 +44,8 @@ O Vite inicia o app em `http://localhost:5173` e encaminha `/api/*` pelo middlew
 
 Os mapas usam OpenStreetMap por padrão. Para usar os estilos CARTO, copie `.env.example` para `.env.local`, preencha `VITE_CARTO_API_KEY` com uma chave pública restrita aos domínios autorizados e reinicie o Vite.
 
+O Vite inclui no bundle do navegador os valores `VITE_*` usados pelo frontend. Use esse prefixo apenas para dados públicos; mantenha credenciais privadas nas funções server-side da Vercel.
+
 ### Comandos úteis
 
 ```sh

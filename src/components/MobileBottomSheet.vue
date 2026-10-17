@@ -24,6 +24,7 @@ defineEmits<{
   createAlert: [request: PredictionAlertRequest];
   toggleSelectedStopFavorite: [];
   requestPermission: [];
+  startMonitoring: [];
 }>();
 </script>
 
@@ -47,6 +48,7 @@ defineEmits<{
       @create-alert="$emit('createAlert', $event)"
       @toggle-selected-stop-favorite="$emit('toggleSelectedStopFavorite')"
       @request-permission="$emit('requestPermission')"
+      @start-monitoring="$emit('startMonitoring')"
     />
   </MobilePanelSheet>
 </template>

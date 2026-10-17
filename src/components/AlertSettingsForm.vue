@@ -27,11 +27,11 @@ function updateMinutes(event: Event) {
 </script>
 
 <template>
-  <form class="panel form-grid tw:grid tw:gap-3.5 tw:rounded-[10px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_rgba(16,24,40,0.05)] tw:dark:border-[#1f4a47] tw:dark:bg-[#132f2d] tw:dark:text-[#e5e7eb]" @submit.prevent>
+  <form class="panel form-grid tw:grid tw:gap-3.5 tw:rounded-[10px] tw:border tw:border-bh-border tw:bg-white tw:p-4 tw:shadow-[0_10px_30px_var(--bh-shadow-08)] tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb]" @submit.prevent>
     <label class="tw:gap-1.5 tw:dark:text-[#9eb7b4]">
       Código da parada
         <input
-          class="tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb]"
+          class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]"
         :value="settings.stopCode"
         inputmode="numeric"
         placeholder="Ex: 1234"
@@ -42,7 +42,7 @@ function updateMinutes(event: Event) {
     <label class="tw:gap-1.5 tw:dark:text-[#9eb7b4]">
       Linha
         <input
-          class="tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb]"
+          class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]"
         :value="settings.lineCode"
         placeholder="Ex: 8350"
         @input="update('lineCode', ($event.target as HTMLInputElement).value)"
@@ -52,7 +52,7 @@ function updateMinutes(event: Event) {
     <label class="tw:gap-1.5 tw:dark:text-[#9eb7b4]">
       Variante da 8350
       <select
-        class="tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb]"
+        class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]"
         :value="settings.variantFilter"
         @change="update('variantFilter', ($event.target as HTMLSelectElement).value as BusVariantFilter)"
       >
@@ -65,7 +65,7 @@ function updateMinutes(event: Event) {
     <label class="tw:gap-1.5 tw:dark:text-[#9eb7b4]">
       Avisar quando faltar até
         <input
-          class="tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb]"
+          class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]"
         :value="settings.minutesBefore"
         type="number"
         min="1"
@@ -79,7 +79,7 @@ function updateMinutes(event: Event) {
       <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:text-white tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="update('enabled', !settings.enabled)">
         {{ settings.enabled ? 'Pausar monitoramento' : 'Ativar monitoramento' }}
       </button>
-      <button type="button" class="tw:dark:border-[#28514d] tw:dark:bg-[#0f2423] tw:dark:text-[#e5e7eb]" @click="emit('requestPermission')">Permitir notificações</button>
+      <button type="button" class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]" @click="emit('requestPermission')">Permitir notificações</button>
     </div>
   </form>
 </template>

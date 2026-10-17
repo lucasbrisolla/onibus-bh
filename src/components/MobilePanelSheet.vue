@@ -28,7 +28,7 @@ const {
 <template>
   <div
     :ref="setSheetElement"
-    class="mobile-panel-sheet tw:select-none tw:overflow-hidden tw:overscroll-contain tw:rounded-[18px_18px_8px_8px] tw:border tw:border-[rgba(208,213,221,0.9)] tw:bg-white/[.97] tw:shadow-[0_24px_60px_rgba(16,24,40,0.3)] tw:transition-[height,transform] tw:duration-[180ms] tw:will-change-transform tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:h-[min(42vh,340px)] tw:dark:border-[#1f4a47] tw:dark:bg-[rgba(15,36,35,0.98)] tw:dark:shadow-[0_24px_60px_rgba(0,0,0,0.46)]"
+    class="mobile-panel-sheet tw:select-none tw:overflow-hidden tw:overscroll-contain tw:rounded-[18px_18px_8px_8px] tw:border tw:border-[var(--bh-border-28)] tw:bg-[var(--bh-glass-white)] tw:shadow-[0_24px_60px_var(--bh-shadow-28)] tw:transition-[height,transform] tw:duration-[180ms] tw:will-change-transform tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:h-[min(42vh,340px)] tw:dark:border-[#1f4a47] tw:dark:bg-[var(--bh-glass-inset)] tw:dark:shadow-[0_24px_60px_var(--bh-shadow-16)]"
     :class="[
       placement === 'viewport'
         ? 'tw:fixed tw:inset-x-2.5 tw:z-[1000] tw:hidden tw:max-[920px]:flex tw:max-[920px]:flex-col tw:max-[920px]:bottom-[calc(68px_+_env(safe-area-inset-bottom))]'
@@ -36,8 +36,8 @@ const {
       `is-${sheetState}`,
       isDragging ? 'is-dragging tw:shadow-none! tw:transition-none!' : '',
       isSettling ? 'is-settling tw:shadow-none!' : '',
-      themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[rgba(15,36,35,0.98)]!' : '',
-      sheetState === 'peek' ? 'tw:max-[920px]:h-[25vh]! tw:max-[920px]:min-h-[160px]! tw:max-[920px]:max-h-[240px]! tw:max-[920px]:translate-y-0! tw:max-[920px]:shadow-[0_14px_32px_rgba(16,24,40,0.22)]' : '',
+      themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[var(--bh-glass-inset)]!' : '',
+      sheetState === 'peek' ? 'tw:max-[920px]:h-[25vh]! tw:max-[920px]:min-h-[160px]! tw:max-[920px]:max-h-[240px]! tw:max-[920px]:translate-y-0! tw:max-[920px]:shadow-[0_14px_32px_var(--bh-shadow-16)]' : '',
       sheetState === 'half' ? 'tw:max-[920px]:h-[min(42vh,340px)]' : '',
       sheetState === 'full' ? 'tw:max-[920px]:h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]! tw:max-[920px]:max-h-[calc(100dvh_-_76px_-_env(safe-area-inset-bottom))]!' : '',
     ]"

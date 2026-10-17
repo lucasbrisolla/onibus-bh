@@ -10,11 +10,26 @@
   --color-bh-border: #e4e7ec;
   --color-bh-border-accent: #99f6e4;
   --color-bh-copy: #475467;
-  --color-bh-primary: #0d9488;
-  --color-bh-primary-hover: #0f766e;
+  --color-bh-primary: #0f766e;
+  --color-bh-primary-hover: #115e59;
+  --color-bh-accent: #0d9488;
   --color-bh-highlight: #ccfbf1;
-  --color-bh-muted: #667085;
+  --color-bh-muted: #5b6678;
   --color-bh-surface: #f0fdfa;
+  --color-bh-surface-0: #edf3f2;
+  --color-bh-surface-1: #f9fafb;
+  --color-bh-surface-2: #ffffff;
+  --color-bh-surface-3: #f2f4f7;
+  --color-bh-surface-inset: #ffffff;
+  --color-bh-surface-0-dark: #081b1a;
+  --color-bh-surface-1-dark: #0c2b29;
+  --color-bh-surface-2-dark: #132f2d;
+  --color-bh-surface-3-dark: #163735;
+  --color-bh-surface-inset-dark: #0f2423;
+  --color-bh-disabled-bg: #e4e7ec;
+  --color-bh-disabled-text: #475467;
+  --color-bh-disabled-dark-bg: #1f4a47;
+  --color-bh-disabled-dark-text: #9eb7b4;
   --color-bh-text: #101828;
   --color-bh-title: #1d2939;
 
@@ -26,6 +41,66 @@
 }
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --bh-accent-08: color-mix(in srgb, var(--color-bh-accent) 8%, transparent);
+  --bh-accent-16: color-mix(in srgb, var(--color-bh-accent) 16%, transparent);
+  --bh-accent-28: color-mix(in srgb, var(--color-bh-accent) 28%, transparent);
+  --bh-action-08: color-mix(in srgb, var(--color-bh-primary) 8%, transparent);
+  --bh-action-16: color-mix(in srgb, var(--color-bh-primary) 16%, transparent);
+  --bh-action-28: color-mix(in srgb, var(--color-bh-primary) 28%, transparent);
+  --bh-focus-08: color-mix(in srgb, #5eead4 8%, transparent);
+  --bh-focus-16: color-mix(in srgb, #5eead4 16%, transparent);
+  --bh-focus-28: color-mix(in srgb, #5eead4 28%, transparent);
+  --bh-mint-08: color-mix(in srgb, #2dd4bf 8%, transparent);
+  --bh-mint-16: color-mix(in srgb, #2dd4bf 16%, transparent);
+  --bh-mint-28: color-mix(in srgb, #2dd4bf 28%, transparent);
+  --bh-route-08: color-mix(in srgb, #14b8a6 8%, transparent);
+  --bh-route-16: color-mix(in srgb, #14b8a6 16%, transparent);
+  --bh-route-28: color-mix(in srgb, #14b8a6 28%, transparent);
+  --bh-warning-08: color-mix(in srgb, #f59e0b 8%, transparent);
+  --bh-warning-16: color-mix(in srgb, #f59e0b 16%, transparent);
+  --bh-warning-28: color-mix(in srgb, #f59e0b 28%, transparent);
+  --bh-warning-dark-08: color-mix(in srgb, #fbbf24 8%, transparent);
+  --bh-warning-dark-16: color-mix(in srgb, #fbbf24 16%, transparent);
+  --bh-warning-dark-28: color-mix(in srgb, #fbbf24 28%, transparent);
+  --bh-attention-08: color-mix(in srgb, #c2410c 8%, transparent);
+  --bh-attention-16: color-mix(in srgb, #c2410c 16%, transparent);
+  --bh-attention-28: color-mix(in srgb, #c2410c 28%, transparent);
+  --bh-location-08: color-mix(in srgb, #2563eb 8%, transparent);
+  --bh-location-16: color-mix(in srgb, #2563eb 16%, transparent);
+  --bh-location-28: color-mix(in srgb, #2563eb 28%, transparent);
+  --bh-success-08: color-mix(in srgb, #16a34a 8%, transparent);
+  --bh-success-16: color-mix(in srgb, #16a34a 16%, transparent);
+  --bh-success-28: color-mix(in srgb, #16a34a 28%, transparent);
+  --bh-shadow-08: color-mix(in srgb, #101828 8%, transparent);
+  --bh-shadow-16: color-mix(in srgb, #101828 16%, transparent);
+  --bh-shadow-28: color-mix(in srgb, #101828 28%, transparent);
+  --bh-white-08: color-mix(in srgb, #ffffff 8%, transparent);
+  --bh-white-16: color-mix(in srgb, #ffffff 16%, transparent);
+  --bh-white-28: color-mix(in srgb, #ffffff 28%, transparent);
+  --bh-ink-08: color-mix(in srgb, #000000 8%, transparent);
+  --bh-ink-16: color-mix(in srgb, #000000 16%, transparent);
+  --bh-ink-28: color-mix(in srgb, #000000 28%, transparent);
+  --bh-border-08: color-mix(in srgb, #d0d5dd 8%, transparent);
+  --bh-border-16: color-mix(in srgb, #d0d5dd 16%, transparent);
+  --bh-border-28: color-mix(in srgb, #d0d5dd 28%, transparent);
+  --bh-glass-white-88: color-mix(in srgb, #ffffff 88%, transparent);
+  --bh-glass-white: color-mix(in srgb, #ffffff 96%, transparent);
+  --bh-glass-inset-soft: color-mix(in srgb, var(--color-bh-surface-inset-dark) 80%, transparent);
+  --bh-glass-inset: color-mix(in srgb, var(--color-bh-surface-inset-dark) 96%, transparent);
+  --bh-glass-surface-0: color-mix(in srgb, var(--color-bh-surface-0-dark) 88%, transparent);
+  --bh-surface-1: var(--color-bh-surface-1-dark);
+  --bh-surface-2: var(--color-bh-surface-2-dark);
+}
+
+[data-theme='dark'] {
+  --color-bh-surface-0: var(--color-bh-surface-0-dark);
+  --color-bh-surface-1: var(--color-bh-surface-1-dark);
+  --color-bh-surface-2: var(--color-bh-surface-2-dark);
+  --color-bh-surface-3: var(--color-bh-surface-3-dark);
+  --color-bh-surface-inset: var(--color-bh-surface-inset-dark);
+}
 
 @layer base {
   * {
@@ -47,9 +122,24 @@
     cursor: pointer;
   }
 
+  button.primary:not(:disabled):hover {
+    border-color: var(--color-bh-primary-hover);
+    background-color: var(--color-bh-primary-hover);
+  }
+
+  [data-theme='dark'] button.primary:not(:disabled):hover {
+    border-color: #5eead4;
+    background-color: #5eead4;
+    color: #082f2b;
+  }
+
   :focus-visible {
-    outline: 3px solid #0d9488;
+    outline: 3px solid var(--color-bh-accent);
     outline-offset: 3px;
+  }
+
+  [data-theme='dark'] :focus-visible {
+    outline-color: #5eead4;
   }
 
   input,
@@ -69,4 +159,21 @@
     font-size: 0.9rem;
     font-weight: 700;
   }
+}
+
+.leaflet-tooltip.map-vehicle-tooltip {
+  z-index: 1000;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-radius: 9999px;
+  background-color: rgba(8, 47, 43, 0.94);
+  color: #f0fdfa;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(8, 47, 43, 0.94), 0 12px 24px var(--bh-shadow-28);
+}
+
+.leaflet-tooltip.map-vehicle-tooltip::before {
+  display: none;
 }
