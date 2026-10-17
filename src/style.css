@@ -12,6 +12,7 @@
   --color-bh-copy: #475467;
   --color-bh-primary: #0f766e;
   --color-bh-primary-hover: #115e59;
+  --color-bh-on-primary: #ffffff;
   --color-bh-accent: #0d9488;
   --color-bh-highlight: #ccfbf1;
   --color-bh-muted: #5b6678;
@@ -130,7 +131,7 @@
   [data-theme='dark'] button.primary:not(:disabled):hover {
     border-color: #5eead4;
     background-color: #5eead4;
-    color: #082f2b;
+    color: var(--tw-color-bh-on-primary);
   }
 
   :focus-visible {

@@ -20,6 +20,7 @@ const props = withDefaults(
     error?: string | null;
     selectedStopId?: number | null;
     themeMode?: 'light' | 'dark';
+    monochromeMap?: boolean;
   }>(),
   {
     stops: () => [],
@@ -27,6 +28,7 @@ const props = withDefaults(
     error: null,
     selectedStopId: null,
     themeMode: 'light',
+    monochromeMap: false,
   },
 );
 
@@ -172,6 +174,7 @@ onMounted(() => {
   mapLifecycle = createMapLifecycle({
     element: mapElement.value,
     themeMode: props.themeMode,
+    monochromeMap: props.monochromeMap,
     initialView: {
       center: DEFAULT_CENTER,
       zoom: MOBILIBUS_STOPS_MIN_ZOOM,
@@ -203,6 +206,11 @@ watch(
 watch(
   () => props.themeMode,
   themeMode => mapLifecycle?.setTheme(themeMode),
+);
+
+watch(
+  () => props.monochromeMap,
+  monochromeMap => mapLifecycle?.setMonochromeMap(monochromeMap),
 );
 </script>
 
@@ -274,7 +282,7 @@ watch(
       role="alert"
     >
       <span>{{ error ?? 'Não foi possível carregar os pontos do Ótimo.' }}</span>
-      <button type="button" class="primary tw:shrink-0 tw:border-bh-primary tw:bg-bh-primary tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:text-white tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="emit('retry')">
+      <button type="button" class="primary tw:shrink-0 tw:border-bh-primary tw:bg-bh-primary tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]" @click="emit('retry')">
         Tentar novamente
       </button>
     </div>

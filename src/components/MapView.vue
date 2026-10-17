@@ -68,6 +68,7 @@ const props = withDefaults(
     route?: RoutePoint[];
     vehicles?: Vehicle[];
     themeMode?: 'light' | 'dark';
+    monochromeMap?: boolean;
     selectedVehicleId?: string | null;
     selectedVehicleStatus?: VehicleApproachInfo | null;
     userLocation?: MapUserLocation | null;
@@ -81,6 +82,7 @@ const props = withDefaults(
     route: () => [],
     vehicles: () => [],
     themeMode: 'light',
+    monochromeMap: false,
     selectedVehicleId: null,
     selectedVehicleStatus: null,
     userLocation: null,
@@ -193,8 +195,8 @@ function getCompactToggleThemeClasses(isActive: boolean): string {
 
 function getLocationButtonThemeClasses(): string {
   return props.themeMode === 'dark'
-    ? 'tw:border-[#2dd4bf]! tw:bg-[#2dd4bf]! tw:text-[#082f2b]!'
-    : 'tw:border-bh-primary! tw:bg-bh-primary! tw:text-white!';
+    ? 'tw:border-[#2dd4bf]! tw:bg-[#2dd4bf]! tw:text-bh-on-primary!'
+    : 'tw:border-bh-primary! tw:bg-bh-primary! tw:text-bh-on-primary!';
 }
 
 function escapePopupText(value: string): string {
@@ -602,6 +604,7 @@ onMounted(() => {
   mapLifecycle = createMapLifecycle({
     element: mapElement.value,
     themeMode: props.themeMode,
+    monochromeMap: props.monochromeMap,
     mapOptions: createMapInteractionOptions(),
   });
   mapLifecycle.mount();
@@ -640,6 +643,11 @@ watch(
       renderRoute(activeMapScene);
     }
   },
+);
+
+watch(
+  () => props.monochromeMap,
+  monochromeMap => mapLifecycle?.setMonochromeMap(monochromeMap),
 );
 </script>
 
@@ -681,7 +689,7 @@ watch(
     <div class="map-location-control tw:absolute tw:right-[26px] tw:top-[18px] tw:z-[700] tw:grid tw:max-w-[280px] tw:justify-items-end tw:gap-[7px] tw:max-[920px]:top-3 tw:max-[920px]:right-4 tw:max-[920px]:max-w-[44px]">
       <button
         type="button"
-        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:border-bh-primary tw:bg-bh-primary tw:p-0! tw:text-white tw:shadow-[0_12px_32px_var(--bh-accent-28)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
+        class="primary map-location-button tw:grid tw:touch-manipulation tw:size-12 tw:place-items-center tw:rounded-[14px]! tw:border-bh-primary tw:bg-bh-primary tw:p-0! tw:text-bh-on-primary tw:shadow-[0_12px_32px_var(--bh-accent-28)] tw:transition-[filter,transform] tw:duration-[150ms] tw:hover:brightness-105 tw:active:scale-[.98] tw:max-[920px]:size-[42px] tw:max-[920px]:rounded-xl!"
         :aria-label="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :title="isLocating ? 'Localizando sua posição' : 'Usar minha localização'"
         :disabled="isLocating"

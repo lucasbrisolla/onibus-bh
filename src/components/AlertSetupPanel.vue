@@ -257,7 +257,7 @@ function updateMinutes(value: number) {
     <button
       v-if="selectedStop"
       type="button"
-      class="primary alert-submit tw:inline-flex tw:min-h-12 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-[9px] tw:border-bh-primary tw:bg-bh-primary tw:text-white tw:font-extrabold tw:shadow-[0_5px_14px_var(--bh-accent-16)] tw:transition-colors tw:hover:border-bh-primary-hover tw:hover:bg-bh-primary-hover tw:focus-visible:outline-2 tw:focus-visible:outline-offset-2 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b] tw:dark:hover:bg-[#5eead4]"
+      class="primary alert-submit tw:inline-flex tw:min-h-12 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-[9px] tw:border-bh-primary tw:bg-bh-primary tw:text-bh-on-primary tw:font-extrabold tw:shadow-[0_5px_14px_var(--bh-accent-16)] tw:transition-colors tw:hover:border-bh-primary-hover tw:hover:bg-bh-primary-hover tw:focus-visible:outline-2 tw:focus-visible:outline-offset-2 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:hover:bg-[#5eead4]"
       @click="settings.enabled ? update('enabled', false) : permission === 'granted' ? update('enabled', true) : emit('startMonitoring')"
     >
       <BellRing class="tw:size-[17px]" aria-hidden="true" />

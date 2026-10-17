@@ -76,7 +76,7 @@ function updateMinutes(event: Event) {
     </label>
 
     <div class="actions tw:flex tw:flex-wrap tw:gap-2">
-      <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:text-white tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="update('enabled', !settings.enabled)">
+      <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]" @click="update('enabled', !settings.enabled)">
         {{ settings.enabled ? 'Pausar monitoramento' : 'Ativar monitoramento' }}
       </button>
       <button type="button" class="tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb]" @click="emit('requestPermission')">Permitir notificações</button>

@@ -175,8 +175,11 @@ function describePredictionForScreenReader(prediction: Prediction, isNext = fals
           @keydown="handlePredictionKeydown($event, prediction)"
         >
           <div
-            class="bus-token tw:grid tw:size-[26px] tw:place-items-center tw:rounded-lg tw:bg-bh-highlight tw:text-bh-primary-hover tw:max-[920px]:size-[30px]"
-            :class="prediction.id === nextPredictionId ? 'tw:bg-bh-primary tw:text-white tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b] tw:min-[921px]:size-[30px]' : ''"
+            class="bus-token tw:grid tw:size-[26px] tw:place-items-center tw:rounded-lg tw:max-[920px]:size-[30px]"
+            :class="prediction.id === nextPredictionId
+              ? 'tw:bg-bh-primary tw:text-bh-on-primary tw:min-[921px]:size-[30px]'
+              : 'tw:bg-bh-highlight tw:text-bh-primary-hover'"
+            data-contrast-check="non-text"
             aria-hidden="true"
           >
             <BusFront class="tw:size-[18px] tw:stroke-[2.2]" />
@@ -200,7 +203,7 @@ function describePredictionForScreenReader(prediction: Prediction, isNext = fals
             <strong
               class="tw:text-[#0f766e] tw:text-[1rem] tw:text-right tw:transition-colors tw:duration-200 tw:dark:text-[#5eead4] tw:max-[920px]:text-[0.92rem]"
               :class="[
-                prediction.id === nextPredictionId ? 'tw:text-[1.12rem]! tw:font-black' : '',
+                prediction.id === nextPredictionId ? 'tw:text-[1.12rem] tw:font-black' : '',
                 Boolean(prediction.departureLabel)
                   ? 'is-departure tw:max-w-[86px] tw:whitespace-normal tw:text-[0.88rem] tw:leading-[1.15]'
                   : '',
@@ -246,18 +249,18 @@ function describePredictionForScreenReader(prediction: Prediction, isNext = fals
       <div
         v-if="contextMenu"
         class="prediction-context-menu tw:fixed tw:z-[1600] tw:grid tw:min-w-[248px] tw:gap-1 tw:rounded-[10px] tw:border tw:border-[#d0d5dd] tw:bg-white tw:p-1.5 tw:shadow-[0_18px_48px_var(--bh-shadow-16)]"
-        :class="props.themeMode === 'dark' ? 'tw:border-[#28514d]! tw:bg-[#132f2d]!' : ''"
+        :class="props.themeMode === 'dark' ? 'tw:border-[#28514d] tw:bg-[#132f2d]' : ''"
         :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         role="menu"
         @pointerdown.stop
       >
-        <p class="tw:m-[2px_8px_4px] tw:text-[#667085] tw:text-[0.72rem] tw:font-extrabold" :class="props.themeMode === 'dark' ? 'tw:text-[#9eb7b4]!' : ''">
+        <p class="tw:m-[2px_8px_4px] tw:text-[#667085] tw:text-[0.72rem] tw:font-extrabold" :class="props.themeMode === 'dark' ? 'tw:text-[#9eb7b4]' : ''">
           Opções para a linha {{ contextMenu.prediction.lineCode }}
         </p>
         <button
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
-          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb] tw:hover:bg-[#0f2423] tw:hover:text-[#5eead4] tw:focus-visible:bg-[#0f2423] tw:focus-visible:text-[#5eead4]' : ''"
           role="menuitem"
           @click="createAlert('line')"
         >
@@ -267,7 +270,7 @@ function describePredictionForScreenReader(prediction: Prediction, isNext = fals
           v-if="contextMenu.prediction.variant !== 'not-applicable'"
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
-          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb] tw:hover:bg-[#0f2423] tw:hover:text-[#5eead4] tw:focus-visible:bg-[#0f2423] tw:focus-visible:text-[#5eead4]' : ''"
           role="menuitem"
           @click="createAlert('variant')"
         >
@@ -276,7 +279,7 @@ function describePredictionForScreenReader(prediction: Prediction, isNext = fals
         <button
           type="button"
           class="tw:rounded-[7px] tw:border-0 tw:bg-transparent tw:px-2.5 tw:py-[9px] tw:text-left tw:text-[0.82rem] tw:font-bold tw:text-bh-text tw:hover:bg-bh-surface tw:hover:text-bh-primary-hover"
-          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb]! tw:hover:bg-[#0f2423]! tw:hover:text-[#5eead4]! tw:focus-visible:bg-[#0f2423]! tw:focus-visible:text-[#5eead4]!' : ''"
+          :class="props.themeMode === 'dark' ? 'tw:text-[#e5e7eb] tw:hover:bg-[#0f2423] tw:hover:text-[#5eead4] tw:focus-visible:bg-[#0f2423] tw:focus-visible:text-[#5eead4]' : ''"
           role="menuitem"
           @click="selectPrediction(contextMenu.prediction)"
         >

@@ -6,6 +6,7 @@ import AppShell from './components/AppShell.vue';
 import type { DashboardSection } from './components/AppShell.vue';
 import MapView from './components/MapView.vue';
 import type { UserLocation } from './components/MapView.vue';
+import MapStylePreview from './components/MapStylePreview.vue';
 import MobileBottomSheet from './components/MobileBottomSheet.vue';
 import MobilibusLinesPanel from './components/MobilibusLinesPanel.vue';
 import MonitoringPanel from './components/MonitoringPanel.vue';
@@ -108,6 +109,23 @@ const isLocating = ref(false);
 const locationStatus = ref('Use sua localização para encontrar pontos por perto.');
 const userLocation = ref<UserLocation | null>(null);
 const activeSection = ref<DashboardSection>('mapa');
+const mapStylePreview = ref<'colorido' | 'monocromatico' | null>(null);
+
+function hideMapStylePreviewOnPointerLeave(event: MouseEvent) {
+  const group = event.currentTarget as HTMLElement;
+
+  if (!group.contains(document.activeElement)) {
+    mapStylePreview.value = null;
+  }
+}
+
+function hideMapStylePreviewOnFocusLeave(event: FocusEvent) {
+  const group = event.currentTarget as HTMLElement;
+
+  if (!group.contains(event.relatedTarget as Node | null)) {
+    mapStylePreview.value = null;
+  }
+}
 const mobilibusCatalog = createMobilibusCatalog({
   fetchStops: fetchMobilibusStops,
   fetchDepartures: fetchMobilibusDepartures,
@@ -139,6 +157,37 @@ const themeMode = useStorage<ThemeMode>('onibus-bh-theme', loadThemeMode(), unde
   },
   onError: () => {
     // O tema continua funcionando em memória quando o storage não está disponível.
+  },
+});
+const darkThemeTokenClasses = [
+  'tw:dark:[--tw-color-bh-border:#1f4a47]',
+  'tw:dark:[--tw-color-bh-border-accent:#2dd4bf]',
+  'tw:dark:[--tw-color-bh-copy:#c7d7d4]',
+  'tw:dark:[--tw-color-bh-primary:#2dd4bf]',
+  'tw:dark:[--tw-color-bh-primary-hover:#5eead4]',
+  'tw:dark:[--tw-color-bh-on-primary:#082f2b]',
+  'tw:dark:[--tw-color-bh-accent:#5eead4]',
+  'tw:dark:[--tw-color-bh-highlight:#134e4a]',
+  'tw:dark:[--tw-color-bh-muted:#9eb7b4]',
+  'tw:dark:[--tw-color-bh-surface:#134e4a]',
+  'tw:dark:[--tw-color-bh-surface-0:#081b1a]',
+  'tw:dark:[--tw-color-bh-surface-1:#0c2b29]',
+  'tw:dark:[--tw-color-bh-surface-2:#132f2d]',
+  'tw:dark:[--tw-color-bh-surface-3:#163735]',
+  'tw:dark:[--tw-color-bh-surface-inset:#0f2423]',
+  'tw:dark:[--tw-color-bh-disabled-bg:#1f4a47]',
+  'tw:dark:[--tw-color-bh-disabled-text:#9eb7b4]',
+  'tw:dark:[--tw-color-bh-text:#e5e7eb]',
+  'tw:dark:[--tw-color-bh-title:#f9fafb]',
+].join(' ');
+const monochromeMap = useStorage<boolean>('onibus-bh-map-monochrome', false, undefined, {
+  writeDefaults: false,
+  serializer: {
+    read: value => value === 'true',
+    write: value => (value ? 'true' : 'false'),
+  },
+  onError: () => {
+    // A preferência continua funcionando em memória quando o storage não está disponível.
   },
 });
 const currentLocation = useCurrentLocationComposable({
@@ -354,7 +403,7 @@ function permissionLabel(value: PermissionState): string {
 
 function clearSavedData(): void {
   const confirmed = window.confirm(
-    'Limpar alertas, favoritos e nomes salvos neste dispositivo? Essa ação não pode ser desfeita.',
+    'Limpar alertas, favoritos, nomes e preferências salvos neste dispositivo? Essa ação não pode ser desfeita.',
   );
   if (!confirmed) return;
 
@@ -368,6 +417,7 @@ function clearSavedData(): void {
   saveSettings(resetSettings);
   try {
     window.localStorage.removeItem('onibus-bh-theme');
+    window.localStorage.removeItem('onibus-bh-map-monochrome');
   } catch {
     // A página será recarregada com o tema atual se o storage não estiver acessível.
   }
@@ -531,7 +581,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-theme tw:min-h-screen tw:font-sans tw:bg-bh-surface-0 tw:text-bh-text tw:dark:bg-bh-surface-0 tw:dark:text-[#e5e7eb]" :data-theme="themeMode">
+  <div class="app-theme tw:min-h-screen tw:font-sans tw:bg-bh-surface-0 tw:text-bh-text tw:dark:bg-bh-surface-0 tw:dark:text-[#e5e7eb]" :class="darkThemeTokenClasses" :data-theme="themeMode">
     <AppShell
       :last-updated="lastUpdated"
       :is-loading="isLoading"
@@ -548,7 +598,7 @@ onBeforeUnmount(() => {
     <section
       v-if="activeSection === 'mapa'"
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
-      :class="{ 'tw:grid-cols-[minmax(0,1fr)]!': !isSidebarOpen }"
+      :class="{ 'tw:grid-cols-[minmax(0,1fr)]': !isSidebarOpen }"
     >
       <MonitoringPanel
         v-show="isSidebarOpen"
@@ -579,6 +629,7 @@ onBeforeUnmount(() => {
           :route="route"
           :vehicles="vehicles"
           :theme-mode="themeMode"
+          :monochrome-map="monochromeMap"
           :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
           :selected-vehicle-status="selectedVehicleStatus"
           :user-location="userLocation"
@@ -617,7 +668,7 @@ onBeforeUnmount(() => {
     <section
       v-else-if="activeSection === 'monitoramento'"
       class="dashboard-grid tw:relative tw:grid tw:min-h-0 tw:grid-cols-[360px_minmax(0,1fr)] tw:max-[920px]:grid-cols-1"
-      :class="{ 'tw:grid-cols-[minmax(0,1fr)]!': !isSidebarOpen }"
+      :class="{ 'tw:grid-cols-[minmax(0,1fr)]': !isSidebarOpen }"
     >
       <MonitoringPanel
         v-show="isSidebarOpen"
@@ -647,6 +698,7 @@ onBeforeUnmount(() => {
           :route="route"
           :vehicles="vehicles"
           :theme-mode="themeMode"
+          :monochrome-map="monochromeMap"
           :selected-vehicle-id="selectedPrediction?.vehicleId ?? null"
           :selected-vehicle-status="selectedVehicleStatus"
           :user-location="userLocation"
@@ -692,6 +744,7 @@ onBeforeUnmount(() => {
       :departures-error="mobilibusDeparturesError"
       :is-selected-stop-favorite="isSelectedMobilibusStopFavorite"
       :theme-mode="themeMode"
+      :monochrome-map="monochromeMap"
       @request-map-tiles="loadMobilibusStops"
       @retry-map="retryMobilibusStops"
       @select-stop="selectMobilibusStop"
@@ -724,25 +777,25 @@ onBeforeUnmount(() => {
             <form v-if="editingFavoriteKey === siuFavoriteKey(favorite)" class="tw:mt-1 tw:flex tw:flex-wrap tw:items-end tw:gap-2" @submit.prevent="saveFavoriteAlias(siuFavoriteKey(favorite))">
               <label class="tw:min-w-[180px] tw:max-w-[260px] tw:flex-1 tw:gap-1 tw:text-[.76rem] tw:dark:text-[#c7d7d4]">
                 Nome do favorito
-                <input v-model="favoriteAliasDraft" maxlength="40" placeholder="Casa ou Trabalho" class="tw:py-2! tw:text-[.84rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#e5e7eb]!" />
+                <input v-model="favoriteAliasDraft" maxlength="40" placeholder="Casa ou Trabalho" class="tw:py-2 tw:text-[.84rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb]" />
               </label>
-              <button type="submit" class="tw:px-3! tw:py-2! tw:text-[.78rem]! tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#5eead4]!">Salvar</button>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.78rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" @click="cancelFavoriteRename">Cancelar</button>
+              <button type="submit" class="tw:px-3 tw:py-2 tw:text-[.78rem] tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#5eead4]">Salvar</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.78rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" @click="cancelFavoriteRename">Cancelar</button>
             </form>
             <div v-if="pendingFavoriteRemovalKey === siuFavoriteKey(favorite)" class="tw:mt-1 tw:flex tw:flex-wrap tw:items-center tw:gap-2" role="status">
               <span class="tw:text-[.78rem] tw:font-semibold">Remover este ponto dos favoritos?</span>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.76rem]! tw:font-bold tw:text-[#b42318] tw:dark:border-[#7f1d1d]! tw:dark:bg-[#3b1717]! tw:dark:text-[#fecaca]!" @click="confirmRemoveFavorite(favorite)">Confirmar remoção</button>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.76rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" @click="pendingFavoriteRemovalKey = null">Manter</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.76rem] tw:font-bold tw:text-[#b42318] tw:dark:border-[#7f1d1d] tw:dark:bg-[#3b1717] tw:dark:text-[#fecaca]" @click="confirmRemoveFavorite(favorite)">Confirmar remoção</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.76rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" @click="pendingFavoriteRemovalKey = null">Manter</button>
             </div>
           </div>
           <div class="favorite-stop-actions tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-1.5 tw:max-[560px]:justify-start">
             <button
               type="button"
-              class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3! tw:py-2! tw:text-[.78rem]! tw:text-white! tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]"
+              class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3 tw:py-2 tw:text-[.78rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]"
               @click="selectStop(favorite)"
             >Abrir parada</button>
-            <button type="button" class="tw:border-transparent! tw:bg-transparent! tw:px-2.5! tw:py-2! tw:text-[.76rem]! tw:font-semibold tw:text-bh-muted tw:hover:bg-[#f2f4f7]! tw:dark:text-[#c7d7d4]! tw:dark:hover:bg-bh-surface-3!" @click="beginFavoriteRename(siuFavoriteKey(favorite))"> {{ favoriteAliases[siuFavoriteKey(favorite)] ? 'Renomear' : 'Dar nome' }} </button>
-            <button type="button" class="tw:border-transparent! tw:bg-transparent! tw:px-2! tw:py-2! tw:text-[.74rem]! tw:font-medium tw:text-bh-muted tw:hover:bg-[#f2f4f7]! tw:dark:text-[#9eb7b4]! tw:dark:hover:bg-bh-surface-3!" @click="askToRemoveFavorite(siuFavoriteKey(favorite))">Remover</button>
+            <button type="button" class="tw:border-transparent tw:bg-transparent tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:font-semibold tw:text-bh-muted tw:hover:bg-[#f2f4f7] tw:dark:text-[#c7d7d4] tw:dark:hover:bg-bh-surface-3" @click="beginFavoriteRename(siuFavoriteKey(favorite))"> {{ favoriteAliases[siuFavoriteKey(favorite)] ? 'Renomear' : 'Dar nome' }} </button>
+            <button type="button" class="tw:border-transparent tw:bg-transparent tw:px-2 tw:py-2 tw:text-[.74rem] tw:font-medium tw:text-bh-muted tw:hover:bg-[#f2f4f7] tw:dark:text-[#9eb7b4] tw:dark:hover:bg-bh-surface-3" @click="askToRemoveFavorite(siuFavoriteKey(favorite))">Remover</button>
           </div>
         </article>
         <article
@@ -757,27 +810,27 @@ onBeforeUnmount(() => {
             <form v-if="editingFavoriteKey === mobilibusFavoriteKey(favorite)" class="tw:mt-1 tw:flex tw:flex-wrap tw:items-end tw:gap-2" @submit.prevent="saveFavoriteAlias(mobilibusFavoriteKey(favorite))">
               <label class="tw:min-w-[180px] tw:max-w-[260px] tw:flex-1 tw:gap-1 tw:text-[.76rem] tw:dark:text-[#c7d7d4]">
                 Nome do favorito
-                <input v-model="favoriteAliasDraft" maxlength="40" placeholder="Casa ou Trabalho" class="tw:py-2! tw:text-[.84rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#e5e7eb]!" />
+                <input v-model="favoriteAliasDraft" maxlength="40" placeholder="Casa ou Trabalho" class="tw:py-2 tw:text-[.84rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb]" />
               </label>
-              <button type="submit" class="tw:px-3! tw:py-2! tw:text-[.78rem]! tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#5eead4]!">Salvar</button>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.78rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" @click="cancelFavoriteRename">Cancelar</button>
+              <button type="submit" class="tw:px-3 tw:py-2 tw:text-[.78rem] tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#5eead4]">Salvar</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.78rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" @click="cancelFavoriteRename">Cancelar</button>
             </form>
             <div v-if="pendingFavoriteRemovalKey === mobilibusFavoriteKey(favorite)" class="tw:mt-1 tw:flex tw:flex-wrap tw:items-center tw:gap-2" role="status">
               <span class="tw:text-[.78rem] tw:font-semibold">Remover este ponto dos favoritos?</span>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.76rem]! tw:font-bold tw:text-[#b42318] tw:dark:border-[#7f1d1d]! tw:dark:bg-[#3b1717]! tw:dark:text-[#fecaca]!" @click="confirmRemoveMobilibusFavorite(favorite)">Confirmar remoção</button>
-              <button type="button" class="tw:px-3! tw:py-2! tw:text-[.76rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" @click="pendingFavoriteRemovalKey = null">Manter</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.76rem] tw:font-bold tw:text-[#b42318] tw:dark:border-[#7f1d1d] tw:dark:bg-[#3b1717] tw:dark:text-[#fecaca]" @click="confirmRemoveMobilibusFavorite(favorite)">Confirmar remoção</button>
+              <button type="button" class="tw:px-3 tw:py-2 tw:text-[.76rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" @click="pendingFavoriteRemovalKey = null">Manter</button>
             </div>
           </div>
           <div class="favorite-stop-actions tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-1.5 tw:max-[560px]:justify-start">
             <button
               type="button"
-              class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3! tw:py-2! tw:text-[.78rem]! tw:text-white! tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]"
+              class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3 tw:py-2 tw:text-[.78rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]"
               @click="openMobilibusFavoriteStop(favorite)"
             >
               Abrir no Ótimo
             </button>
-            <button type="button" class="tw:border-transparent! tw:bg-transparent! tw:px-2.5! tw:py-2! tw:text-[.76rem]! tw:font-semibold tw:text-bh-muted tw:hover:bg-[#f2f4f7]! tw:dark:text-[#c7d7d4]! tw:dark:hover:bg-bh-surface-3!" @click="beginFavoriteRename(mobilibusFavoriteKey(favorite))"> {{ favoriteAliases[mobilibusFavoriteKey(favorite)] ? 'Renomear' : 'Dar nome' }} </button>
-            <button type="button" class="tw:border-transparent! tw:bg-transparent! tw:px-2! tw:py-2! tw:text-[.74rem]! tw:font-medium tw:text-bh-muted tw:hover:bg-[#f2f4f7]! tw:dark:text-[#9eb7b4]! tw:dark:hover:bg-bh-surface-3!" @click="askToRemoveFavorite(mobilibusFavoriteKey(favorite))">Remover</button>
+            <button type="button" class="tw:border-transparent tw:bg-transparent tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:font-semibold tw:text-bh-muted tw:hover:bg-[#f2f4f7] tw:dark:text-[#c7d7d4] tw:dark:hover:bg-bh-surface-3" @click="beginFavoriteRename(mobilibusFavoriteKey(favorite))"> {{ favoriteAliases[mobilibusFavoriteKey(favorite)] ? 'Renomear' : 'Dar nome' }} </button>
+            <button type="button" class="tw:border-transparent tw:bg-transparent tw:px-2 tw:py-2 tw:text-[.74rem] tw:font-medium tw:text-bh-muted tw:hover:bg-[#f2f4f7] tw:dark:text-[#9eb7b4] tw:dark:hover:bg-bh-surface-3" @click="askToRemoveFavorite(mobilibusFavoriteKey(favorite))">Remover</button>
           </div>
         </article>
       </div>
@@ -787,7 +840,7 @@ onBeforeUnmount(() => {
           <strong class="tw:text-[.98rem] tw:text-bh-title tw:dark:text-[#f9fafb]">Nenhuma parada salva</strong>
           <span class="tw:text-[.84rem] tw:leading-[1.45] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Use a estrela em um ponto para encontrá-lo mais rápido na próxima vez.</span>
         </div>
-        <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3.5! tw:py-2.5! tw:text-[.82rem]! tw:text-white! tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="navigate('mapa')">Encontrar uma parada</button>
+        <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3.5 tw:py-2.5 tw:text-[.82rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]" @click="navigate('mapa')">Encontrar uma parada</button>
       </div>
     </section>
 
@@ -804,7 +857,7 @@ onBeforeUnmount(() => {
           <strong class="tw:text-[.98rem] tw:text-bh-title tw:dark:text-[#f9fafb]">O app ainda não registra um histórico</strong>
           <span class="tw:text-[.84rem] tw:leading-[1.45] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Os avisos enviados não ficam salvos nesta tela. Você pode consultar as partidas atuais no mapa.</span>
         </div>
-        <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3.5! tw:py-2.5! tw:text-[.82rem]! tw:text-white! tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="navigate('monitoramento')">Criar meu primeiro alerta</button>
+        <button type="button" class="primary tw:border-bh-primary tw:bg-bh-primary tw:px-3.5 tw:py-2.5 tw:text-[.82rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]" @click="navigate('monitoramento')">Criar meu primeiro alerta</button>
       </div>
     </section>
 
@@ -814,7 +867,7 @@ onBeforeUnmount(() => {
     >
       <div class="section-page-header tw:grid tw:max-w-[760px] tw:gap-1.5">
         <h1 class="tw:m-0 tw:text-bh-text tw:text-[clamp(1.35rem,2.3vw,1.75rem)] tw:leading-[1.2] tw:dark:text-[#f9fafb]">Configurações</h1>
-        <p class="tw:m-0 tw:text-bh-muted tw:leading-[1.5] tw:dark:text-[#c7d7d4]">Tema, notificações e preferências de alerta deste dispositivo.</p>
+        <p class="tw:m-0 tw:text-bh-muted tw:leading-[1.5] tw:dark:text-[#c7d7d4]">Tema, mapa, notificações e preferências de alerta deste dispositivo.</p>
       </div>
       <div class="settings-list tw:grid tw:max-w-[820px] tw:divide-y tw:divide-[#e4e7ec] tw:rounded-[12px] tw:border tw:border-[#e4e7ec] tw:bg-white tw:px-4 tw:dark:divide-[#28514d] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset">
         <section class="settings-row tw:grid tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:py-4 tw:max-[560px]:grid-cols-1">
@@ -823,8 +876,67 @@ onBeforeUnmount(() => {
             <p class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Aparência atual: {{ themeMode === 'dark' ? 'escura' : 'clara' }}.</p>
           </div>
           <div class="tw:flex tw:gap-2" role="group" aria-label="Tema de cores">
-            <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:px-3! tw:py-2! tw:text-[.8rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" :class="themeMode === 'light' ? 'tw:border-bh-primary! tw:bg-bh-surface! tw:text-bh-primary-hover! tw:dark:border-[#2dd4bf]! tw:dark:bg-[#134e4a]! tw:dark:text-[#99f6e4]!' : ''" :aria-pressed="themeMode === 'light'" @click="themeMode = 'light'"><Sun class="tw:size-4" aria-hidden="true" />Claro</button>
-            <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:px-3! tw:py-2! tw:text-[.8rem]! tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#c7d7d4]!" :class="themeMode === 'dark' ? 'tw:border-bh-primary! tw:bg-bh-surface! tw:text-bh-primary-hover! tw:dark:border-[#2dd4bf]! tw:dark:bg-[#134e4a]! tw:dark:text-[#99f6e4]!' : ''" :aria-pressed="themeMode === 'dark'" @click="themeMode = 'dark'"><MoonStar class="tw:size-4" aria-hidden="true" />Escuro</button>
+            <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-2 tw:text-[.8rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" :class="themeMode === 'light' ? 'tw:border-bh-primary tw:bg-bh-surface tw:text-bh-primary-hover tw:dark:border-[#2dd4bf] tw:dark:bg-[#134e4a] tw:dark:text-[#99f6e4]' : ''" :aria-pressed="themeMode === 'light'" @click="themeMode = 'light'"><Sun class="tw:size-4" aria-hidden="true" />Claro</button>
+            <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-2 tw:text-[.8rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]" :class="themeMode === 'dark' ? 'tw:border-bh-primary tw:bg-bh-surface tw:text-bh-primary-hover tw:dark:border-[#2dd4bf] tw:dark:bg-[#134e4a] tw:dark:text-[#99f6e4]' : ''" :aria-pressed="themeMode === 'dark'" @click="themeMode = 'dark'"><MoonStar class="tw:size-4" aria-hidden="true" />Escuro</button>
+          </div>
+        </section>
+
+        <section class="settings-row tw:grid tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:py-4 tw:max-[560px]:grid-cols-1">
+          <div class="tw:grid tw:gap-1">
+            <h2 class="tw:m-0 tw:text-[.92rem] tw:font-bold tw:text-bh-title tw:dark:text-[#f9fafb]">Estilo do mapa</h2>
+            <p class="tw:m-0 tw:max-w-[58ch] tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">O modo monocromático mostra os tiles em tons de cinza; ônibus, rotas e paradas mantêm suas cores.</p>
+          </div>
+          <div
+            class="tw:relative tw:flex tw:flex-wrap tw:gap-2"
+            role="group"
+            aria-label="Estilo do mapa"
+            @mouseleave="hideMapStylePreviewOnPointerLeave"
+            @focusout="hideMapStylePreviewOnFocusLeave"
+            @keydown.esc="mapStylePreview = null"
+          >
+            <button
+              type="button"
+              class="tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-2 tw:text-[.8rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]"
+              :class="!monochromeMap ? 'tw:border-bh-primary tw:bg-bh-surface tw:text-bh-primary-hover tw:dark:border-[#2dd4bf] tw:dark:bg-[#134e4a] tw:dark:text-[#99f6e4]' : ''"
+              :aria-pressed="!monochromeMap"
+              :aria-describedby="mapStylePreview === 'colorido' ? 'map-style-preview' : undefined"
+              @mouseenter="mapStylePreview = 'colorido'"
+              @focus="mapStylePreview = 'colorido'"
+              @click="monochromeMap = false"
+            >Colorido</button>
+            <button
+              type="button"
+              class="tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-2 tw:text-[.8rem] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#c7d7d4]"
+              :class="monochromeMap ? 'tw:border-bh-primary tw:bg-bh-surface tw:text-bh-primary-hover tw:dark:border-[#2dd4bf] tw:dark:bg-[#134e4a] tw:dark:text-[#99f6e4]' : ''"
+              :aria-pressed="monochromeMap"
+              :aria-describedby="mapStylePreview === 'monocromatico' ? 'map-style-preview' : undefined"
+              @mouseenter="mapStylePreview = 'monocromatico'"
+              @focus="mapStylePreview = 'monocromatico'"
+              @click="monochromeMap = true"
+            >Monocromático</button>
+            <Transition
+              enter-active-class="tw:transition tw:duration-150"
+              enter-from-class="tw:translate-y-1 tw:opacity-0"
+              enter-to-class="tw:translate-y-0 tw:opacity-100"
+              leave-active-class="tw:transition tw:duration-100"
+              leave-from-class="tw:translate-y-0 tw:opacity-100"
+              leave-to-class="tw:translate-y-1 tw:opacity-0"
+            >
+              <div
+                v-if="mapStylePreview"
+                id="map-style-preview"
+                class="tw:absolute tw:left-0 tw:top-[calc(100%+0.5rem)] tw:z-50 tw:w-[min(17rem,calc(100vw-3.5rem))] tw:rounded-[12px] tw:border tw:border-bh-border tw:bg-white tw:p-2.5 tw:shadow-[0_12px_28px_var(--bh-shadow-16)] tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2"
+                role="tooltip"
+              >
+                <p class="tw:mb-2 tw:mt-0 tw:text-[.8rem] tw:font-bold tw:text-bh-title tw:dark:text-[#f9fafb]">
+                  {{ mapStylePreview === 'monocromatico' ? 'Monocromática' : 'Colorido' }}
+                </p>
+                <MapStylePreview :monochrome="mapStylePreview === 'monocromatico'" :dark="themeMode === 'dark'" />
+                <p class="tw:mb-0 tw:mt-2 tw:text-[.72rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">
+                  {{ mapStylePreview === 'monocromatico' ? 'Tiles em cinza; ônibus, rota e paradas preservam suas cores.' : 'Tiles com cores naturais; ônibus, rota e paradas preservam suas cores.' }}
+                </p>
+              </div>
+            </Transition>
           </div>
         </section>
 
@@ -848,22 +960,22 @@ onBeforeUnmount(() => {
           <div class="tw:grid tw:gap-1.5">
             <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
               <h2 class="tw:m-0 tw:text-[.92rem] tw:font-bold tw:text-bh-title tw:dark:text-[#f9fafb]">Notificações</h2>
-              <span class="tw:rounded-full tw:px-2.5 tw:py-1 tw:text-[.72rem] tw:font-bold" :class="permission === 'granted' ? 'tw:bg-[#dcfce7] tw:text-[#166534] tw:dark:bg-[#153a2c] tw:dark:text-[#86efac]' : permission === 'denied' ? 'tw:bg-[#fee4e2] tw:text-[#b42318] tw:dark:bg-[#3b1717] tw:dark:text-[#fecaca]' : 'tw:bg-[#f2f4f7] tw:text-[#475467] tw:dark:bg-bh-surface-3 tw:dark:text-[#c7d7d4]'">{{ permissionLabel(permission) }}</span>
+              <span class="tw:rounded-full tw:px-2.5 tw:py-1 tw:text-[.72rem] tw:font-bold" :class="permission === 'granted' ? 'tw:bg-[#dcfce7] tw:text-[#166534] tw:dark:bg-[#153a2c] tw:dark:text-[#86efac]' : permission === 'denied' ? 'tw:bg-[#fff7ed] tw:text-[#9a3412] tw:dark:bg-[#431f13] tw:dark:text-[#fdba74]' : 'tw:bg-[#f2f4f7] tw:text-[#475467] tw:dark:bg-bh-surface-3 tw:dark:text-[#c7d7d4]'">{{ permissionLabel(permission) }}</span>
             </div>
             <p v-if="permission === 'granted'" class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">O navegador pode exibir os avisos que você configurar.</p>
             <p v-else-if="permission === 'denied'" class="tw:m-0 tw:max-w-[62ch] tw:text-[.8rem] tw:leading-[1.45] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Para liberar, abra as informações do site na barra de endereço do navegador e altere Notificações para Permitir. Depois, atualize esta página.</p>
             <p v-else-if="permission === 'unsupported'" class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Este navegador não oferece notificações para o app.</p>
             <p v-else class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">A permissão será solicitada quando você iniciar um monitoramento.</p>
           </div>
-          <button v-if="permission === 'default'" type="button" class="tw:px-3! tw:py-2! tw:text-[.78rem]! tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d]! tw:dark:bg-bh-surface-2! tw:dark:text-[#5eead4]!" @click="requestPermission">Permitir notificações</button>
+          <button v-if="permission === 'default'" type="button" class="tw:px-3 tw:py-2 tw:text-[.78rem] tw:font-bold tw:text-bh-primary-hover tw:dark:border-[#28514d] tw:dark:bg-bh-surface-2 tw:dark:text-[#5eead4]" @click="requestPermission">Permitir notificações</button>
         </section>
 
         <section class="settings-row tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-4 tw:py-4">
           <div class="tw:grid tw:gap-1">
             <h2 class="tw:m-0 tw:text-[.92rem] tw:font-bold tw:text-bh-title tw:dark:text-[#f9fafb]">Dados salvos neste dispositivo</h2>
-            <p class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Limpa favoritos, nomes personalizados, tema e configuração do alerta.</p>
+            <p class="tw:m-0 tw:text-[.8rem] tw:leading-[1.4] tw:text-bh-muted tw:dark:text-[#c7d7d4]">Limpa favoritos, nomes personalizados, tema, estilo do mapa e configuração do alerta.</p>
           </div>
-          <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:border-[#fda29b]! tw:bg-white! tw:px-3! tw:py-2! tw:text-[.78rem]! tw:font-semibold tw:text-[#b42318]! tw:dark:border-[#7f1d1d]! tw:dark:bg-[#3b1717]! tw:dark:text-[#fecaca]!" @click="clearSavedData"><Trash2 class="tw:size-4" aria-hidden="true" />Limpar dados salvos</button>
+          <button type="button" class="tw:flex tw:items-center tw:gap-1.5 tw:border-[#fda29b] tw:bg-white tw:px-3 tw:py-2 tw:text-[.78rem] tw:font-semibold tw:text-[#b42318] tw:dark:border-[#7f1d1d] tw:dark:bg-[#3b1717] tw:dark:text-[#fecaca]" @click="clearSavedData"><Trash2 class="tw:size-4" aria-hidden="true" />Limpar dados salvos</button>
         </section>
       </div>
     </section>

@@ -5,6 +5,7 @@ import { createMapBaseTileLayer, type MapTheme } from './mapBaseLayer';
 export interface MapLifecycleOptions {
   element: HTMLElement;
   themeMode: MapTheme;
+  monochromeMap?: boolean;
   mapOptions?: L.MapOptions;
   initialView?: {
     center: L.LatLngTuple;
@@ -17,6 +18,7 @@ export interface MapLifecycle {
   getMap(): L.Map | null;
   listen(eventName: string, handler: L.LeafletEventHandlerFn): void;
   setTheme(themeMode: MapTheme): void;
+  setMonochromeMap(enabled: boolean): void;
   invalidateSize(): void;
   destroy(): void;
 }
@@ -32,6 +34,7 @@ export function createMapLifecycle(options: MapLifecycleOptions): MapLifecycle {
   let resizeObserver: ResizeObserver | null = null;
   let resizeFrameId: number | null = null;
   let themeMode = options.themeMode;
+  let monochromeMap = options.monochromeMap ?? false;
   const registeredListeners: RegisteredListener[] = [];
 
   function scheduleInvalidateSize(): void {
@@ -80,7 +83,7 @@ export function createMapLifecycle(options: MapLifecycleOptions): MapLifecycle {
       currentMap.setView(options.initialView.center, options.initialView.zoom);
     }
 
-    baseTileLayer = createMapBaseTileLayer(themeMode);
+    baseTileLayer = createMapBaseTileLayer(themeMode, { monochrome: monochromeMap });
     baseTileLayer.addTo(currentMap);
     L.control.zoom({ position: 'bottomright' }).addTo(currentMap);
 
@@ -116,7 +119,19 @@ export function createMapLifecycle(options: MapLifecycleOptions): MapLifecycle {
 
     themeMode = nextThemeMode;
     map.removeLayer(baseTileLayer);
-    baseTileLayer = createMapBaseTileLayer(nextThemeMode);
+    baseTileLayer = createMapBaseTileLayer(nextThemeMode, { monochrome: monochromeMap });
+    baseTileLayer.addTo(map);
+  }
+
+  function setMonochromeMap(enabled: boolean): void {
+    if (monochromeMap === enabled || !map || !baseTileLayer) {
+      monochromeMap = enabled;
+      return;
+    }
+
+    monochromeMap = enabled;
+    map.removeLayer(baseTileLayer);
+    baseTileLayer = createMapBaseTileLayer(themeMode, { monochrome: monochromeMap });
     baseTileLayer.addTo(map);
   }
 
@@ -152,6 +167,7 @@ export function createMapLifecycle(options: MapLifecycleOptions): MapLifecycle {
     getMap,
     listen,
     setTheme,
+    setMonochromeMap,
     invalidateSize,
     destroy,
   };

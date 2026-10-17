@@ -113,7 +113,7 @@ function closeMoreMenuOutside(event: PointerEvent) {
       class="sidebar tw:flex tw:min-w-0 tw:flex-col tw:gap-8 tw:bg-[#0f2e2c] tw:p-[26px_18px] tw:text-[#f9fafb] tw:max-[920px]:hidden tw:dark:bg-bh-surface-1"
     >
       <a class="brand tw:inline-flex tw:items-center tw:gap-2.5 tw:text-[1.18rem] tw:text-inherit tw:no-underline" href="#" aria-label="Ônibus BH">
-        <span class="brand-icon tw:grid tw:size-[30px] tw:place-items-center tw:rounded-lg tw:bg-bh-primary tw:text-white" aria-hidden="true">
+        <span class="brand-icon tw:grid tw:size-[30px] tw:place-items-center tw:rounded-lg tw:bg-bh-primary tw:text-bh-on-primary" aria-hidden="true">
           <BusFront class="tw:size-[18px] tw:stroke-[2.2]" />
         </span>
         <strong>Ônibus BH</strong>
@@ -124,16 +124,10 @@ function closeMoreMenuOutside(event: PointerEvent) {
           v-for="item in navItems"
           :key="item.id"
           type="button"
-          class="tw:flex tw:items-center tw:gap-2.5 tw:border-0! tw:p-3! tw:text-left tw:transition-colors tw:duration-[160ms]"
-          :class="{
-            active: item.id === activeSection,
-            'tw:bg-transparent!': item.id !== activeSection,
-            'tw:text-[#99f6e4]!': item.id !== activeSection,
-            'tw:bg-[#0f766e]!': item.id === activeSection && themeMode !== 'dark',
-            'tw:text-white!': item.id === activeSection && themeMode !== 'dark',
-            'tw:bg-[#2dd4bf]!': item.id === activeSection && themeMode === 'dark',
-            'tw:text-[#0c2b29]!': item.id === activeSection && themeMode === 'dark',
-          }"
+          class="tw:flex tw:items-center tw:gap-2.5 tw:border-0 tw:p-3 tw:text-left tw:transition-colors tw:duration-[160ms]"
+          :class="item.id === activeSection
+            ? 'tw:bg-bh-primary tw:text-bh-on-primary'
+            : 'tw:bg-transparent tw:text-[#99f6e4]'"
           :aria-current="item.id === activeSection ? 'page' : undefined"
           @click="navigateTo(item.id)"
         >
@@ -147,14 +141,14 @@ function closeMoreMenuOutside(event: PointerEvent) {
         role="switch"
         :aria-checked="themeMode === 'dark'"
         aria-label="Modo escuro"
-        class="theme-toggle tw:flex tw:min-h-11 tw:items-center tw:justify-between tw:gap-3 tw:border tw:border-[var(--bh-focus-16)]! tw:bg-[var(--bh-focus-08)]! tw:px-3.5 tw:py-2.5! tw:text-[#c7d7d4]! tw:hover:bg-[var(--bh-focus-16)]! tw:focus-visible:outline-2 tw:focus-visible:outline-offset-2 tw:focus-visible:outline-[#5eead4]"
+        class="theme-toggle tw:flex tw:min-h-11 tw:items-center tw:justify-between tw:gap-3 tw:border tw:border-[var(--bh-focus-16)] tw:bg-[var(--bh-focus-08)] tw:px-3.5 tw:py-2.5 tw:text-[#c7d7d4] tw:hover:bg-[var(--bh-focus-16)] tw:focus-visible:outline-2 tw:focus-visible:outline-offset-2 tw:focus-visible:outline-[#5eead4]"
         @click="emit('toggleTheme')"
       >
         <span class="tw:inline-flex tw:items-center tw:gap-2.5">
           <component :is="themeMode === 'dark' ? MoonStar : Sun" class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
           Modo escuro
         </span>
-        <span class="tw:inline-flex tw:w-11 tw:shrink-0 tw:items-center tw:rounded-full tw:bg-[#667085] tw:p-[3px] tw:transition-colors" :class="themeMode === 'dark' ? 'tw:bg-[#0d9488]!' : ''" aria-hidden="true">
+        <span class="tw:inline-flex tw:w-11 tw:shrink-0 tw:items-center tw:rounded-full tw:bg-[#667085] tw:p-[3px] tw:transition-colors" :class="themeMode === 'dark' ? 'tw:bg-[#0d9488]' : ''" aria-hidden="true">
           <span class="tw:size-[18px] tw:translate-x-0 tw:rounded-full tw:bg-white tw:shadow-sm tw:transition-transform" :class="themeMode === 'dark' ? 'tw:translate-x-5' : ''"></span>
         </span>
       </button>
@@ -187,7 +181,7 @@ function closeMoreMenuOutside(event: PointerEvent) {
       >
         <button
           type="button"
-          class="icon-button sidebar-toggle tw:justify-self-start tw:grid tw:size-[42px] tw:place-items-center tw:p-0! tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb] tw:max-[920px]:hidden"
+          class="icon-button sidebar-toggle tw:justify-self-start tw:grid tw:size-[42px] tw:place-items-center tw:p-0 tw:dark:border-[#28514d] tw:dark:bg-bh-surface-inset tw:dark:text-[#e5e7eb] tw:max-[920px]:hidden"
           :aria-label="isSidebarOpen ? 'Recolher sidebar' : 'Abrir sidebar'"
           @click="toggleSidebar"
         >
@@ -198,8 +192,8 @@ function closeMoreMenuOutside(event: PointerEvent) {
           <span class="tw:sr-only">Buscar parada ou endereço</span>
           <input
             :class="themeMode === 'dark'
-              ? 'tw:border-[#28514d]! tw:bg-[#0f2423]! tw:text-[#e5e7eb]!'
-              : 'tw:border-[#d0d5dd]! tw:bg-[#f2f4f7]! tw:text-bh-text!'
+              ? 'tw:border-[#28514d] tw:bg-[#0f2423] tw:text-[#e5e7eb]'
+              : 'tw:border-[#d0d5dd] tw:bg-[#f2f4f7] tw:text-bh-text'
             "
             :value="searchQuery"
             placeholder="Buscar parada ou endereço"
@@ -213,10 +207,10 @@ function closeMoreMenuOutside(event: PointerEvent) {
               v-for="stop in searchResults"
               :key="stop.code"
               type="button"
-              class="tw:grid tw:gap-[3px] tw:border-0! tw:p-[10px_12px]! tw:text-left"
+              class="tw:grid tw:gap-[3px] tw:border-0 tw:p-[10px_12px] tw:text-left"
               :class="themeMode === 'dark'
-                ? 'tw:bg-bh-surface-inset! tw:hover:bg-bh-surface-3!'
-                : 'tw:bg-[#f9fafb]! tw:hover:bg-[#ecfdf5]!'
+                ? 'tw:bg-bh-surface-inset tw:hover:bg-bh-surface-3'
+                : 'tw:bg-[#f9fafb] tw:hover:bg-[#f2f4f7]'
               "
               @click="emit('selectStop', stop)"
             >
@@ -232,7 +226,7 @@ function closeMoreMenuOutside(event: PointerEvent) {
 
       <nav
         class="mobile-nav tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-[1100] tw:hidden tw:grid-cols-4 tw:border-t tw:border-bh-border tw:bg-[var(--bh-glass-white)] tw:pb-[env(safe-area-inset-bottom)] tw:shadow-[0_-8px_24px_var(--bh-shadow-08)] tw:backdrop-blur-[16px] tw:max-[920px]:grid"
-        :class="themeMode === 'dark' ? 'tw:border-[#1f4a47]! tw:bg-[var(--bh-surface-2)]!' : ''"
+        :class="themeMode === 'dark' ? 'tw:border-[#1f4a47] tw:bg-[var(--bh-surface-2)]' : ''"
         aria-label="Navegação inferior"
         @keydown.esc="closeMoreMenu"
       >
@@ -247,8 +241,8 @@ function closeMoreMenuOutside(event: PointerEvent) {
             v-for="item in mobileMoreItems"
             :key="item.id"
             type="button"
-            class="tw:flex tw:min-h-11 tw:items-center tw:gap-3 tw:rounded-lg tw:border-0! tw:bg-transparent! tw:px-3! tw:text-left tw:text-[0.9rem] tw:font-semibold tw:text-[#344054]! tw:transition-colors tw:hover:bg-[#f2f4f7]! tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]! tw:dark:hover:bg-bh-surface-3!"
-            :class="item.id === activeSection ? 'tw:bg-[#f0fdfa]! tw:text-[#0f766e]! tw:dark:bg-[#134e4a]! tw:dark:text-[#5eead4]!' : ''"
+            class="tw:flex tw:min-h-11 tw:items-center tw:gap-3 tw:rounded-lg tw:border-0 tw:bg-transparent tw:px-3 tw:text-left tw:text-[0.9rem] tw:font-semibold tw:text-[#344054] tw:transition-colors tw:hover:bg-[#f2f4f7] tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4] tw:dark:hover:bg-bh-surface-3"
+            :class="item.id === activeSection ? 'tw:bg-[#f0fdfa] tw:text-[#0f766e] tw:dark:bg-[#134e4a] tw:dark:text-[#5eead4]' : ''"
             :aria-current="item.id === activeSection ? 'page' : undefined"
             @click="navigateTo(item.id)"
           >
@@ -261,14 +255,14 @@ function closeMoreMenuOutside(event: PointerEvent) {
             role="switch"
             :aria-checked="themeMode === 'dark'"
             aria-label="Modo escuro"
-            class="tw:flex tw:min-h-11 tw:items-center tw:justify-between tw:gap-3 tw:rounded-lg tw:border-0! tw:bg-transparent! tw:px-3! tw:text-[0.9rem] tw:font-semibold tw:text-[#344054]! tw:transition-colors tw:hover:bg-[#f2f4f7]! tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]! tw:dark:hover:bg-bh-surface-3!"
+            class="tw:flex tw:min-h-11 tw:items-center tw:justify-between tw:gap-3 tw:rounded-lg tw:border-0 tw:bg-transparent tw:px-3 tw:text-[0.9rem] tw:font-semibold tw:text-[#344054] tw:transition-colors tw:hover:bg-[#f2f4f7] tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4] tw:dark:hover:bg-bh-surface-3"
             @click="emit('toggleTheme')"
           >
             <span class="tw:inline-flex tw:items-center tw:gap-3">
               <component :is="themeMode === 'dark' ? MoonStar : Sun" class="tw:size-[18px] tw:stroke-[2.2]" aria-hidden="true" />
               Modo escuro
             </span>
-            <span class="tw:inline-flex tw:w-11 tw:shrink-0 tw:items-center tw:rounded-full tw:bg-[#667085] tw:p-[3px] tw:transition-colors" :class="themeMode === 'dark' ? 'tw:bg-[#0d9488]!' : ''" aria-hidden="true">
+            <span class="tw:inline-flex tw:w-11 tw:shrink-0 tw:items-center tw:rounded-full tw:bg-[#667085] tw:p-[3px] tw:transition-colors" :class="themeMode === 'dark' ? 'tw:bg-[#0d9488]' : ''" aria-hidden="true">
               <span class="tw:size-[18px] tw:translate-x-0 tw:rounded-full tw:bg-white tw:shadow-sm tw:transition-transform" :class="themeMode === 'dark' ? 'tw:translate-x-5' : ''"></span>
             </span>
           </button>
@@ -277,15 +271,15 @@ function closeMoreMenuOutside(event: PointerEvent) {
           v-for="item in mobileNavItems"
           :key="item.id"
           type="button"
-          class="mobile-nav-item tw:flex tw:min-h-[58px] tw:flex-col tw:items-center tw:justify-center tw:gap-1 tw:border-0! tw:bg-transparent! tw:px-1 tw:py-2 tw:text-center tw:text-[0.76rem] tw:font-semibold tw:text-[#475467]! tw:transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-[-3px] tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]!"
+          class="mobile-nav-item tw:flex tw:min-h-[58px] tw:flex-col tw:items-center tw:justify-center tw:gap-1 tw:border-0 tw:bg-transparent tw:px-1 tw:py-2 tw:text-center tw:text-[0.76rem] tw:font-semibold tw:text-[#475467] tw:transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-[-3px] tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]"
           :class="[
             { active: item.id === activeSection },
             themeMode === 'dark'
               ? item.id === activeSection
-                ? 'tw:text-[#5eead4]! tw:font-extrabold!'
+                ? 'tw:text-[#5eead4] tw:font-extrabold'
                 : ''
               : item.id === activeSection
-                ? 'tw:text-[#0f766e]! tw:font-extrabold!'
+                ? 'tw:text-[#0f766e] tw:font-extrabold'
                 : '',
           ]"
           :aria-current="item.id === activeSection ? 'page' : undefined"
@@ -297,15 +291,15 @@ function closeMoreMenuOutside(event: PointerEvent) {
         <button
           type="button"
           ref="moreToggleRef"
-          class="mobile-more-toggle tw:flex tw:min-h-[58px] tw:flex-col tw:items-center tw:justify-center tw:gap-1 tw:border-0! tw:bg-transparent! tw:px-1 tw:py-2 tw:text-center tw:text-[0.76rem] tw:font-semibold tw:text-[#475467]! tw:transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-[-3px] tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]!"
+          class="mobile-more-toggle tw:flex tw:min-h-[58px] tw:flex-col tw:items-center tw:justify-center tw:gap-1 tw:border-0 tw:bg-transparent tw:px-1 tw:py-2 tw:text-center tw:text-[0.76rem] tw:font-semibold tw:text-[#475467] tw:transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-[-3px] tw:focus-visible:outline-bh-accent tw:dark:focus-visible:outline-[#5eead4] tw:dark:text-[#c7d7d4]"
           :class="[
             { active: isMoreMenuOpen || isMoreSectionActive },
             themeMode === 'dark'
               ? isMoreMenuOpen || isMoreSectionActive
-                ? 'tw:text-[#5eead4]! tw:font-extrabold!'
+                ? 'tw:text-[#5eead4] tw:font-extrabold'
                 : ''
               : isMoreMenuOpen || isMoreSectionActive
-                ? 'tw:text-[#0f766e]! tw:font-extrabold!'
+                ? 'tw:text-[#0f766e] tw:font-extrabold'
                 : '',
           ]"
           :aria-expanded="isMoreMenuOpen"

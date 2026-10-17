@@ -5,6 +5,7 @@ export type MapBaseProvider = 'carto' | 'openstreetmap';
 
 export interface MapBaseLayerOptions {
   cartoApiKey?: string;
+  monochrome?: boolean;
 }
 
 export interface MapBaseLayerConfig {
@@ -27,6 +28,9 @@ const OPEN_STREET_MAP_ATTRIBUTION =
 const CARTO_ATTRIBUTION =
   OPEN_STREET_MAP_ATTRIBUTION +
   ' &copy; <a class="tw:text-bh-primary-hover! tw:dark:text-[#5eead4]!" href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>';
+const DARK_FALLBACK_TILE_CLASSES =
+  'tw:[&_img.leaflet-tile]:invert! tw:[&_img.leaflet-tile]:hue-rotate-180! tw:[&_img.leaflet-tile]:brightness-[0.78]! tw:[&_img.leaflet-tile]:contrast-[1.08]! tw:[&_img.leaflet-tile]:saturate-[0.72]!';
+const MONOCHROME_TILE_CLASS = 'tw:[&_img.leaflet-tile]:grayscale!';
 const defaultCartoApiKey = import.meta.env.VITE_CARTO_API_KEY?.trim() ?? '';
 
 function appendCartoApiKey(url: string, apiKey: string): string {
@@ -74,23 +78,20 @@ export function createMapBaseTileLayer(
   options: MapBaseLayerOptions = {},
 ): L.TileLayer {
   const config = getMapBaseLayerConfig(theme, options);
+  const usesDarkOpenStreetMapFallback = config.className.includes('map-base-tiles-dark-fallback');
+  const className = [
+    config.className,
+    usesDarkOpenStreetMapFallback ? DARK_FALLBACK_TILE_CLASSES : '',
+    options.monochrome ? MONOCHROME_TILE_CLASS : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const tileLayer = L.tileLayer(config.url, {
     attribution: config.attribution,
-    className: config.className,
+    className,
     maxZoom: config.maxZoom,
     subdomains: config.subdomains,
   });
-  const tileFilterUtility = config.className.includes('map-base-tiles-dark-fallback')
-    ? 'tw:[filter:invert(0.88)_hue-rotate(180deg)_brightness(0.78)_contrast(1.08)_saturate(0.72)]'
-    : config.theme === 'light'
-      ? 'tw:[filter:grayscale(1)_saturate(0)_brightness(1.06)_contrast(0.88)]'
-      : null;
-
-  if (tileFilterUtility) {
-    tileLayer.on('tileload', event => {
-      event.tile.classList.add(tileFilterUtility);
-    });
-  }
 
   return tileLayer;
 }

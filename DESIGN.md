@@ -77,12 +77,13 @@ A escala clara substitui os antigos slates: `#F9FAFB`, `#D0D5DD`, `#667085`, `#9
 | --- | --- | --- |
 | Ação primária | Fundo `#0F766E`, texto branco | Fundo `#2DD4BF`, texto `#082F2B` |
 | Hover da ação primária | `#115E59` | `#5EEAD4` |
+| Texto sobre a ação primária (`bh-on-primary`) | `#FFFFFF` | `#082F2B` |
 | Foco, ícones e detalhes teal | `#0D9488` | `#5EEAD4` no foco |
-| Item ativo da sidebar | Fundo `#0F766E`, texto branco | Fundo `#2DD4BF`, texto `#0C2B29` |
+| Item ativo da sidebar | Fundo `#0F766E`, texto `#FFFFFF` | Fundo `#2DD4BF`, texto `#082F2B` |
 | Itens inativos da sidebar | `#99F6E4` | `#99F6E4` |
 | Localização da pessoa | Azul `#60A5FA` → `#2563EB` → `#1D4ED8` | Mesmo gradiente azul |
 
-O texto de toda ação primária clara é branco. O fundo `#0D9488` fica reservado a foco, ícones e detalhes decorativos; o botão primário usa `#0F766E` e passa a `#115E59` no hover.
+O texto de toda ação primária usa o token `bh-on-primary`: branco no tema claro e `#082F2B` no escuro. O ícone da marca e os itens ativos da navegação usam o mesmo token quando estão sobre a cor primária. O fundo `#0D9488` fica reservado a foco, ícones e detalhes decorativos; o botão primário usa `#0F766E` e passa a `#115E59` no hover.
 
 ### Estados
 
@@ -111,9 +112,10 @@ O ponto pulsante e o rótulo “Em tempo real” identificam a atualização ao 
 | Agrupamento de paradas | Fundo `#475467`, texto branco | Fundo `#344054`, texto `#F9FAFB` |
 | Tooltip de parada | Branco translúcido, texto `#111827`, contorno teal | Fundo `#0F2423`, texto `#F9FAFB`, contorno `#2DD4BF` |
 | Tooltip de veículo | Fundo `rgba(8, 47, 43, 0.94)`, texto `#F0FDFA`, borda branca translúcida | Mesmo tratamento escuro |
+| Mapa monocromático | Opcional em Configurações; aplica tons de cinza apenas aos tiles | Mesmo comportamento |
 | Créditos do mapa | Link `#115E59` | Link `#5EEAD4` |
 
-A rota clara usa opacidade `0.88` e largura de `5 px`; o fluxo usa opacidade `0.58`, largura `3 px` e padrão `2 12`. No tema escuro, a rota muda para `#14B8A6` e o fluxo para `#CCFBF1`. O contêiner dos mapas usa `#E8ECE6` no claro e `#0B1616` no escuro. CartoDB Positron fornece os tiles claros e CartoDB Dark Matter, os escuros. Sem chave CARTO, o OpenStreetMap recebe filtro visual; os tiles externos não têm um hexadecimal fixo no app.
+A rota clara usa opacidade `0.88` e largura de `5 px`; o fluxo usa opacidade `0.58`, largura `3 px` e padrão `2 12`. No tema escuro, a rota muda para `#14B8A6` e o fluxo para `#CCFBF1`. O contêiner dos mapas usa `#E8ECE6` no claro e `#0B1616` no escuro. CartoDB Positron fornece os tiles claros e CartoDB Dark Matter, os escuros. Sem chave CARTO, o OpenStreetMap é usado como fallback. A opção monocromática aplica tons de cinza somente aos tiles; marcadores e rotas mantêm suas cores nos dois temas.
 
 ### Cores fornecidas pela API
 
@@ -123,7 +125,7 @@ Exemplos registrados em `docs/mobilibus-otimo-api-research.md`: `#EF7D01`, `#592
 
 ### Ícone, navegador e PWA
 
-O favicon e o ícone SVG usam gradiente teal `#0F766E` → `#0D9488` → `#14B8A6` com traço `#F9FAFB`. O ícone da marca no shell usa `bh-primary` com símbolo branco. O manifesto usa `#0F2E2C` como fundo. As meta tags `theme-color` usam `#0F2E2C` no tema claro e `#081B1A` no escuro por meio de `media` para cada preferência.
+O favicon e o ícone SVG usam gradiente teal `#0F766E` → `#0D9488` → `#14B8A6` com traço `#F9FAFB`. O ícone da marca no shell usa `bh-primary` com símbolo `bh-on-primary`. O manifesto usa `#0F2E2C` como fundo. As meta tags `theme-color` usam `#0F2E2C` no tema claro e `#081B1A` no escuro por meio de `media` para cada preferência.
 
 ### Transparências e controles desabilitados
 
@@ -136,7 +138,11 @@ Os tokens `bh-disabled-bg` e `bh-disabled-text` usam fundo `#E4E7EC` e texto `#4
 ### Regras de manutenção da paleta
 
 - `src/style.css` mantém os tokens globais, as camadas de superfície, os estados desabilitados e as transparências.
+- `src/App.vue` aplica a paleta escura aos tokens `--tw-color-bh-*` no contêiner `.app-theme` com utilitários Tailwind. Ao mudar a escala escura, atualize esse mapeamento junto com os tokens e este documento.
+- `bh-on-primary` define a cor de texto e ícone sobre fundos primários nos dois temas. Componentes usam `tw:text-bh-on-primary` sem escolher outra cor em `dark:`.
 - Antes de criar um novo hexadecimal, verificar se um token existente representa o mesmo papel.
+- `npm run lint` valida tipos e executa `scripts/check-design-system.mjs`. O verificador reprova cores de produção sem token ou registro neste documento e utilitários Tailwind com `!` fora das integrações Leaflet justificadas no script. `MapStylePreview.vue` é a única exceção de cor, pois desenha uma ilustração estática dos tiles.
+- `npm run test:e2e` percorre Mapa, Alerta, Ótimo, Favoritos, Histórico e Configurações nos temas claro e escuro. Na primeira execução, instale o navegador com `npx playwright install chromium`. O axe verifica contraste sobre conteúdo HTML; verificações próprias exigem ao menos 3:1 para ícones marcados com `data-contrast-check="non-text"` e calculam o contraste do tooltip sobre os tiles. Tiles e respostas de API são simulados, e o relatório HTML e as capturas ficam em `playwright-report/` e `playwright-artifacts/test-results/`.
 - Teal identifica ação e ônibus; azul, localização; verde, atividade ao vivo; âmbar, parada selecionada ou favorita; laranja-queimado, atenção; vermelho, erro.
 - Não usar a cor da API na rota do mapa nem o `textColor` sugerido pela API na etiqueta da linha.
 - Ao alterar uma cor, atualizar este inventário e os dois temas.
@@ -169,3 +175,4 @@ Os tokens `bh-disabled-bg` e `bh-disabled-text` usam fundo `#E4E7EC` e texto `#4
 - o card com menor tempo previsto válido recebe o rótulo e o destaque `Próximo`, independentemente da posição na lista;
 - cards de previsão não mostram `vehicleId` nem texto auxiliar `Chegando`;
 - durante uma atualização, previsões já carregadas permanecem visíveis; se a lista estiver vazia, são exibidos indicadores de carregamento em formato de cartão.
+- em `Configurações`, os botões `Colorido` e `Monocromático` mostram uma prévia do mapa ao passar o mouse ou receber foco; a prévia respeita o tema ativo e mantém rota, ônibus e paradas coloridos.

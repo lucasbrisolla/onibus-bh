@@ -54,7 +54,7 @@ export const mapStopClusterUtilities =
 export const mapStopClusterTextUtilities = 'tw:leading-none tw:tabular-nums';
 
 export const mapStopTooltipClassName =
-  'map-stop-tooltip tw:z-[1000]! tw:border! tw:border-[var(--bh-accent-28)]! tw:rounded-[12px]! tw:bg-[var(--bh-glass-white)]! tw:text-[#111827]! tw:px-2.5! tw:py-[7px]! tw:min-w-[140px]! tw:max-w-[220px]! tw:text-[0.78rem]! tw:font-bold! tw:leading-[1.3]! tw:whitespace-normal! tw:break-normal! tw:[overflow-wrap:break-word]! tw:text-left! tw:shadow-[0_10px_24px_var(--bh-action-16)]! tw:before:hidden! tw:dark:border-[var(--bh-mint-28)]! tw:dark:bg-[var(--bh-glass-inset)]! tw:dark:text-[#f9fafb]!';
+  'map-stop-tooltip tw:z-[1000]! tw:border! tw:border-[var(--bh-accent-28)]! tw:rounded-[12px]! tw:bg-[var(--bh-glass-white)]! tw:text-[#111827]! tw:px-2.5! tw:py-[7px]! tw:min-w-[140px]! tw:max-w-[220px]! tw:text-[0.78rem]! tw:font-bold! tw:leading-[1.3]! tw:whitespace-normal! tw:break-normal! tw:[overflow-wrap:break-word]! tw:text-left! tw:shadow-[0_10px_24px_var(--bh-action-16)]! tw:before:hidden! tw:dark:border-[#5eead4]! tw:dark:bg-[#082f2b]! tw:dark:text-[#f9fafb]! tw:dark:shadow-[0_10px_24px_var(--bh-shadow-28)]!';
 
 export const mapStopTooltipContentClassName =
   'map-stop-tooltip-content tw:grid tw:gap-0.5';
@@ -63,4 +63,4 @@ export const mapStopTooltipNumberClassName =
   'map-stop-tooltip-number tw:text-bh-copy tw:text-[0.72rem] tw:font-semibold tw:dark:text-[#c7d7d4]';
 
 export const mapVehicleTooltipClassName =
-  'map-vehicle-tooltip';
+  'map-vehicle-tooltip tw:z-[1000]! tw:border-2! tw:border-[var(--bh-white-28)]! tw:rounded-full! tw:bg-[#082f2b]! tw:text-[#f0fdfa]! tw:px-2.5! tw:py-1.5! tw:text-[0.8rem]! tw:font-extrabold! tw:leading-none! tw:shadow-[0_0_0_1px_#082f2b,0_12px_24px_var(--bh-shadow-28)]! tw:before:hidden!';

@@ -31,6 +31,7 @@ const props = defineProps<{
   departuresError: string | null;
   isSelectedStopFavorite: boolean;
   themeMode: 'light' | 'dark';
+  monochromeMap: boolean;
 }>();
 
 const departureFilter = ref('');
@@ -226,6 +227,7 @@ watch(
           :status="stopsStatus"
           :error="stopsError"
           :theme-mode="themeMode"
+          :monochrome-map="monochromeMap"
           :selected-stop-id="selectedStop?.stopId ?? null"
           @request-tiles="emit('requestMapTiles', $event)"
           @retry="emit('retryMap')"
@@ -241,7 +243,7 @@ watch(
         :theme-mode="themeMode"
       >
         <aside
-          class="mobilibus-lines-control-panel tw:relative tw:z-[1] tw:col-start-1 tw:row-start-1 tw:grid tw:min-h-[calc(100vh-79px)] tw:min-w-0 tw:max-h-[calc(100vh-79px)] tw:gap-3 tw:overflow-y-auto tw:rounded-none tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:shadow-none tw:backdrop-blur-none tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb] tw:max-[920px]:z-auto tw:max-[920px]:col-auto tw:max-[920px]:row-auto tw:max-[920px]:min-h-0 tw:max-[920px]:flex-1 tw:max-[920px]:h-[calc(100%-34px)] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-0! tw:max-[920px]:bg-transparent! tw:max-[920px]:p-[6px_8px_10px]"
+          class="mobilibus-lines-control-panel tw:relative tw:z-[1] tw:col-start-1 tw:row-start-1 tw:grid tw:min-h-[calc(100vh-79px)] tw:min-w-0 tw:max-h-[calc(100vh-79px)] tw:gap-3 tw:overflow-y-auto tw:rounded-none tw:border-r tw:border-bh-border tw:bg-white tw:p-[18px] tw:shadow-none tw:backdrop-blur-none tw:dark:border-[#1f4a47] tw:dark:bg-bh-surface-2 tw:dark:text-[#e5e7eb] tw:max-[920px]:z-auto tw:max-[920px]:col-auto tw:max-[920px]:row-auto tw:max-[920px]:min-h-0 tw:max-[920px]:flex-1 tw:max-[920px]:h-[calc(100%-34px)] tw:max-[920px]:max-h-[calc(100%-34px)] tw:max-[920px]:border-0 tw:max-[920px]:bg-transparent tw:max-[920px]:p-[6px_8px_10px]"
           aria-label="Detalhes do ponto do Ótimo"
         >
         <section
@@ -334,7 +336,7 @@ watch(
                 role="alert"
               >
                 <span>{{ departuresError ?? 'Não foi possível consultar este ponto.' }}</span>
-                <button type="button" class="primary tw:shrink-0 tw:border-bh-primary tw:bg-bh-primary tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:text-white tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf] tw:dark:text-[#082f2b]" @click="emit('retryDepartures')">
+                <button type="button" class="primary tw:shrink-0 tw:border-bh-primary tw:bg-bh-primary tw:px-2.5 tw:py-2 tw:text-[.76rem] tw:text-bh-on-primary tw:dark:border-[#2dd4bf] tw:dark:bg-[#2dd4bf]" @click="emit('retryDepartures')">
                   Tentar novamente
                 </button>
               </div>

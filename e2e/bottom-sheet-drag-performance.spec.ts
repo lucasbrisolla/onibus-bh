@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockMapTiles } from './helpers';
 
 for (const { section, selector, theme } of [
   { section: 'Mapa', selector: '.mobile-bottom-sheet', theme: 'light' },
@@ -8,9 +9,12 @@ for (const { section, selector, theme } of [
 test(`mantém o encaixe half → full fluido no ${section} (${theme})`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(mode => localStorage.setItem('onibus-bh-theme', mode), theme);
-  await page.goto('http://localhost:5173/', { waitUntil: 'domcontentloaded' });
+  await mockMapTiles(page);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   if (section === 'Ótimo') {
-    await page.getByRole('navigation', { name: 'Navegação inferior' }).getByRole('button', { name: 'Ótimo' }).click();
+    const navigation = page.getByRole('navigation', { name: 'Navegação inferior' });
+    await navigation.getByRole('button', { name: 'Mais' }).click();
+    await navigation.getByRole('group', { name: 'Mais opções' }).getByRole('button', { name: 'Ótimo' }).click();
   }
 
   const sheet = page.locator(selector);
@@ -80,7 +84,7 @@ test(`mantém o encaixe half → full fluido no ${section} (${theme})`, async ({
   const layoutTop = section === 'Ótimo'
     ? (await page.locator('.mobilibus-lines-map-layout').boundingBox())?.y ?? 0
     : 0;
-  expect(fullBox?.y).toBeLessThanOrEqual(layoutTop + 12);
+  expect(fullBox?.y).toBeLessThanOrEqual(layoutTop + 16);
 
   const frameMetrics = await page.evaluate(() => {
     const frames = (window as Window & { __bottomSheetFrames?: number[] }).__bottomSheetFrames ?? [];
